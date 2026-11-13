@@ -1,6 +1,7 @@
 import { esc } from '../../shared/esc.js';
 import { state, canOpenQuyen } from '../store.js';
 import type { RouteId } from '../store.js';
+import { ICONS } from '../icons.js';
 
 type Room = {
   id: RouteId;
@@ -22,24 +23,6 @@ const ROOMS: Room[] = [
   { id: 'quyen', name: 'PHÒNG CHỦ XỊ', sub: 'Ma trận quyền', tone: 'cream', area: 'boss', gated: true },
 ];
 
-const TONE_BG: Record<Room['tone'], string> = {
-  red: '#C62828',
-  yellow: '#FFCF33',
-  blue: '#1F5FD1',
-  green: '#1B7A43',
-  cream: '#FFF4D6',
-  orange: '#F28C28',
-};
-
-const TONE_FG: Record<Room['tone'], string> = {
-  red: '#fff',
-  yellow: '#1B1B1B',
-  blue: '#fff',
-  green: '#fff',
-  cream: '#1B1B1B',
-  orange: '#1B1B1B',
-};
-
 export function titleHome(): { chip: string; fun: string } {
   const name = state.me?.displayName?.split('(')[0]?.trim() || 'đồng nghiệp';
   return { chip: 'SẢNH VP', fun: `CHÀO ${name.toUpperCase()}!` };
@@ -47,9 +30,9 @@ export function titleHome(): { chip: string; fun: string } {
 
 export function renderHome(): string {
   const rooms = ROOMS.filter((r) => !r.gated || canOpenQuyen()).map((r) => {
-    const bg = TONE_BG[r.tone];
-    const fg = TONE_FG[r.tone];
-    return `<a class="hn-floor-room" href="#/${r.id}" data-area="${r.area}" style="background:${bg};color:${fg}">
+    const icon = r.id === 'quyen' ? ICONS.paw : (ICONS as Record<string, string>)[r.id] || ICONS.ban;
+    return `<a class="hn-floor-room" href="#/${r.id}" data-area="${r.area}" data-tone="${r.tone}">
+      <span class="hn-floor-room-icon">${icon}</span>
       <span class="hn-floor-room-name">${esc(r.name)}</span>
       <span class="hn-floor-room-sub">${esc(r.sub)}</span>
     </a>`;
@@ -59,6 +42,7 @@ export function renderHome(): string {
     <div class="hn-floor" role="navigation" aria-label="Sơ đồ văn phòng">
       <div class="hn-floor-hall" aria-hidden="true">HÀNH LANG</div>
       ${rooms.join('')}
+      <div class="hn-floor-plant" aria-hidden="true">${ICONS.paw}</div>
       <div class="hn-floor-door" aria-hidden="true">CỬA</div>
     </div>
   </main>`;

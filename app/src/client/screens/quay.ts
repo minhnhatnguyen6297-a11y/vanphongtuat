@@ -117,6 +117,7 @@ function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
     const eased = reduced ? p : easeOutCubic(p);
     const angle = anim.from + (anim.to - anim.from) * eased;
     face.style.transform = `rotate(${angle}deg)`;
+    face.style.setProperty('--wheel-angle', `${angle}deg`);
     animAngle = angle;
     if (p < 1) {
       spinRaf = requestAnimationFrame(tick);
@@ -125,6 +126,7 @@ function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
     spinRaf = 0;
     animAngle = anim.to;
     face.style.transform = `rotate(${anim.to}deg)`;
+    face.style.setProperty('--wheel-angle', `${anim.to}deg`);
     if (!spinDoneTimer) {
       spinDoneTimer = window.setTimeout(() => {
         spinDoneTimer = 0;
@@ -202,16 +204,13 @@ export function renderQuay(): string {
   });
 
   let spinLabel = 'QUAY NGAY';
-  let spinBg = '#FFCF33';
   let disabled = false;
   if (!canPerm('wheel.spin')) {
     spinLabel = 'CHỈ XEM';
     disabled = true;
-    spinBg = '#FFFFFF';
   } else if (items.length < 2) {
     spinLabel = 'THÊM ÍT NHẤT 2 Ô';
     disabled = true;
-    spinBg = '#FFFFFF';
   } else if (spinning) {
     spinLabel = 'ĐANG QUAY…';
     disabled = true;
@@ -224,10 +223,10 @@ export function renderQuay(): string {
   let act = '';
   if (hasWinner && wheel.kind === 'shop' && canPerm('table.setWinner')) {
     const item = items[last!.resultIndex];
-    act = `<button type="button" class="hn-btn hn-btn-red" data-act="set-winner" data-shop="${item?.refShopId || ''}" data-spin="${last!.id}">CHỐT QUÁN NÀY</button>`;
+    act = `<button type="button" class="hn-btn hn-btn-green" data-act="set-winner" data-shop="${item?.refShopId || ''}" data-spin="${last!.id}">CHỐT QUÁN NÀY</button>`;
   } else if (hasWinner && wheel.kind === 'person' && canPerm('table.setPickup')) {
     const item = JSON.parse(last!.itemsJson)[last!.resultIndex] as { refMemberId?: string };
-    act = `<button type="button" class="hn-btn" style="background:#1B7A43;color:#fff" data-act="set-pickup" data-member="${item?.refMemberId || ''}" data-spin="${last!.id}">GHI NGƯỜI ĐI LẤY</button>`;
+    act = `<button type="button" class="hn-btn hn-btn-green" data-act="set-pickup" data-member="${item?.refMemberId || ''}" data-spin="${last!.id}">GHI NGƯỜI ĐI LẤY</button>`;
   }
 
   const canDelWheel = canPerm('wheel.delete');
@@ -238,7 +237,7 @@ export function renderQuay(): string {
         ? `<button type="button" data-del-wheel="${w.id}" aria-label="Xóa vòng" title="Xóa vòng" style="margin-left:2px;width:28px;height:28px;border:2px solid #1B1B1B;background:#fff;cursor:pointer;font-weight:800;line-height:1">×</button>`
         : '';
       return `<span style="display:inline-flex;align-items:center">
-        <button type="button" data-wheel="${w.id}" aria-pressed="${on}" style="font-family:var(--font-body);font-size:13px;font-weight:800;background:${on ? '#1B1B1B' : '#fff'};color:${on ? '#FFF4D6' : '#1B1B1B'};border:2px solid #1B1B1B;padding:4px 10px;min-height:40px;cursor:pointer">${esc(w.title)}</button>${del}
+        <button type="button" class="hn-choice" data-wheel="${w.id}" aria-pressed="${on}">${esc(w.title)}</button>${del}
       </span>`;
     })
     .join('');
@@ -247,12 +246,12 @@ export function renderQuay(): string {
     .map((r, i) => {
       const pctNum = Math.max(1, Math.min(99, Math.round((r.weight / totalW) * 100)));
       const dot = SHOP_COLORS[i % SHOP_COLORS.length];
-      return `<li style="display:flex;align-items:center;gap:8px;border:2px solid #1B1B1B;background:#FFF4D6;padding:4px 6px">
-        <span aria-hidden="true" style="flex:0 0 16px;height:16px;border-radius:50%;border:2px solid #1B1B1B;background:${dot}"></span>
-        <input class="hn-input" data-iname="${r.id}" value="${esc(r.name)}" style="flex:1;border:0;background:transparent;min-height:40px;font-weight:800">
-        <input type="range" min="1" max="99" value="${pctNum}" data-iw="${r.id}" data-iw-weight="${r.weight}" aria-label="Tỷ lệ %" style="width:84px;min-height:40px">
-        <span data-pct-for="${r.id}" style="flex:0 0 40px;text-align:right;font-family:var(--font-mono);font-weight:700;font-size:14px">${pctNum}%</span>
-        <button type="button" data-iremove="${r.id}" aria-label="Bỏ ô" style="flex:0 0 40px;height:40px;background:#fff;border:2px solid #1B1B1B;cursor:pointer;display:flex;align-items:center;justify-content:center">${ICONS.x}</button>
+      return `<li class="hn-wheel-row">
+        <span class="hn-wheel-swatch" aria-hidden="true" style="background:${dot}"></span>
+        <input class="hn-input" data-iname="${r.id}" aria-label="Tên ô" value="${esc(r.name)}">
+        <input type="range" min="1" max="99" value="${pctNum}" data-iw="${r.id}" data-iw-weight="${r.weight}" aria-label="Tỷ lệ %" style="accent-color:${dot}">
+        <span class="hn-wheel-percent" data-pct-for="${r.id}">${pctNum}%</span>
+        <button class="hn-wheel-remove" type="button" data-iremove="${r.id}" aria-label="Bỏ ô">${ICONS.x}</button>
       </li>`;
     })
     .join('');
@@ -263,60 +262,66 @@ export function renderQuay(): string {
     .map((s) => {
       const d = new Date(s.startedAt);
       const when = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      return `<div style="display:flex;gap:10px;font-size:14px"><span style="font-family:var(--font-mono);font-weight:700;flex:0 0 52px">${when}</span><b>${esc(s.resultName)}</b></div>`;
+      return `<div class="hn-wheel-log-row"><time>${when}</time><b>${esc(s.resultName)}</b></div>`;
     })
     .join('');
 
   const soundIcon = state.ui.soundOn ? ICONS.soundOn : ICONS.soundOff;
 
   return `<main class="hn-main">
+    <div class="hn-wheel-chat">${renderChatPanel(`wheel:${wheel.id}`, { title: 'Chat vòng', collapsible: true })}</div>
     <div class="hn-quay-wrap">
-      <section aria-label="Bàn xoay" class="hn-panel-blue" style="position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:16px">
-        <button type="button" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}" title="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}" style="position:absolute;top:10px;right:10px;z-index:5;background:#fff;border:3px solid #1B1B1B;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center">${soundIcon}</button>
+      <section aria-label="Bàn xoay" class="hn-panel hn-paper-fold hn-wheel-stage">
+        <button type="button" class="hn-btn hn-btn-white hn-wheel-sound" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}">${soundIcon} Âm thanh <span aria-hidden="true"></span></button>
+        <div class="hn-wheel-play${hasWinner ? ' has-winner' : ''}">
+        <div class="hn-wheel-controls">
         <div class="hn-wheel-disk">
           <div class="hn-pointer-outer" aria-hidden="true"></div>
           <div class="hn-pointer-inner" aria-hidden="true"></div>
-          <div class="hn-wheel-face" id="wheel-face" style="background:${conic(items)};transform:rotate(${angle}deg);transition:none">
+          <div class="hn-wheel-face" id="wheel-face" style="background:${conic(items)};--wheel-angle:${angle}deg;transform:rotate(${angle}deg);transition:none">
             ${segs
               .map(
                 (s) => `
               <div style="position:absolute;left:50%;top:50%;width:50%;height:3px;margin-top:-1.5px;background:#1B1B1B;transform-origin:0 50%;transform:rotate(${s.sep}deg);z-index:1"></div>
-              <div style="position:absolute;left:50%;top:50%;width:50%;height:0;transform-origin:0 0;transform:rotate(${s.rot}deg);z-index:2">
-                <span style="position:absolute;left:42%;top:0;transform:translate(-50%,-50%) rotate(90deg);max-width:${Math.min(110, s.span * 2.2)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;font-size:${s.span < 28 ? 11 : 13}px;font-weight:800;color:${s.ink};text-shadow:0 0 2px rgba(0,0,0,0.15)">${esc(s.name)}</span>
+              <div class="hn-wheel-ray" style="--ray-angle:${s.rot}deg">
+                <span class="hn-wheel-label" title="${esc(s.name)}" style="color:${s.ink};font-size:${s.span < 28 ? 11 : 13}px;max-width:${Math.min(110, s.span * 2.2)}px">${esc(s.name)}</span>
               </div>`,
               )
               .join('')}
           </div>
-          <div class="hn-hub">NHÂN<br>PHẨM</div>
+          <div class="hn-hub">${ICONS.paw}</div>
         </div>
-        <button type="button" class="hn-btn" data-act="spin" data-cmd="wheel.spin" ${disabled ? 'disabled' : ''} style="font-size:22px;background:${spinBg};min-height:56px;min-width:min(320px,100%);box-shadow:5px 5px 0 #1B1B1B;border-width:4px">${spinLabel}</button>
+        <button type="button" class="hn-btn hn-btn-red hn-wheel-spin" data-act="spin" data-cmd="wheel.spin" ${disabled ? 'disabled' : ''}>${ICONS.history}${spinLabel}</button>
+        </div>
         ${
           hasWinner
-            ? `<div role="status" style="width:100%;background:#FFF4D6;border:4px solid #1B1B1B;padding:14px 16px;box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;position:relative">
-          <span style="position:absolute;top:-16px;left:14px;background:#C62828;color:#fff;border:3px solid #1B1B1B;font-family:var(--font-display);font-size:13px;padding:3px 10px;transform:rotate(-4deg)">TRỜI ĐÃ ĐỊNH</span>
-          <div style="margin-right:auto;min-width:0">
-            <div style="font-family:var(--font-display);font-size:clamp(22px,2.6vw,30px);line-height:1.1">${esc(last!.resultName)}</div>
+            ? `<div role="status" class="hn-wheel-result">
+          <span class="hn-wheel-stamp">TRỜI ĐÃ ĐỊNH</span>
+          <div class="hn-wheel-verdict">
+            <div class="hn-wheel-winner">${esc(last!.resultName)}</div>
             <div style="font-size:14px;color:#3D3D3D;margin-top:2px">${esc(verdict(count))}</div>
           </div>
+          ${wheel.kind === 'shop' ? '<span class="hn-art-rice" aria-hidden="true"></span>' : ''}
           ${act}
         </div>`
             : ''
         }
-        ${renderChatPanel(`wheel:${wheel.id}`, { title: 'CHAT VÒNG' })}
+        </div>
       </section>
       <section style="min-width:0">
-        <div class="hn-panel" style="display:flex;flex-direction:column;gap:10px;max-height:min(78vh,820px);overflow:auto">
-          <div role="group" aria-label="Chọn vòng quay" style="display:flex;flex-wrap:wrap;gap:6px">
-            ${chips}
+        <div class="hn-panel hn-paper-fold hn-wheel-editor">
+          <div class="hn-section-head"><h2 class="hn-h2"><span>CÁC Ô</span></h2></div>
+          <div class="hn-wheel-picker">
+            <div class="hn-wheel-tabs" role="group" aria-label="Chọn vòng quay">${chips}</div>
             ${canPerm('wheel.create') ? `<button type="button" class="hn-btn" data-act="new-wheel" style="font-size:12px;min-height:40px">+ VÒNG MỚI</button>` : ''}
           </div>
-          <input class="hn-input" id="wheel-title" value="${esc(wheel.title)}" ${canPerm('wheel.edit') ? '' : 'readonly'} style="font-family:var(--font-display);font-size:18px;background:transparent;border:0;border-bottom:3px solid #1B1B1B">
-          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px">${rows}</ul>
+          <input class="hn-input" id="wheel-title" aria-label="Tên vòng" value="${esc(wheel.title)}" ${canPerm('wheel.edit') ? '' : 'readonly'}>
+          <ul class="hn-wheel-items">${rows}</ul>
           ${
             canPerm('wheel.edit')
               ? `<div style="display:flex;gap:6px">
             <input class="hn-input" id="wheel-new" placeholder="Thêm ô…" style="flex:1">
-            <button type="button" class="hn-btn hn-btn-ink" data-act="add-item" style="box-shadow:none">THÊM</button>
+            <button type="button" class="hn-btn hn-btn-green" data-act="add-item">THÊM</button>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
             <button type="button" class="hn-btn" data-act="equal" style="min-height:40px;font-family:var(--font-body);font-weight:800;font-size:13px">Chia đều</button>
@@ -326,8 +331,8 @@ export function renderQuay(): string {
           }
           ${
             log
-              ? `<div style="border-top:3px solid #1B1B1B;padding-top:8px;display:flex;flex-direction:column;gap:4px">
-            <h3 style="margin:0;font-family:var(--font-display);font-weight:400;font-size:13px">ĐÃ QUAY</h3>
+              ? `<div class="hn-wheel-log">
+            <h3>ĐÃ QUAY</h3>
             ${log}
           </div>`
               : ''
@@ -343,6 +348,14 @@ export function bindQuay(root: HTMLElement): void {
   if (wheel) setChatSubs([`wheel:${wheel.id}`]);
   else setChatSubs([]);
   bindChatPanel(root);
+
+  const tabs = root.querySelector<HTMLElement>('.hn-wheel-tabs');
+  const selectedTab = tabs?.querySelector<HTMLElement>('[aria-pressed="true"]');
+  if (tabs && selectedTab?.parentElement) {
+    const viewport = tabs.getBoundingClientRect();
+    const tab = selectedTab.parentElement.getBoundingClientRect();
+    if (tab.right > viewport.right) tabs.scrollLeft += tab.right - viewport.right + 3;
+  }
 
   const face = root.querySelector('#wheel-face') as HTMLElement | null;
   const spinning = wheel ? activeSpin(wheel.id) : undefined;

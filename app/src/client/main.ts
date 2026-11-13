@@ -4,6 +4,7 @@ import { connectWs, setChatSubs } from './ws.js';
 import { apiMe } from './api.js';
 import { renderHeader, bindHeader, renderTitle } from './ui/header.js';
 import { renderLogin } from './ui/login.js';
+import { renderRail } from './ui/rail.js';
 import { renderHome, bindHome, titleHome } from './screens/home.js';
 import { renderBan, bindBan, titleBan } from './screens/ban.js';
 import { renderQuay, bindQuay, titleQuay } from './screens/quay.js';
@@ -19,6 +20,7 @@ const app = document.getElementById('app');
 if (!app) throw new Error('#app missing');
 
 let pasteUnbind: (() => void) | null = null;
+let renderedRoute: string | null = null;
 
 function titles(): { chip: string; fun: string } {
   switch (state.route) {
@@ -84,6 +86,7 @@ function restoreFocus(snap: FocusSnap): void {
 
 function renderShell(): void {
   if (!state.me) {
+    renderedRoute = null;
     void renderLogin(app!);
     return;
   }
@@ -121,10 +124,22 @@ function renderShell(): void {
       main = renderBan();
   }
 
-  app!.innerHTML = `<div class="hn-shell${state.route === 'home' ? ' hn-shell-home' : ''}">
-    ${renderHeader()}
-    ${renderTitle(t.chip, t.fun)}
-    ${main}
+  const route = state.route;
+  if (renderedRoute !== route) window.scrollTo(0, 0);
+  renderedRoute = route;
+  const illustrated = route === 'ban' || route === 'quay' || route === 'tien';
+  app!.innerHTML = `<div class="hn-scene${illustrated ? ' hn-scene-illustrated' : ''}" data-scene="${route}">
+    ${illustrated ? `<div class="hn-scene-art" aria-hidden="true">
+      <span class="hn-art-leaves"></span>
+      ${route === 'tien' ? '<span class="hn-art-polaroid"></span>' : '<span class="hn-art-shiba"></span>'}
+      ${route === 'ban' ? '<span class="hn-art-books"></span>' : ''}
+    </div>` : ''}
+    <div class="hn-shell${route === 'home' ? ' hn-shell-home' : ''}">
+      ${renderHeader()}
+      ${renderTitle(t.chip, t.fun)}
+      ${main}
+      ${route === 'home' ? '' : renderRail()}
+    </div>
   </div>`;
 
   bindHeader(app!);

@@ -9,51 +9,53 @@ let selectedUsername = '';
 
 export async function renderLogin(mount: HTMLElement): Promise<void> {
   const roster = await fetchLoginRoster();
-  if (!selectedUsername && roster[0]) selectedUsername = roster[0].username;
+  if (state.me) return;
+  if (!roster.some((member) => member.username === selectedUsername)) {
+    selectedUsername = roster[0]?.username ?? '';
+  }
 
   const paint = () => {
     mount.innerHTML = `<div class="hn-login-wrap">
-      <div class="hn-login-brand">
-        <div class="hn-office-logo" aria-label="Văn phòng tuất">
-          <span class="hn-office-logo-mark" aria-hidden="true">VP</span>
-          <span class="hn-office-logo-stack">
-            <span class="hn-office-logo-text">VĂN PHÒNG TUẤT</span>
-            <span class="hn-office-logo-sub">Hôm nay ăn gì?</span>
-          </span>
-        </div>
-      </div>
-      <div class="hn-login-card">
-        <h1>AI ĐÓ?</h1>
-        <div class="hn-member-grid">
+      <div class="hn-office-logo"><img src="/art/login-wordmark.png" alt="Văn phòng Tuất"></div>
+      <form class="hn-login-card hn-paper-fold" aria-labelledby="login-title">
+        <h1 id="login-title">ĐĂNG NHẬP</h1>
+        <fieldset class="hn-login-roster">
+          <legend>Chọn tên</legend>
+          <div class="hn-member-grid">
           ${roster
             .map(
               (m) =>
                 `<button type="button" data-user="${esc(m.username)}" aria-pressed="${m.username === selectedUsername}">${esc(m.displayName)}</button>`,
             )
-            .join('')}
-        </div>
-        <label style="display:flex;flex-direction:column;gap:4px;font-weight:800;margin-bottom:12px">
+            .join('') || '<p>Chưa có thành viên để đăng nhập.</p>'}
+          </div>
+        </fieldset>
+        <label class="hn-login-pin">
           PIN 6 số
-          <input class="hn-input" id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" pattern="[0-9]*" style="font-family:var(--font-mono);font-size:24px;letter-spacing:0.3em;text-align:center">
+          <span class="hn-login-pin-box">
+            <input class="hn-input" id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" placeholder=" " ${roster.length ? '' : 'disabled'}>
+            <span class="hn-login-pin-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </span>
         </label>
-        <button type="button" class="hn-btn hn-btn-red" id="login-go" style="width:100%;font-size:18px;min-height:52px">VÀO SẢNH</button>
-      </div>
+        <button type="submit" class="hn-btn hn-btn-red" id="login-go" ${roster.length ? '' : 'disabled'}>VÀO SẢNH</button>
+      </form>
     </div>`;
 
-    mount.querySelectorAll('[data-user]').forEach((btn) => {
+    const pin = mount.querySelector<HTMLInputElement>('#login-pin');
+    const members = mount.querySelectorAll<HTMLButtonElement>('[data-user]');
+    members.forEach((btn) => {
       btn.addEventListener('click', () => {
-        selectedUsername = (btn as HTMLElement).dataset.user || '';
-        paint();
-        (mount.querySelector('#login-pin') as HTMLInputElement | null)?.focus();
+        selectedUsername = btn.dataset.user || '';
+        members.forEach((member) => member.setAttribute('aria-pressed', String(member === btn)));
+        pin?.focus();
       });
     });
 
-    const pin = mount.querySelector('#login-pin') as HTMLInputElement;
     pin?.focus();
-    pin?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') void doLogin();
+    mount.querySelector('form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void doLogin();
     });
-    mount.querySelector('#login-go')?.addEventListener('click', () => void doLogin());
   };
 
   async function doLogin() {

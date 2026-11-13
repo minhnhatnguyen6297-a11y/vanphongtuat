@@ -3,6 +3,9 @@ import { state, memberById, canPerm } from '../store.js';
 import type { ChatMsg } from '../../shared/types.js';
 import { cmd } from '../ws.js';
 import { toast } from './toast.js';
+import { ICONS } from '../icons.js';
+
+const expandedChats = new Set<string>();
 
 const drafts = new Map<string, string>();
 
@@ -19,7 +22,7 @@ export function chatMessagesFor(scope: string): ChatMsg[] {
   return state.chatByScope[scope] || [];
 }
 
-export function renderChatPanel(scope: string, opts?: { title?: string }): string {
+export function renderChatPanel(scope: string, opts?: { title?: string; collapsible?: boolean }): string {
   const title = opts?.title || 'CHAT';
   const msgs = chatMessagesFor(scope);
   const canSend = canPerm('chat.send');
@@ -49,21 +52,43 @@ export function renderChatPanel(scope: string, opts?: { title?: string }): strin
     })
     .join('');
 
-  return `<section class="hn-panel hn-chat" data-chat-scope="${esc(scope)}" aria-label="${esc(title)}">
-    <h3 class="hn-chat-title">${esc(title)}</h3>
+  const content = `
     <div class="hn-chat-log" data-chat-log>
       ${rows || '<span class="hn-chat-empty">Chưa có tin</span>'}
     </div>
     <div class="hn-chat-compose">
-      <input class="hn-input" data-chat-input maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>
-      <button type="button" class="hn-btn hn-btn-ink" data-chat-send ${canSend ? '' : 'disabled'}>GỬI</button>
-    </div>
+      <input class="hn-input" data-chat-input aria-label="Tin nhắn" maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>
+      <button type="button" class="hn-btn hn-btn-blue" data-chat-send ${canSend ? '' : 'disabled'}>GỬI</button>
+    </div>`;
+
+  if (opts?.collapsible) {
+    return `<details class="hn-chat-fold" data-chat-scope="${esc(scope)}" ${expandedChats.has(scope) ? 'open' : ''}>
+      <summary class="hn-chat-title">${ICONS.chat} ${esc(title)}${msgs.length ? ` <span>(${msgs.length})</span>` : ''}</summary>
+      ${content}
+    </details>`;
+  }
+
+  return `<section class="hn-panel hn-chat" data-chat-scope="${esc(scope)}" aria-label="${esc(title)}">
+    <h3 class="hn-chat-title">${esc(title)}</h3>
+    ${content}
   </section>`;
 }
 
 export function bindChatPanel(root: HTMLElement): void {
   root.querySelectorAll('[data-chat-scope]').forEach((panel) => {
     const scope = (panel as HTMLElement).dataset.chatScope!;
+    const log = panel.querySelector('[data-chat-log]');
+    if (panel instanceof HTMLDetailsElement) {
+      panel.addEventListener('toggle', () => {
+        if (!panel.isConnected) return;
+        if (panel.open) {
+          expandedChats.add(scope);
+          if (log) log.scrollTop = log.scrollHeight;
+        } else {
+          expandedChats.delete(scope);
+        }
+      });
+    }
     const input = panel.querySelector('[data-chat-input]') as HTMLInputElement | null;
     input?.addEventListener('input', () => {
       setChatDraft(scope, input.value);
@@ -94,7 +119,6 @@ export function bindChatPanel(root: HTMLElement): void {
         if (!ack.ok) toast('Không xóa được');
       });
     });
-    const log = panel.querySelector('[data-chat-log]');
     if (log) log.scrollTop = log.scrollHeight;
   });
 }

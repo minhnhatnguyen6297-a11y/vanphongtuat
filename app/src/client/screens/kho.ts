@@ -10,10 +10,10 @@ import { waitAi } from '../ws.js';
 import { toast } from '../ui/toast.js';
 
 const TYPE_COLOR: Record<string, string> = {
-  no: '#C62828',
-  vat: '#FFCF33',
-  uong: '#1B7A43',
-  '': '#1B1B1B',
+  no: 'var(--red)',
+  vat: 'var(--yellow)',
+  uong: 'var(--green)',
+  '': 'var(--ink)',
 };
 
 let khoFocus: 'shop' | 'menu' = 'menu';
@@ -60,7 +60,7 @@ export function renderKho(): string {
   const typeChips = (['no', 'vat', 'uong'] as const)
     .map((k) => {
       const on = form.type === k;
-      return `<button type="button" role="radio" aria-checked="${on}" data-type="${k}" style="flex:1;font-family:var(--font-body);font-size:14px;font-weight:800;background:${on ? '#1B1B1B' : '#fff'};color:${on ? '#FFF4D6' : '#1B1B1B'};border:2px solid #1B1B1B;padding:6px;min-height:44px;cursor:pointer">${SHOP_TYPE_LABELS[k]}</button>`;
+      return `<button type="button" class="hn-choice" role="radio" aria-checked="${on}" data-type="${k}" style="flex:1">${SHOP_TYPE_LABELS[k]}</button>`;
     })
     .join('');
 
@@ -82,14 +82,14 @@ export function renderKho(): string {
   ]
     .map((f) => {
       const on = filter === f.id;
-      return `<button type="button" data-filter="${f.id}" aria-pressed="${on}" style="font-family:var(--font-body);font-size:14px;font-weight:800;background:${on ? '#1B1B1B' : '#fff'};color:${on ? '#FFF4D6' : '#1B1B1B'};border:3px solid #1B1B1B;padding:4px 12px;min-height:44px;cursor:pointer">${f.label}</button>`;
+      return `<button type="button" class="hn-choice" data-filter="${f.id}" aria-pressed="${on}">${f.label}</button>`;
     })
     .join('');
 
   const list = state.shops
     .filter((s) => filter === 'all' || s.type === filter)
     .map((s) => {
-      const head = TYPE_COLOR[s.type] || '#1B1B1B';
+      const head = TYPE_COLOR[s.type] || 'var(--ink)';
       const typeLabel = s.type ? SHOP_TYPE_LABELS[s.type as Exclude<ShopType, ''>] : 'Khác';
       const phone = s.phone?.trim() || '';
       return `<li class="hn-shop-row" style="border-left-color:${head}">
@@ -120,7 +120,7 @@ export function renderKho(): string {
   return `<main class="hn-main">
     <div class="hn-two-col-tien">
       <section class="hn-panel-yellow" style="display:flex;flex-direction:column;gap:10px">
-        <h2 class="hn-h2" style="font-size:20px">${editing ? 'SỬA QUÁN' : '+ THÊM QUÁN'}</h2>
+        <div class="hn-section-head"><h2 class="hn-h2">${editing ? 'SỬA QUÁN' : '+ THÊM QUÁN'}</h2></div>
         <div style="display:flex;gap:6px">
           <input class="hn-input" id="kho-paste" data-focus="shop" value="${esc(form.paste)}" placeholder="Link Maps hoặc dán ảnh → AI đọc quán" style="flex:1;border-style:dashed;border-width:3px;min-height:48px">
           <button type="button" class="hn-btn hn-btn-ink" data-act="fill" style="min-height:48px;box-shadow:none">ĐIỀN</button>

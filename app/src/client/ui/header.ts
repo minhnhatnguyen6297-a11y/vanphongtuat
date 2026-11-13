@@ -11,6 +11,12 @@ const HEADER_TIER: Record<Tier, string> = {
   no_le: 'Nô lệ',
 };
 
+const TITLE_ART: Partial<Record<typeof state.route, string>> = {
+  ban: '/art/table-title.png',
+  quay: '/art/wheel-title.png',
+  tien: '/art/bill-title.png',
+};
+
 export function renderHeader(): string {
   const me = state.me;
   const tier = (me?.tier || (me?.isOperator ? 'chu_xi' : 'dan_den')) as Tier;
@@ -18,7 +24,9 @@ export function renderHeader(): string {
   const hostNote = me && state.table?.hostId === me.id ? ' · Chủ xị bàn' : '';
   const label = me ? `${me.displayName}, ${tierLabel}${hostNote}` : 'Tài khoản';
   return `<header class="hn-head hn-head-bar">
-    <a class="hn-logo" href="#/home">HÔM NAY ĂN GÌ</a>
+    <a class="hn-logo" href="#/home" aria-label="Văn phòng Tuất, Hôm nay ăn gì?">
+      <img src="/art/brand-sticker.png" alt="" width="900" height="223">
+    </a>
     ${
       me
         ? `<button type="button" class="hn-avatar-block" data-act="avatar" aria-label="${esc(label)}" title="${esc(label)}">
@@ -39,9 +47,11 @@ export function bindHeader(root: HTMLElement): void {
 
 export function renderTitle(chip: string, fun: string): string {
   const showBack = state.me && state.route !== 'home';
-  return `<section class="hn-title">
+  const isWheel = state.route === 'quay';
+  const art = TITLE_ART[state.route];
+  return `<section class="hn-title${isWheel ? ' hn-title-wheel' : ''}">
     ${showBack ? `<a class="hn-back-home" href="#/home" aria-label="Về sảnh">← SẢNH</a>` : ''}
-    <span class="hn-chip">${esc(chip)}</span>
-    <h1 class="hn-fun">${esc(fun)}</h1>
+    <h1 class="hn-fun${art ? ' hn-fun-illustrated' : ''}">${art ? `<img src="${art}" alt="${esc(isWheel ? `${chip} · ${fun}` : fun)}">` : esc(fun)}</h1>
+    <span class="hn-chip${isWheel ? ' sr-only' : ''}">${esc(chip)}</span>
   </section>`;
 }
