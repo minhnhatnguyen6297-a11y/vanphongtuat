@@ -1,7 +1,7 @@
 import type { RouteId } from './store.js';
 import { state, notify } from './store.js';
 
-const ROUTES: RouteId[] = ['home', 'ban', 'quay', 'tien', 'so', 'kho', 'quyen', 'sanh'];
+const ROUTES: RouteId[] = ['home', 'ban', 'quay', 'tien', 'so', 'kho', 'quyen', 'sanh', 'chat'];
 
 export function parseHash(hash = location.hash): RouteId {
   const m = hash.replace(/^#\/?/, '').split(/[/?#]/)[0];

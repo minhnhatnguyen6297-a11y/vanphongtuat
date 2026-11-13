@@ -12,6 +12,7 @@ import { renderSo, bindSo, titleSo } from './screens/so.js';
 import { renderKho, bindKho, titleKho, handleKhoImage, getKhoPasteTarget } from './screens/kho.js';
 import { renderQuyen, bindQuyen, titleQuyen } from './screens/quyen.js';
 import { renderSanh, bindSanh, titleSanh } from './screens/sanh.js';
+import { renderChat, bindChat, titleChat } from './screens/chat.js';
 import { bindPaste } from './image.js';
 
 const app = document.getElementById('app');
@@ -35,6 +36,8 @@ function titles(): { chip: string; fun: string } {
       return titleQuyen();
     case 'sanh':
       return titleSanh();
+    case 'chat':
+      return titleChat();
     default:
       return titleBan();
   }
@@ -111,6 +114,9 @@ function renderShell(): void {
     case 'sanh':
       main = renderSanh();
       break;
+    case 'chat':
+      main = renderChat();
+      break;
     default:
       main = renderBan();
   }
@@ -148,6 +154,9 @@ function renderShell(): void {
       break;
     case 'sanh':
       bindSanh(app!);
+      break;
+    case 'chat':
+      bindChat(app!);
       break;
     default:
       bindBan(app!);

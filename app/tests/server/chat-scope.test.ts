@@ -10,6 +10,7 @@ import {
   resetChatRateLimit,
   type ChatEvent,
 } from '../../src/server/commands/chat.ts';
+import { LOBBY_CHAT_SCOPE } from '../../src/shared/chat.ts';
 import { buildSnap } from '../../src/server/snapshots.ts';
 
 describe('chat scope ACL + fanout', () => {
@@ -154,6 +155,31 @@ describe('chat scope ACL + fanout', () => {
     assert.equal(del.ok, true);
     const snap = loadChatSnap(db, scope);
     assert.ok(snap.messages[0]!.deletedAt);
+  });
+
+  it('lobby: mọi thành viên chat chung, tách khỏi wheel/table', () => {
+    assert.equal(canAccessChatScope(db, chu.member, LOBBY_CHAT_SCOPE), true);
+    assert.equal(canAccessChatScope(db, dan.member, LOBBY_CHAT_SCOPE), true);
+    assert.equal(canAccessChatScope(db, nole.member, LOBBY_CHAT_SCOPE), true);
+
+    const send = dispatchCommand(db, dan.member, {
+      opId: crypto.randomUUID(),
+      name: 'chat.send',
+      args: { scope: LOBBY_CHAT_SCOPE, body: 'alo cả VP' },
+    });
+    assert.equal(send.ok, true);
+    resetChatRateLimit();
+
+    const snap = loadChatSnap(db, LOBBY_CHAT_SCOPE);
+    assert.equal(snap.messages.length, 1);
+    assert.equal(snap.messages[0]!.body, 'alo cả VP');
+
+    const wheelSnap = loadChatSnap(db, `wheel:${wheelA}`);
+    assert.equal(wheelSnap.messages.length, 0);
+
+    const hello = buildSnap(db, chatSubKey(LOBBY_CHAT_SCOPE));
+    assert.ok(hello);
+    assert.equal((hello!.data as { messages: { body: string }[] }).messages[0]!.body, 'alo cả VP');
   });
 
   it('game leave / outsider không access chat game scope', () => {

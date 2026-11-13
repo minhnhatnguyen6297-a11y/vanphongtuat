@@ -18,6 +18,7 @@ const ROOMS: Room[] = [
   { id: 'so', name: 'SỔ BÀN GIẤY', sub: 'Lịch sử bàn', tone: 'cream', area: 'ledger' },
   { id: 'kho', name: 'KHO THỰC PHẨM', sub: 'Quán ruột', tone: 'orange', area: 'store' },
   { id: 'sanh', name: 'PHÒNG GIẢI TRÍ', sub: 'Caro · Cá ngựa · Tỉ phú', tone: 'green', area: 'game' },
+  { id: 'chat', name: 'PHÒNG CHAT', sub: 'Chat tổng cả VP', tone: 'blue', area: 'chat' },
   { id: 'quyen', name: 'PHÒNG CHỦ XỊ', sub: 'Ma trận quyền', tone: 'cream', area: 'boss', gated: true },
 ];
 
@@ -58,7 +59,6 @@ export function renderHome(): string {
     <div class="hn-floor" role="navigation" aria-label="Sơ đồ văn phòng">
       <div class="hn-floor-hall" aria-hidden="true">HÀNH LANG</div>
       ${rooms.join('')}
-      <div class="hn-floor-plant" aria-hidden="true"><span></span><span></span></div>
       <div class="hn-floor-door" aria-hidden="true">CỬA</div>
     </div>
   </main>`;

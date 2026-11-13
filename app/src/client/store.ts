@@ -1,7 +1,7 @@
 import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, Wheel } from '../shared/types.js';
 import type { PermKey, Tier } from '../shared/perms-catalog.js';
 
-export type RouteId = 'home' | 'ban' | 'quay' | 'tien' | 'so' | 'kho' | 'quyen' | 'sanh';
+export type RouteId = 'home' | 'ban' | 'quay' | 'tien' | 'so' | 'kho' | 'quyen' | 'sanh' | 'chat';
 
 export type PermsState = {
   matrix: Record<Tier, PermKey[]>;

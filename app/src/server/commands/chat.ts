@@ -5,6 +5,7 @@ import { hasPerm, type AuthMember } from '../perms.ts';
 import type { Db } from '../db.ts';
 import type { ChatEvent, ChatMsg, CmdOk, Handler } from './types.ts';
 import type { CommandArgs } from '../../shared/commands.ts';
+import { LOBBY_CHAT_SCOPE } from '../../shared/chat.ts';
 
 export type { ChatEvent, ChatMsg };
 
@@ -20,14 +21,14 @@ export function resetChatRateLimit(): void {
   lastSendAt.clear();
 }
 
-const SCOPE_RE = /^(table:\d+|wheel:[0-9a-f-]{36}|game:[0-9a-f-]{36})$/i;
+const SCOPE_RE = /^(table:\d+|wheel:[0-9a-f-]{36}|game:[0-9a-f-]{36}|lobby)$/i;
 
 export function parseChatScope(raw: string): string | null {
   const s = String(raw || '').trim();
   return SCOPE_RE.test(s) ? s : null;
 }
 
-/** Hello sub key: chat:table:1 | chat:wheel:uuid | chat:game:uuid */
+/** Hello sub key: chat:table:1 | chat:wheel:uuid | chat:game:uuid | chat:lobby */
 export function chatSubKey(scope: string): `chat:${string}` {
   return `chat:${scope}`;
 }
@@ -42,6 +43,9 @@ export function canAccessChatScope(db: Db, member: AuthMember, scope: string): b
   const parsed = parseChatScope(scope);
   if (!parsed) return false;
 
+  if (parsed === LOBBY_CHAT_SCOPE) {
+    return true;
+  }
   if (parsed.startsWith('table:')) {
     const id = Number(parsed.slice(6));
     const row = db.prepare('SELECT id FROM tables WHERE id = ?').get(id);

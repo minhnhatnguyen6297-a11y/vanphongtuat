@@ -574,7 +574,7 @@ input[type=range] { accent-color: var(--red); }
     "eat eat wheel cash"
     "hall hall hall hall"
     "store ledger game boss"
-    "door plant game boss";
+    "door chat game boss";
   gap: 12px;
   min-height: min(68vh, 640px);
   padding: 14px;
@@ -613,6 +613,7 @@ input[type=range] { accent-color: var(--red); }
 .hn-floor-room[data-area="ledger"] { grid-area: ledger; }
 .hn-floor-room[data-area="game"] { grid-area: game; }
 .hn-floor-room[data-area="boss"] { grid-area: boss; }
+.hn-floor-room[data-area="chat"] { grid-area: chat; }
 
 .hn-floor-room-name {
   font-family: var(--font-display);
@@ -659,37 +660,6 @@ input[type=range] { accent-color: var(--red); }
   box-shadow: 4px 4px 0 var(--ink);
 }
 
-.hn-floor-plant {
-  grid-area: plant;
-  position: relative;
-  background: #fff;
-  border: 4px solid var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-}
-
-.hn-floor-plant span:first-child {
-  position: absolute;
-  left: 50%;
-  bottom: 14px;
-  width: 28px;
-  height: 18px;
-  transform: translateX(-50%);
-  background: #F28C28;
-  border: 2px solid var(--ink);
-}
-
-.hn-floor-plant span:last-child {
-  position: absolute;
-  left: 50%;
-  bottom: 28px;
-  width: 36px;
-  height: 36px;
-  transform: translateX(-50%);
-  background: #1B7A43;
-  border: 2px solid var(--ink);
-  border-radius: 50% 50% 40% 40%;
-}
-
 @media (max-width: 900px) {
   .hn-floor {
     grid-template-columns: 1fr 1fr;
@@ -700,9 +670,28 @@ input[type=range] { accent-color: var(--red); }
       "hall hall"
       "store ledger"
       "game boss"
-      "door plant";
+      "chat chat"
+      "door door";
     min-height: 0;
   }
+}
+
+.hn-chat-room {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: min(72vh, 720px);
+}
+
+.hn-chat-room .hn-chat {
+  flex: 1;
+  max-height: none;
+  min-height: min(60vh, 560px);
+}
+
+.hn-chat-room .hn-chat-log {
+  min-height: 280px;
+  flex: 1;
 }
 
 .hn-member-grid {
