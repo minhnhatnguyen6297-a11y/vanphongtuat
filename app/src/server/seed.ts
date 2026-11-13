@@ -120,7 +120,7 @@ export function seedIfEmpty(db: Db): SeedPin[] | null {
       }
     }
 
-    // Bàn mẫu từ thietke_v2 (rút gọn, current = bàn trưa 09/11)
+    // Bàn mẫu từ archive/thietke_v2 (rút gọn, current = bàn trưa 09/11)
     seedSampleTables(db, ids);
   });
 

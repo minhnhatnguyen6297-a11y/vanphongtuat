@@ -1,0 +1,71 @@
+﻿[
+  {
+    "scenario": "Refresh playing game: existing player cannot select PLAY",
+    "defect": true,
+    "observed": "<button type=\"button\" class=\"hn-btn hn-btn-ink\" data-enter=\"2d1b9df7-dff3-4752-8c6e-e175c6f25ccd\" data-as=\"play\" disabled>"
+  },
+  {
+    "scenario": "Back-to-lobby/leave during game prevents return to seat",
+    "defect": true,
+    "observed": {
+      "leave": true,
+      "rejoin": "already_started"
+    }
+  },
+  {
+    "scenario": "Spectator selects PLAY in open room but remains spectator",
+    "defect": true,
+    "observed": {
+      "t": "ack",
+      "opId": "4b7d908c-b6e7-4dfe-9420-cdaf0432d3ba",
+      "ok": true,
+      "result": {
+        "roomId": "c30f9246-094c-48f2-930e-f6a2699354a6",
+        "seat": "spectator"
+      },
+      "scopes": [
+        "games"
+      ]
+    }
+  },
+  {
+    "scenario": "Different member replays privileged opId and receives cached PIN",
+    "defect": true,
+    "observed": {
+      "replayAccepted": true,
+      "pinReturned": true
+    }
+  },
+  {
+    "scenario": "Logout in another tab revokes cookie but existing socket still writes",
+    "defect": true,
+    "observed": {
+      "sessionValid": false,
+      "commandAccepted": true
+    }
+  },
+  {
+    "scenario": "Disabled account still writes through existing socket",
+    "defect": true,
+    "observed": {
+      "commandAccepted": true
+    }
+  },
+  {
+    "scenario": "Queued reconnect runs after logout",
+    "defect": true,
+    "observed": {
+      "socketsBefore": 1,
+      "socketsAfter": 2
+    }
+  },
+  {
+    "scenario": "Pending write survives logout and is sent under next account",
+    "defect": true,
+    "observed": {
+      "replayedCommands": [
+        "order.add"
+      ]
+    }
+  }
+]

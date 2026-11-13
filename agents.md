@@ -13,7 +13,7 @@
 
 1. **Bảo tồn UI Neo-Brutalism** theo design trong `design-toi-gian/ViaHe-*.dc.html` (cream `#FFF4D6`, đỏ `#C62828`, vàng `#FFCF33`, xanh `#1F5FD1`, lá `#1B7A43`, mực `#1B1B1B`, cam `#F28C28`; font Bungee / Be Vietnam Pro / JetBrains Mono; viền 3px; bóng cứng 4–6px).
 2. **Không** tự đổi sang soft/pastel, Bootstrap, Material Design.
-3. **`thietke_v1.html` / `thietke_v2.html`** chỉ tham khảo. Không sửa. Không mang nợ, dòng bill, ship/voucher, Gmail vào đợt 1.
+3. **`archive/thietke_v1.html` / `archive/thietke_v2.html`** chỉ tham khảo. Không sửa. Không mang nợ, dòng bill, ship/voucher, Gmail vào đợt 1.
 4. Mọi tính năng đợt 1 bám plan; máy chủ SQLite + WSS là nguồn dữ liệu duy nhất.
 
 ### Ngoài phạm vi đợt 1

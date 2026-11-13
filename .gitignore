@@ -32,3 +32,8 @@ Thumbs.db
 .claude/
 .superpowers/
 .cursor/
+
+# Local scrape / chat caches
+threads_cache.json
+**/threads_cache.json
+

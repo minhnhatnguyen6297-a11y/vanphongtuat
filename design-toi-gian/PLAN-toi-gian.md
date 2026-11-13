@@ -43,7 +43,7 @@
 - **Quy tắc giao diện:** không emoji (dùng SVG); vùng bấm ≥ 44px; escape mọi dữ liệu người dùng khi render; AudioContext chỉ resume trong sự kiện click.
 
 ### 0.5 Tài liệu cũ
-`agents.md`, `specs.md`, `features.md`, `design.md`, `readme.md` vẫn mô tả nợ, dòng bill, ship/voucher, Gmail. **Không sửa khi owner chưa đồng ý**; liệt kê chỗ mâu thuẫn trong báo cáo. `thietke_v1.html` và `thietke_v2.html` chỉ để tham khảo, không sửa.
+`agents.md`, `specs.md`, `features.md`, `design.md`, `readme.md` vẫn mô tả nợ, dòng bill, ship/voucher, Gmail. **Không sửa khi owner chưa đồng ý**; liệt kê chỗ mâu thuẫn trong báo cáo. `archive/thietke_v1.html` và `archive/thietke_v2.html` chỉ để tham khảo, không sửa.
 
 ---
 
@@ -230,7 +230,7 @@ ai_jobs(id TEXT PK, kind, member_id, status TEXT, created_at, finished_at, resul
 ```
 - **"Bàn hiện tại"** là bàn có `id` lớn nhất. Sổ ghi liệt kê mọi bàn.
 - **Thống kê thẻ quán** ("8 lần · lần cuối 05/11"): đếm các bàn có quán hiệu lực là quán đó. Quán hiệu lực = `winner_shop_id`; nếu chưa chốt thì là quán nhiều phiếu nhất; hòa thì lấy quán thêm vào trước.
-- **Seed:** 6 quán, 6 thành viên và vài bàn mẫu lấy từ `thietke_v2.html`. Chỉ chạy khi DB trống, mỗi thành viên seed có PIN in ra console một lần.
+- **Seed:** 6 quán, 6 thành viên và vài bàn mẫu lấy từ `archive/thietke_v2.html`. Chỉ chạy khi DB trống, mỗi thành viên seed có PIN in ra console một lần.
 
 ### 5.2 Giao thức WebSocket (`/ws`, JSON)
 - **Mở kết nối:** client gửi `{t:'hello', subs:['table:current','shops','wheels','members']}`. Server trả `{t:'snap', scope, version, data}` cho từng scope.

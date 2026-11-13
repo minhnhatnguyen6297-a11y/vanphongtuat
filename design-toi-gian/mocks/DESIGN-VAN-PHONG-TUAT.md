@@ -63,7 +63,7 @@ Dùng font WOFF2 local sẵn trong app. Nhịp giãn cách 4, 8, 12, 16 và 24 p
 
 Các ảnh dùng tên, quán, số tiền và mã QR minh họa. Thiết kế đăng nhập lấy bố cục từ ảnh mẫu và dùng luồng chọn thành viên, nhập PIN của app.
 
-1. [Đăng nhập](van-phong-tuat/01-dang-nhap.png)
-2. [Bàn hôm nay](van-phong-tuat/02-ban-hom-nay.png)
-3. [Vòng quay](van-phong-tuat/03-vong-quay.png)
-4. [Tính tiền](van-phong-tuat/04-tinh-tien.png)
+1. [Đăng nhập](01-dang-nhap.png)
+2. [Bàn hôm nay](02-ban-hom-nay.png)
+3. [Vòng quay](03-vong-quay.png)
+4. [Tính tiền](04-tinh-tien.png)
