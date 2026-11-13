@@ -8,6 +8,8 @@ export type CaroState = {
   turnId: string | null;
   winnerId: string | null;
   playerIds: string[];
+  /** Ô vừa đánh — UI đánh dấu để đối thủ thấy nhanh. */
+  lastMove: { row: number; col: number } | null;
 };
 
 export function emptyCaro(playerIds: string[]): CaroState {
@@ -16,6 +18,7 @@ export function emptyCaro(playerIds: string[]): CaroState {
     turnId: playerIds[0] ?? null,
     winnerId: null,
     playerIds: [...playerIds],
+    lastMove: null,
   };
 }
 
@@ -85,6 +88,7 @@ export function applyCaroMove(
     turnId: won ? null : next,
     winnerId: won ? memberId : null,
     playerIds: state.playerIds,
+    lastMove: { row, col },
   };
   if (!won && cells.every((c) => c != null)) {
     nextState.turnId = null;

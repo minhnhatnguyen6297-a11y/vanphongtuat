@@ -84,6 +84,9 @@ describe('game caro 5a', () => {
     // host (chu) goes first
     const m0 = dispatchCommand(db, chu.member, op('game.move', { roomId, row: 7, col: 7 }));
     assert.equal(m0.ok, true);
+    const afterFirst = (m0 as { result: { state: { lastMove: { row: number; col: number } | null } } })
+      .result.state;
+    assert.deepEqual(afterFirst.lastMove, { row: 7, col: 7 });
 
     // occupied / out of turn
     const occ = dispatchCommand(db, dan.member, op('game.move', { roomId, row: 7, col: 7 }));

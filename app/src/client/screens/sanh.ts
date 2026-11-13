@@ -119,15 +119,22 @@ function renderCaroBoard(room: GameRoom): string {
   else if (room.status === 'ended') statusLine = winner ? `Thắng: ${winner}` : 'Hòa';
   else statusLine = turnName ? `Lượt: ${turnName}` : '…';
 
+  const last = st?.lastMove;
   const grid = Array.from({ length: CARO_SIZE }, (_, row) => {
     const cols = Array.from({ length: CARO_SIZE }, (_, col) => {
       const i = row * CARO_SIZE + col;
       const who = cells[i] ?? null;
       const bg = who ? markColor(who, playerIds) : '#FFF4D6';
       const mark = who ? (playerIds.indexOf(who) === 0 ? 'X' : 'O') : '';
+      const isLast = !!last && last.row === row && last.col === col;
+      const border = isLast ? '3px solid #FFCF33' : '1px solid #1B1B1B';
+      const ring = isLast ? 'inset 0 0 0 2px #1B1B1B' : 'none';
+      const label = isLast ? `ô ${row},${col} vừa đi` : `ô ${row},${col}`;
       return `<button type="button" data-cell="${row},${col}" ${canMove && !who ? '' : 'disabled'}
-        aria-label="ô ${row},${col}"
-        style="width:100%;aspect-ratio:1;border:1px solid #1B1B1B;background:${bg};color:#fff;font-weight:900;font-size:11px;padding:0;cursor:${canMove && !who ? 'pointer' : 'default'}">${mark}</button>`;
+        class="hn-caro-cell${isLast ? ' is-last' : ''}"
+        aria-label="${label}"
+        aria-current="${isLast ? 'true' : 'false'}"
+        style="width:100%;aspect-ratio:1;border:${border};box-shadow:${ring};background:${bg};color:#fff;font-weight:900;font-size:11px;padding:0;cursor:${canMove && !who ? 'pointer' : 'default'};position:relative;z-index:${isLast ? '1' : '0'}">${mark}${isLast ? '<span class="hn-caro-last" aria-hidden="true"></span>' : ''}</button>`;
     }).join('');
     return cols;
   }).join('');
@@ -136,6 +143,7 @@ function renderCaroBoard(room: GameRoom): string {
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       <span style="font-family:var(--font-display);font-size:18px">CARO</span>
       <span style="font-size:14px;font-weight:800">${esc(statusLine)}</span>
+      ${last ? `<span class="hn-caro-last-hint">Ô vừa đi</span>` : ''}
     </div>
     <div style="display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:0;border:3px solid #1B1B1B;background:#1B1B1B;max-width:560px;box-shadow:6px 6px 0 #1B1B1B">
       ${grid}

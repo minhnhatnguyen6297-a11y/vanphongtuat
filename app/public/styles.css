@@ -676,6 +676,39 @@ input[type=range] { accent-color: var(--red); }
   }
 }
 
+.hn-caro-last-hint {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  padding: 2px 8px;
+}
+
+.hn-caro-cell.is-last {
+  animation: hn-caro-pulse 0.9s ease-out 1;
+}
+
+.hn-caro-last {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background: var(--yellow);
+  border: 1px solid var(--ink);
+  pointer-events: none;
+}
+
+@keyframes hn-caro-pulse {
+  0% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-caro-cell.is-last { animation: none; }
+}
+
 .hn-chat-room {
   display: flex;
   flex-direction: column;
