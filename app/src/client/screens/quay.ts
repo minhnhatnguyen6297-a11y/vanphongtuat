@@ -10,6 +10,7 @@ let audioCtx: AudioContext | null = null;
 let lastTick = 0;
 let animAngle = 0;
 let spinRaf = 0;
+let spinEndTimer = 0;
 
 function resumeAudio(): void {
   if (!audioCtx) audioCtx = new AudioContext();
@@ -52,8 +53,8 @@ function segmentLayout(items: { weight: number; name?: string }[]): Seg[] {
 
 function conic(items: { weight: number }[]): string {
   const segs = segmentLayout(items);
-  if (!segs.length) return 'conic-gradient(#FFF4D6, #FFF4D6)';
-  return `conic-gradient(from -90deg, ${segs.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(', ')})`;
+  if (!segs.length) return 'var(--cream)';
+  return `conic-gradient(${segs.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(', ')})`;
 }
 
 function spinAngle(resultIndex: number, items: { weight: number }[]): number {
@@ -71,6 +72,10 @@ function stopSpinRaf(): void {
     cancelAnimationFrame(spinRaf);
     spinRaf = 0;
   }
+  if (spinEndTimer) {
+    window.clearTimeout(spinEndTimer);
+    spinEndTimer = 0;
+  }
 }
 
 function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
@@ -81,7 +86,8 @@ function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
   const dur = Math.max(1, reduced ? Math.min(spinning.durationMs, 600) : spinning.durationMs);
   face.style.transition = 'none';
   const tick = () => {
-    const p = Math.min(1, (Date.now() - start) / dur);
+    if (!face.isConnected) return;
+    const p = Math.max(0, Math.min(1, (Date.now() - start) / dur));
     const angle = target * (reduced ? p : easeOutCubic(p));
     face.style.transform = `rotate(${angle}deg)`;
     animAngle = angle;
@@ -90,7 +96,11 @@ function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
       spinRaf = 0;
       animAngle = target;
       face.style.transform = `rotate(${target}deg)`;
-      notify();
+      const remaining = Math.max(0, start + spinning.durationMs - Date.now());
+      spinEndTimer = window.setTimeout(() => {
+        spinEndTimer = 0;
+        if (face.isConnected) notify();
+      }, remaining + 1);
     }
   };
   spinRaf = requestAnimationFrame(tick);
@@ -144,21 +154,18 @@ export function renderQuay(): string {
 
   const totalW = items.reduce((s, i) => s + i.weight, 0) || 1;
   const segs = layout.map((s, i) => {
-    const ink = i % 2 === 0 ? '#FFF4D6' : '#1B1B1B';
+    const ink = [0, 3, 4].includes(i % SHOP_COLORS.length) ? 'var(--ink)' : 'var(--paper)';
     return { sep: s.start - 90, rot: s.mid - 90, name: s.name || items[i]?.name || '', ink };
   });
 
   let spinLabel = 'QUAY NGAY';
-  let spinBg = '#FFCF33';
   let disabled = false;
   if (!canPerm('wheel.spin')) {
     spinLabel = 'CHỈ XEM';
     disabled = true;
-    spinBg = '#FFFFFF';
   } else if (items.length < 2) {
     spinLabel = 'THÊM ÍT NHẤT 2 Ô';
     disabled = true;
-    spinBg = '#FFFFFF';
   } else if (spinning) {
     spinLabel = 'ĐANG QUAY…';
     disabled = true;
@@ -171,10 +178,10 @@ export function renderQuay(): string {
   let act = '';
   if (hasWinner && wheel.kind === 'shop' && canPerm('table.setWinner')) {
     const item = items[last!.resultIndex];
-    act = `<button type="button" class="hn-btn hn-btn-red" data-act="set-winner" data-shop="${item?.refShopId || ''}" data-spin="${last!.id}">CHỐT QUÁN NÀY</button>`;
+    act = `<button type="button" class="hn-btn hn-btn-green" data-act="set-winner" data-shop="${item?.refShopId || ''}" data-spin="${last!.id}">CHỐT QUÁN NÀY</button>`;
   } else if (hasWinner && wheel.kind === 'person' && canPerm('table.setPickup')) {
     const item = JSON.parse(last!.itemsJson)[last!.resultIndex] as { refMemberId?: string };
-    act = `<button type="button" class="hn-btn" style="background:#1B7A43;color:#fff" data-act="set-pickup" data-member="${item?.refMemberId || ''}" data-spin="${last!.id}">GHI NGƯỜI ĐI LẤY</button>`;
+    act = `<button type="button" class="hn-btn hn-btn-green" data-act="set-pickup" data-member="${item?.refMemberId || ''}" data-spin="${last!.id}">GHI NGƯỜI ĐI LẤY</button>`;
   }
 
   const canDelWheel = canPerm('wheel.delete');
@@ -185,7 +192,7 @@ export function renderQuay(): string {
         ? `<button type="button" data-del-wheel="${w.id}" aria-label="Xóa vòng" title="Xóa vòng" style="margin-left:2px;width:28px;height:28px;border:2px solid #1B1B1B;background:#fff;cursor:pointer;font-weight:800;line-height:1">×</button>`
         : '';
       return `<span style="display:inline-flex;align-items:center">
-        <button type="button" data-wheel="${w.id}" aria-pressed="${on}" style="font-family:var(--font-body);font-size:13px;font-weight:800;background:${on ? '#1B1B1B' : '#fff'};color:${on ? '#FFF4D6' : '#1B1B1B'};border:2px solid #1B1B1B;padding:4px 10px;min-height:40px;cursor:pointer">${esc(w.title)}</button>${del}
+        <button type="button" class="hn-choice" data-wheel="${w.id}" aria-pressed="${on}">${esc(w.title)}</button>${del}
       </span>`;
     })
     .join('');
@@ -194,10 +201,10 @@ export function renderQuay(): string {
     .map((r, i) => {
       const pct = Math.round((r.weight / totalW) * 100) + '%';
       const dot = SHOP_COLORS[i % SHOP_COLORS.length];
-      return `<li style="display:flex;align-items:center;gap:8px;border:2px solid #1B1B1B;background:#FFF4D6;padding:4px 6px">
+      return `<li class="hn-wheel-row">
         <span aria-hidden="true" style="flex:0 0 16px;height:16px;border-radius:50%;border:2px solid #1B1B1B;background:${dot}"></span>
-        <input class="hn-input" data-iname="${r.id}" value="${esc(r.name)}" style="flex:1;border:0;background:transparent;min-height:40px;font-weight:800">
-        <input type="range" min="1" max="100" value="${r.weight}" data-iw="${r.id}" style="width:84px;min-height:40px">
+        <input class="hn-input" data-iname="${r.id}" aria-label="Tên ô" value="${esc(r.name)}">
+        <input type="range" min="1" max="100" value="${r.weight}" data-iw="${r.id}" aria-label="Trọng số ${esc(r.name)}" style="accent-color:${dot}">
         <span style="flex:0 0 40px;text-align:right;font-family:var(--font-mono);font-weight:700;font-size:14px">${pct}</span>
         <button type="button" data-iremove="${r.id}" aria-label="Bỏ ô" style="flex:0 0 40px;height:40px;background:#fff;border:2px solid #1B1B1B;cursor:pointer;display:flex;align-items:center;justify-content:center">${ICONS.x}</button>
       </li>`;
@@ -218,8 +225,10 @@ export function renderQuay(): string {
 
   return `<main class="hn-main">
     <div class="hn-quay-wrap">
-      <section aria-label="Bàn xoay" class="hn-panel-blue" style="position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:16px">
-        <button type="button" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}" title="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}" style="position:absolute;top:10px;right:10px;z-index:5;background:#fff;border:3px solid #1B1B1B;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center">${soundIcon}</button>
+      <section aria-label="Bàn xoay" class="hn-panel hn-wheel-stage">
+        <button type="button" class="hn-btn hn-btn-white hn-wheel-sound" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}" title="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}">${soundIcon}</button>
+        <div class="hn-wheel-play${hasWinner ? ' has-winner' : ''}">
+        <div class="hn-wheel-controls">
         <div class="hn-wheel-disk">
           <div class="hn-pointer-outer" aria-hidden="true"></div>
           <div class="hn-pointer-inner" aria-hidden="true"></div>
@@ -234,13 +243,14 @@ export function renderQuay(): string {
               )
               .join('')}
           </div>
-          <div class="hn-hub">NHÂN<br>PHẨM</div>
+          <div class="hn-hub">${ICONS.paw}</div>
         </div>
-        <button type="button" class="hn-btn" data-act="spin" data-cmd="wheel.spin" ${disabled ? 'disabled' : ''} style="font-size:22px;background:${spinBg};min-height:56px;min-width:min(320px,100%);box-shadow:5px 5px 0 #1B1B1B;border-width:4px">${spinLabel}</button>
+        <button type="button" class="hn-btn hn-btn-red hn-wheel-spin" data-act="spin" data-cmd="wheel.spin" ${disabled ? 'disabled' : ''}>${spinLabel}</button>
+        </div>
         ${
           hasWinner
-            ? `<div role="status" style="width:100%;background:#FFF4D6;border:4px solid #1B1B1B;padding:14px 16px;box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;position:relative">
-          <span style="position:absolute;top:-16px;left:14px;background:#C62828;color:#fff;border:3px solid #1B1B1B;font-family:var(--font-display);font-size:13px;padding:3px 10px;transform:rotate(-4deg)">TRỜI ĐÃ ĐỊNH</span>
+            ? `<div role="status" class="hn-wheel-result">
+          <span class="hn-wheel-stamp">TRỜI ĐÃ ĐỊNH</span>
           <div style="margin-right:auto;min-width:0">
             <div style="font-family:var(--font-display);font-size:clamp(22px,2.6vw,30px);line-height:1.1">${esc(last!.resultName)}</div>
             <div style="font-size:14px;color:#3D3D3D;margin-top:2px">${esc(verdict(count))}</div>
@@ -249,16 +259,18 @@ export function renderQuay(): string {
         </div>`
             : ''
         }
-        ${renderChatPanel(`wheel:${wheel.id}`, { title: 'CHAT VÒNG' })}
+        </div>
+        ${renderChatPanel(`wheel:${wheel.id}`, { title: 'CHAT VÒNG', collapsible: true })}
       </section>
       <section style="min-width:0">
-        <div class="hn-panel" style="display:flex;flex-direction:column;gap:10px;max-height:min(78vh,820px);overflow:auto">
-          <div role="group" aria-label="Chọn vòng quay" style="display:flex;flex-wrap:wrap;gap:6px">
-            ${chips}
+        <div class="hn-panel hn-wheel-editor">
+          <div class="hn-section-head"><h2 class="hn-h2">CÁC Ô</h2></div>
+          <div class="hn-wheel-picker">
+            <div class="hn-wheel-tabs" role="group" aria-label="Chọn vòng quay">${chips}</div>
             ${canPerm('wheel.create') ? `<button type="button" class="hn-btn" data-act="new-wheel" style="font-size:12px;min-height:40px">+ VÒNG MỚI</button>` : ''}
           </div>
           <input class="hn-input" id="wheel-title" value="${esc(wheel.title)}" ${canPerm('wheel.edit') ? '' : 'readonly'} style="font-family:var(--font-display);font-size:18px;background:transparent;border:0;border-bottom:3px solid #1B1B1B">
-          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px">${rows}</ul>
+          <ul class="hn-wheel-items">${rows}</ul>
           ${
             canPerm('wheel.edit')
               ? `<div style="display:flex;gap:6px">
@@ -290,6 +302,14 @@ export function bindQuay(root: HTMLElement): void {
   if (wheel) setChatSubs([`wheel:${wheel.id}`]);
   else setChatSubs([]);
   bindChatPanel(root);
+
+  const tabs = root.querySelector<HTMLElement>('.hn-wheel-tabs');
+  const selectedTab = tabs?.querySelector<HTMLElement>('[aria-pressed="true"]');
+  if (tabs && selectedTab) {
+    const viewport = tabs.getBoundingClientRect();
+    const tab = selectedTab.parentElement!.getBoundingClientRect();
+    if (tab.right > viewport.right) tabs.scrollLeft += tab.right - viewport.right + 3;
+  }
 
   const face = root.querySelector('#wheel-face') as HTMLElement | null;
   const spinning = wheel ? activeSpin(wheel.id) : undefined;

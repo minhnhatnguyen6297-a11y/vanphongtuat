@@ -3,6 +3,7 @@ import { TIER_LABELS, type Tier } from '../../shared/perms-catalog.js';
 import { state } from '../store.js';
 import { openAvatarModal } from './avatar.js';
 import { renderFace } from './face.js';
+import { ICONS } from '../icons.js';
 
 const HEADER_TIER: Record<Tier, string> = {
   chu_xi: 'Chủ xị',
@@ -18,7 +19,10 @@ export function renderHeader(): string {
   const hostNote = me && state.table?.hostId === me.id ? ' · Chủ xị bàn' : '';
   const label = me ? `${me.displayName}, ${tierLabel}${hostNote}` : 'Tài khoản';
   return `<header class="hn-head hn-head-bar">
-    <a class="hn-logo" href="#/home">HÔM NAY ĂN GÌ</a>
+    <a class="hn-logo" href="#/home">
+      <span class="hn-logo-mark">${ICONS.screen}</span>
+      <span>VĂN PHÒNG TUẤT<small>HÔM NAY ĂN GÌ?</small></span>
+    </a>
     ${
       me
         ? `<button type="button" class="hn-avatar-block" data-act="avatar" aria-label="${esc(label)}" title="${esc(label)}">
@@ -41,7 +45,7 @@ export function renderTitle(chip: string, fun: string): string {
   const showBack = state.me && state.route !== 'home';
   return `<section class="hn-title">
     ${showBack ? `<a class="hn-back-home" href="#/home" aria-label="Về sảnh">← SẢNH</a>` : ''}
-    <span class="hn-chip">${esc(chip)}</span>
     <h1 class="hn-fun">${esc(fun)}</h1>
+    <span class="hn-chip">${esc(chip)}</span>
   </section>`;
 }

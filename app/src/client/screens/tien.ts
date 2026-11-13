@@ -16,6 +16,7 @@ import { cmd } from '../ws.js';
 import { copyText } from '../copy.js';
 import { chooseImage, readClipboardImage, type ImageBlob } from '../image.js';
 import { apiAi } from '../api.js';
+import { ICONS } from '../icons.js';
 import { waitAi } from '../ws.js';
 import { toast } from '../ui/toast.js';
 import { openAvatarModal } from '../ui/avatar.js';
@@ -83,7 +84,7 @@ export function renderTien(): string {
             .map((o) => o.text)
             .join(' · ');
           const sel = state.ui.selectedPersonId === r.memberId;
-          return `<button type="button" class="hn-person-row" data-person="${r.memberId}" aria-pressed="${sel}" style="background:${sel ? '#FFF4D6' : 'transparent'}">
+          return `<button type="button" class="hn-person-row" data-person="${r.memberId}" aria-pressed="${sel}">
             <b style="font-family:var(--font-body);font-size:15px">${esc(m?.displayName || '?')}</b>
             <b style="font-size:17px">${esc(fmtVnd(r.share))}</b>
             <span style="font-size:12px;color:#3D3D3D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(texts)}</span>
@@ -99,8 +100,9 @@ export function renderTien(): string {
 
   return `<main class="hn-main">
     <div class="hn-two-col-tien">
-      <section class="hn-panel-yellow" style="display:flex;flex-direction:column;gap:14px">
-        <div style="display:flex;gap:12px;align-items:stretch">
+      <section class="hn-panel hn-stack">
+        <div class="hn-section-head"><h2 class="hn-h2">BILL</h2></div>
+        <div class="hn-bill-source">
           <div aria-label="Ảnh bill" style="flex:0 0 96px;height:120px;background:#fff;border:3px solid #1B1B1B;transform:rotate(-3deg);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px">
             ${
               state.ui.billPreviewUrl
@@ -138,12 +140,12 @@ export function renderTien(): string {
         </div>
       </section>
       <section class="hn-panel" style="font-family:var(--font-mono);display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <h2 class="hn-h2" style="margin-right:auto;font-size:20px">MỖI NGƯỜI</h2>
-          <button type="button" class="hn-btn hn-btn-red" data-act="copy-group">COPY GỬI NHÓM</button>
+        <div class="hn-section-head">
+          <h2 class="hn-h2">MỖI NGƯỜI</h2>
+            <button type="button" class="hn-btn hn-btn-blue" data-act="copy-group">${ICONS.copy} COPY GỬI NHÓM</button>
         </div>
-        <div>${peopleHtml}</div>
-        <div style="display:flex;align-items:baseline;gap:10px;font-family:var(--font-display);font-size:18px;border-top:3px solid #1B1B1B;padding-top:8px;flex-wrap:wrap">
+        <div class="hn-bill-people">${peopleHtml}</div>
+        <div class="hn-bill-summary">
           <span>TỔNG</span>
           ${result.hostCovers > 0 ? `<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:#B71C1C">Chủ xị gánh lẻ +${esc(fmtVnd(result.hostCovers))}</span>` : ''}
           ${
@@ -282,18 +284,22 @@ export function bindTien(root: HTMLElement): void {
     const qr = qrcode(0, 'M');
     qr.addData(payload);
     qr.make();
-    const size = 84;
-    const cell = size / qr.getModuleCount();
+    const modules = qr.getModuleCount();
+    const cell = 4;
+    const margin = 4 * cell;
+    const size = modules * cell + 2 * margin;
     const canvas = document.createElement('canvas');
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', 'Mã VietQR');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#1B1B1B';
-    for (let r = 0; r < qr.getModuleCount(); r++) {
-      for (let c = 0; c < qr.getModuleCount(); c++) {
-        if (qr.isDark(r, c)) ctx.fillRect(c * cell, r * cell, cell, cell);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < modules; r++) {
+      for (let c = 0; c < modules; c++) {
+        if (qr.isDark(r, c)) ctx.fillRect(margin + c * cell, margin + r * cell, cell, cell);
       }
     }
     mount.replaceWith(canvas);

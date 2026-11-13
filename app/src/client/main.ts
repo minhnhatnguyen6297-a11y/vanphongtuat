@@ -4,6 +4,7 @@ import { connectWs, setChatSubs } from './ws.js';
 import { apiMe } from './api.js';
 import { renderHeader, bindHeader, renderTitle } from './ui/header.js';
 import { renderLogin } from './ui/login.js';
+import { renderRail } from './ui/rail.js';
 import { renderHome, bindHome, titleHome } from './screens/home.js';
 import { renderBan, bindBan, titleBan } from './screens/ban.js';
 import { renderQuay, bindQuay, titleQuay } from './screens/quay.js';
@@ -78,6 +79,7 @@ function renderShell(): void {
     ${renderHeader()}
     ${renderTitle(t.chip, t.fun)}
     ${main}
+    ${state.route === 'home' ? '' : renderRail()}
   </div>`;
 
   bindHeader(app!);

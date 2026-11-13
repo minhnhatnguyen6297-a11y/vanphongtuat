@@ -242,20 +242,18 @@ export function renderBan(): string {
       ]
         .filter(Boolean)
         .join('');
-      return `<button type="button" class="hn-shop-card" data-vote="${id}" aria-pressed="${mine}">
-        <span class="hn-shop-card-head" style="background:${color}">${esc(s.name.toUpperCase())}</span>
-        <span class="hn-shop-card-body">
-          <span style="font-family:var(--font-mono);font-size:12px;color:#3D3D3D">${esc(stats)}</span>
-          <span style="display:flex;align-items:center;gap:6px;min-height:24px" role="img" aria-label="${count} phiếu">
-            ${seats}<span style="font-family:var(--font-display);font-size:22px;line-height:1;margin-left:auto">${count}</span>
+      return `<div class="hn-shop-card">
+        <button type="button" class="hn-shop-vote" data-vote="${id}" aria-pressed="${mine}">
+          <span class="hn-shop-card-head"><b>${esc(s.name)}</b><span class="hn-shop-badges">${badges}</span></span>
+          <span class="hn-shop-vote-count" aria-label="${count} phiếu">
+            <span class="hn-shop-seats" aria-hidden="true">${seats}</span>
+            <span>${count} phiếu</span>
           </span>
-          <span class="hn-bar"><span style="width:${pct}%;background:${color}"></span></span>
-        </span>
-        <span class="hn-shop-card-side">
-          ${badges}
-          ${canPerm('table.setWinner') && !table.winnerShopId ? `<button type="button" class="hn-btn hn-btn-white" data-lock="${id}" style="min-height:36px;font-size:12px">Chốt</button>` : ''}
-        </span>
-      </button>`;
+          <span class="hn-shop-progress"><span class="hn-bar" aria-hidden="true"><span style="width:${pct}%;background:${color}"></span></span><b>${pct}%</b></span>
+          ${stats ? `<small class="hn-muted">${esc(stats)}</small>` : ''}
+        </button>
+        ${canPerm('table.setWinner') && !table.winnerShopId ? `<button type="button" class="hn-btn hn-btn-white hn-shop-lock" data-lock="${id}" aria-label="Chốt ${esc(s.name)}">Chốt</button>` : ''}
+      </div>`;
     })
     .join('');
 
@@ -283,7 +281,7 @@ export function renderBan(): string {
   const menuHtml = menu
     .map((m) => {
       const on = draft.has(m.id);
-      return `<button type="button" class="hn-menu-chip${on ? ' on' : ''}" data-menu="${m.id}">
+      return `<button type="button" class="hn-menu-chip" aria-pressed="${on}" data-menu="${m.id}">
         ${esc(m.name)}<span style="font-family:var(--font-mono);font-size:11px;font-weight:700">${esc(fmtK(m.price))}</span>
       </button>`;
     })
@@ -296,38 +294,38 @@ export function renderBan(): string {
 
   return `<main class="hn-main">
     <div class="hn-ban-layout">
-      <section class="hn-ban-cell">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-          <h2 class="hn-h2" style="margin-right:auto">VOTE QUÁN</h2>
-          <button type="button" class="hn-btn" data-act="new-table">+ KÊ BÀN MỚI</button>
-          <button type="button" class="hn-btn hn-btn-ink" data-act="history">${ICONS.history}LỊCH SỬ BÀN</button>
+      <section class="hn-panel hn-ban-cell">
+        <div class="hn-section-head">
+          <h2 class="hn-h2">VOTE QUÁN</h2>
+          <button type="button" class="hn-btn hn-btn-blue" data-act="new-table">+ KÊ BÀN MỚI</button>
+          <button type="button" class="hn-btn hn-btn-white" data-act="history">${ICONS.history}LỊCH SỬ BÀN</button>
         </div>
-        <div class="hn-ban-scroll">
-          <div class="hn-shop-grid">${shopCards}</div>
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px">
-            <span style="font-family:var(--font-display);font-size:12px">THÊM QUÁN</span>
-            ${suggests}
-            ${addShopBtn}
-          </div>
+        <div class="hn-shop-grid hn-ban-scroll">${shopCards}</div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+          <span style="font-family:var(--font-display);font-size:12px">THÊM QUÁN</span>
+          ${suggests}
+          ${addShopBtn}
         </div>
       </section>
-      <section class="hn-ban-cell">
-        <div style="display:flex;align-items:center;gap:8px">
-          <h2 class="hn-h2" style="margin-right:auto">PHIẾU ORDER · ${esc(shortShopName(calling?.name || '…'))}</h2>
-          <button type="button" class="hn-btn hn-btn-white" data-act="copy">${ICONS.copy}Copy order</button>
+      <section class="hn-panel hn-ban-cell">
+        <div class="hn-section-head">
+          <h2 class="hn-h2">GỌI MÓN</h2>
+          <button type="button" class="hn-btn hn-btn-blue" data-act="copy">${ICONS.copy}COPY ORDER</button>
         </div>
+        <b class="hn-calling-shop">${esc(shortShopName(calling?.name || '…'))}</b>
         <div class="hn-order-sheet hn-ban-scroll">
           ${ordersHtml || '<div style="padding:8px;color:#3D3D3D">Chưa ai gọi</div>'}
           <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
             <span>${table.orders.length} suất</span><span>${esc(fmtVnd(orderSum))}</span>
           </div>
         </div>
+        ${renderChatPanel(chatScope, { title: 'CHAT BÀN', collapsible: true })}
       </section>
-      <section class="hn-ban-cell">
-        ${renderChatPanel(chatScope, { title: 'CHAT BÀN' })}
-      </section>
-      <section aria-label="Thực đơn" class="hn-panel-yellow hn-ban-cell" style="gap:8px">
-        <div class="hn-ban-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start">${menuHtml}</div>
+      <section aria-labelledby="ban-menu-heading" class="hn-panel-yellow hn-ban-cell hn-ban-menu">
+        <div class="hn-menu-list">
+          <h2 id="ban-menu-heading" class="hn-h2">THỰC ĐƠN</h2>
+          ${menuHtml}
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
           <input type="text" class="hn-input" id="ban-note" placeholder="Món khác / ghi chú" value="${esc(state.ui.noteDraft)}" style="flex:1 1 160px;min-width:0">
           ${NOTES.map((n) => `<button type="button" class="hn-note-chip" data-note="${esc(n)}">+ ${esc(n)}</button>`).join('')}
@@ -350,8 +348,7 @@ export function bindBan(root: HTMLElement): void {
   bindChatPanel(root);
 
   root.querySelectorAll('[data-vote]').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      if ((e.target as HTMLElement).closest('[data-lock]')) return;
+    btn.addEventListener('click', async () => {
       const shopId = (btn as HTMLElement).dataset.vote!;
       const mine = state.table?.votes.find((v) => v.memberId === state.me?.id)?.shopId === shopId;
       await cmd('vote.set', { shopId: mine ? null : shopId });
@@ -359,8 +356,7 @@ export function bindBan(root: HTMLElement): void {
   });
 
   root.querySelectorAll('[data-lock]').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
+    btn.addEventListener('click', async () => {
       await cmd('table.setWinner', { shopId: (btn as HTMLElement).dataset.lock });
       toast('Đã chốt quán');
     });
