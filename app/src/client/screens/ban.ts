@@ -294,9 +294,9 @@ export function renderBan(): string {
 
   return `<main class="hn-main">
     <div class="hn-ban-layout">
-      <section class="hn-panel hn-ban-cell">
+      <section class="hn-panel hn-paper-fold hn-ban-cell">
         <div class="hn-section-head">
-          <h2 class="hn-h2">VOTE QUÁN</h2>
+          <h2 class="hn-h2"><span>VOTE QUÁN</span></h2>
           <button type="button" class="hn-btn hn-btn-blue" data-act="new-table">+ KÊ BÀN MỚI</button>
           <button type="button" class="hn-btn hn-btn-white" data-act="history">${ICONS.history}LỊCH SỬ BÀN</button>
         </div>
@@ -307,9 +307,9 @@ export function renderBan(): string {
           ${addShopBtn}
         </div>
       </section>
-      <section class="hn-panel hn-ban-cell">
+      <section class="hn-panel hn-paper-fold hn-ban-cell">
         <div class="hn-section-head">
-          <h2 class="hn-h2">GỌI MÓN</h2>
+          <h2 class="hn-h2"><span>GỌI MÓN</span></h2>
           <button type="button" class="hn-btn hn-btn-blue" data-act="copy">${ICONS.copy}COPY ORDER</button>
         </div>
         <b class="hn-calling-shop">${esc(shortShopName(calling?.name || '…'))}</b>
@@ -323,7 +323,7 @@ export function renderBan(): string {
       </section>
       <section aria-labelledby="ban-menu-heading" class="hn-panel-yellow hn-ban-cell hn-ban-menu">
         <div class="hn-menu-list">
-          <h2 id="ban-menu-heading" class="hn-h2">THỰC ĐƠN</h2>
+          <h2 id="ban-menu-heading" class="hn-h2 hn-menu-heading">THỰC ĐƠN</h2>
           ${menuHtml}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">

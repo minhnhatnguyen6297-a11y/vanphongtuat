@@ -100,10 +100,10 @@ export function renderTien(): string {
 
   return `<main class="hn-main">
     <div class="hn-two-col-tien">
-      <section class="hn-panel hn-stack">
-        <div class="hn-section-head"><h2 class="hn-h2">BILL</h2></div>
+      <section class="hn-panel hn-paper-fold hn-bill-panel hn-stack">
+        <div class="hn-section-head"><h2 class="hn-h2"><span>BILL</span></h2></div>
         <div class="hn-bill-source">
-          <div aria-label="Ảnh bill" style="flex:0 0 96px;height:120px;background:#fff;border:3px solid #1B1B1B;transform:rotate(-3deg);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px">
+          <div aria-label="Ảnh bill" class="hn-bill-receipt">
             ${
               state.ui.billPreviewUrl
                 ? `<img src="${state.ui.billPreviewUrl}" alt="" style="max-width:100%;max-height:100%;object-fit:contain">`
@@ -139,9 +139,9 @@ export function renderTien(): string {
           <button type="button" data-mode="equal" aria-pressed="${table.billMode === 'equal'}" ${canBill ? '' : 'disabled'}>CHIA ĐỀU</button>
         </div>
       </section>
-      <section class="hn-panel" style="font-family:var(--font-mono);display:flex;flex-direction:column;gap:10px">
+      <section class="hn-panel hn-paper-fold hn-bill-shares" style="font-family:var(--font-mono);display:flex;flex-direction:column;gap:10px">
         <div class="hn-section-head">
-          <h2 class="hn-h2">MỖI NGƯỜI</h2>
+          <h2 class="hn-h2"><span>MỖI NGƯỜI</span></h2>
             <button type="button" class="hn-btn hn-btn-blue" data-act="copy-group">${ICONS.copy} COPY GỬI NHÓM</button>
         </div>
         <div class="hn-bill-people">${peopleHtml}</div>
@@ -179,6 +179,7 @@ export function renderTien(): string {
                  <span style="font-weight:800">Chủ xị chưa nhập STK</span>`
           }
         </div>
+        <span class="hn-art-coffee" aria-hidden="true"></span>
       </section>
     </div>
   </main>`;

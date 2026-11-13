@@ -75,11 +75,20 @@ function renderShell(): void {
       main = renderBan();
   }
 
-  app!.innerHTML = `<div class="hn-shell${state.route === 'home' ? ' hn-shell-home' : ''}">
-    ${renderHeader()}
-    ${renderTitle(t.chip, t.fun)}
-    ${main}
-    ${state.route === 'home' ? '' : renderRail()}
+  const route = state.route;
+  const illustrated = route === 'ban' || route === 'quay' || route === 'tien';
+  app!.innerHTML = `<div class="hn-scene${illustrated ? ' hn-scene-illustrated' : ''}" data-scene="${route}">
+    ${illustrated ? `<div class="hn-scene-art" aria-hidden="true">
+      <span class="hn-art-leaves"></span>
+      ${route === 'tien' ? '<span class="hn-art-polaroid"></span>' : '<span class="hn-art-shiba"></span>'}
+      ${route === 'ban' ? '<span class="hn-art-books"></span>' : ''}
+    </div>` : ''}
+    <div class="hn-shell${route === 'home' ? ' hn-shell-home' : ''}">
+      ${renderHeader()}
+      ${renderTitle(t.chip, t.fun)}
+      ${main}
+      ${route === 'home' ? '' : renderRail()}
+    </div>
   </div>`;
 
   bindHeader(app!);

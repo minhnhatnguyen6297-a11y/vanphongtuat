@@ -225,7 +225,7 @@ export function renderQuay(): string {
 
   return `<main class="hn-main">
     <div class="hn-quay-wrap">
-      <section aria-label="Bàn xoay" class="hn-panel hn-wheel-stage">
+      <section aria-label="Bàn xoay" class="hn-panel hn-paper-fold hn-wheel-stage">
         <button type="button" class="hn-btn hn-btn-white hn-wheel-sound" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}" title="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}">${soundIcon}</button>
         <div class="hn-wheel-play${hasWinner ? ' has-winner' : ''}">
         <div class="hn-wheel-controls">
@@ -255,6 +255,7 @@ export function renderQuay(): string {
             <div style="font-family:var(--font-display);font-size:clamp(22px,2.6vw,30px);line-height:1.1">${esc(last!.resultName)}</div>
             <div style="font-size:14px;color:#3D3D3D;margin-top:2px">${esc(verdict(count))}</div>
           </div>
+          ${wheel.kind === 'shop' ? '<span class="hn-art-rice" aria-hidden="true"></span>' : ''}
           ${act}
         </div>`
             : ''
@@ -263,8 +264,8 @@ export function renderQuay(): string {
         ${renderChatPanel(`wheel:${wheel.id}`, { title: 'CHAT VÒNG', collapsible: true })}
       </section>
       <section style="min-width:0">
-        <div class="hn-panel hn-wheel-editor">
-          <div class="hn-section-head"><h2 class="hn-h2">CÁC Ô</h2></div>
+        <div class="hn-panel hn-paper-fold hn-wheel-editor">
+          <div class="hn-section-head"><h2 class="hn-h2"><span>CÁC Ô</span></h2></div>
           <div class="hn-wheel-picker">
             <div class="hn-wheel-tabs" role="group" aria-label="Chọn vòng quay">${chips}</div>
             ${canPerm('wheel.create') ? `<button type="button" class="hn-btn" data-act="new-wheel" style="font-size:12px;min-height:40px">+ VÒNG MỚI</button>` : ''}
