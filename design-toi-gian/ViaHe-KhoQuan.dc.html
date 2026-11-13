@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Kho quán — Hôm Nay Ăn Gì</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+body{margin:0;background:#FFF4D6}
+a{color:#B71C1C}a:hover{color:#7F1010}
+input:focus,button:focus-visible,a:focus-visible{outline:3px solid #1F5FD1;outline-offset:2px}
+input[type=range]{accent-color:#C62828}
+.hn-shell{max-width:1280px;margin:0 auto;padding:16px clamp(16px,3vw,32px) 32px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 62px;gap:16px 20px;align-items:start}
+.hn-head{grid-column:1 / -1}
+.hn-title,.hn-main{grid-column:1;min-width:0}
+.hn-rail{grid-column:2;grid-row:2 / span 2;position:sticky;top:16px;display:flex;flex-direction:column;gap:12px}
+.hn-rail a{width:60px;height:60px;box-sizing:border-box;border:3px solid #1B1B1B;box-shadow:4px 4px 0 #1B1B1B;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.hn-rail a:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #1B1B1B}
+@media (max-width:760px){
+.hn-shell{grid-template-columns:minmax(0,1fr);padding-bottom:96px}
+.hn-rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:20;flex-direction:row;justify-content:space-around;background:#C62828;border-top:4px solid #1B1B1B;padding:8px 10px}
+.hn-rail a{width:52px;height:52px;box-shadow:3px 3px 0 #1B1B1B}
+}
+</style>
+</helmet>
+<div style="background: #FFF4D6; color: #1B1B1B; font-family: 'Be Vietnam Pro', sans-serif; min-height: 100vh">
+<div class="hn-shell">
+
+<header class="hn-head" style="background: #C62828; border: 4px solid #1B1B1B; box-shadow: 6px 6px 0 #1B1B1B; padding: 10px 16px; display: flex; align-items: center; gap: 12px">
+<a href="ViaHe-Ban.dc.html" style="font-family: Bungee, sans-serif; font-size: clamp(24px, 3vw, 34px); line-height: 1; color: #FFCF33; text-shadow: 3px 3px 0 #1B1B1B; text-decoration: none; margin-right: auto">HÔM NAY ĂN GÌ</a>
+<button aria-label="Minh, Chủ xị" title="Minh · Chủ xị" style="width: 44px; height: 44px; border-radius: 50%; background: #FFCF33; color: #1B1B1B; border: 3px solid #1B1B1B; display: flex; align-items: center; justify-content: center; font-family: 'Be Vietnam Pro', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer">M</button>
+</header>
+
+<section class="hn-title" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px">
+<span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px; background: #1B1B1B; color: #FFF4D6; padding: 4px 10px">{{shopCount}} QUÁN</span>
+<h1 style="margin: 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: clamp(30px, 4.4vw, 52px); line-height: 1; color: #FFCF33; -webkit-text-stroke: 2px #1B1B1B; text-shadow: 4px 4px 0 #C62828; transform: rotate(-2deg); transform-origin: left center">KHO QUÁN RUỘT!</h1>
+</section>
+
+<nav class="hn-rail" aria-label="Chuyển màn">
+<a href="ViaHe-Ban.dc.html" aria-label="Bàn hôm nay" title="Bàn hôm nay" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"></path><path d="M13 3l-3 6M19 4l-6 5"></path></svg></a>
+<a href="ViaHe-VongQuay.dc.html" aria-label="Vòng quay" title="Vòng quay" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"></path><circle cx="12" cy="12" r="2.5" fill="currentColor"></circle></svg></a>
+<a href="ViaHe-TinhTien.dc.html" aria-label="Tính tiền" title="Tính tiền" style="background: #C62828; color: #FFFFFF"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6M9 16h3"></path></svg></a>
+<a href="ViaHe-SoGhi.dc.html" aria-label="Sổ ghi" title="Sổ ghi" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h12a2 2 0 0 1 2 2v16H7a2 2 0 0 1-2-2z"></path><path d="M5 17a2 2 0 0 1 2-2h12M9 7h6M9 11h4"></path></svg></a>
+<a href="ViaHe-KhoQuan.dc.html" aria-current="page" aria-label="Kho quán" title="Kho quán" style="background: #FFCF33; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path><path d="M5 12v9h14v-9M10 21v-5h4v5"></path></svg></a>
+</nav>
+
+<main class="hn-main">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; align-items: start">
+
+<!-- vùng thêm quán -->
+<section style="background: #FFCF33; border: 3px solid #1B1B1B; box-shadow: 5px 5px 0 #1B1B1B; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: 20px">+ THÊM QUÁN</h2>
+<div style="display: flex; gap: 6px">
+<label style="flex: 1 1 auto; min-width: 0; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Link Google Maps hoặc ảnh quán</span>
+<input type="text" value="{{paste}}" onChange="{{onPaste}}" placeholder="Dán link Maps / ảnh quán" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; background: #FFFFFF; color: #1B1B1B; border: 3px dashed #1B1B1B; padding: 8px 10px; min-height: 48px; width: 100%; box-sizing: border-box"></label>
+<button onClick="{{autofill}}" style="font-family: Bungee, sans-serif; font-size: 14px; background: #1B1B1B; color: #FFF4D6; border: 3px solid #1B1B1B; padding: 6px 14px; min-height: 48px; cursor: pointer">ĐIỀN</button>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<label style="flex: 2 1 180px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 800">Tên quán
+<input type="text" value="{{name}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; font-weight: 700; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 8px; min-height: 44px; box-sizing: border-box"></label>
+<label style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 800">SĐT
+<input type="tel" value="{{phone}}" style="font-family: 'JetBrains Mono', monospace; font-size: 15px; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 8px; min-height: 44px; box-sizing: border-box"></label>
+</div>
+<div role="radiogroup" aria-label="Loại" style="display: flex; gap: 6px">
+<sc-for list="{{typeChips}}" as="c" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}" style="flex: 1 1 0; font-family: 'Be Vietnam Pro', sans-serif; font-size: 14px; font-weight: 800; background: {{c.bg}}; color: {{c.ink}}; border: 2px solid #1B1B1B; padding: 6px; min-height: 44px; cursor: pointer">{{c.label}}</button>
+</sc-for>
+</div>
+<div style="background: #FFFFFF; border: 2px solid #1B1B1B; padding: 8px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 6px">
+<span style="font-family: Bungee, sans-serif; font-size: 13px; margin-right: auto">MENU</span>
+<button onClick="{{readMenu}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">Dán ảnh Ctrl+V</button>
+<button onClick="{{readMenu}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">Chọn ảnh</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="5">
+<span style="display: flex; align-items: center; gap: 6px; border: 2px solid #1B1B1B; background: #FFF4D6; padding: 2px 2px 2px 8px; font-size: 13px; font-weight: 800">{{m.name}}<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{m.price}}</span><button onClick="{{m.remove}}" aria-label="Bỏ {{m.name}}" style="width: 32px; height: 32px; background: transparent; border: 0; cursor: pointer; font-weight: 800">×</button></span>
+</sc-for>
+</div>
+</div>
+<button style="font-family: Bungee, sans-serif; font-size: 16px; background: #C62828; color: #FFFFFF; border: 3px solid #1B1B1B; box-shadow: 4px 4px 0 #1B1B1B; padding: 10px; min-height: 52px; cursor: pointer">LƯU VÀO KHO</button>
+</section>
+
+<!-- vùng danh sách -->
+<section style="display: flex; flex-direction: column; gap: 10px">
+<div role="group" aria-label="Lọc loại" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+<button onClick="{{f.pick}}" aria-pressed="{{f.pressed}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 14px; font-weight: 800; background: {{f.bg}}; color: {{f.ink}}; border: 3px solid #1B1B1B; padding: 4px 12px; min-height: 44px; cursor: pointer">{{f.label}}</button>
+</sc-for>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{shops}}" as="s" hint-placeholder-count="6">
+<li style="background: #FFFFFF; border: 3px solid #1B1B1B; border-left: 10px solid {{s.head}}; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 6px 6px 12px">
+<span style="font-weight: 800; font-size: 15px; flex: 1 1 140px; min-width: 0">{{s.name}}</span>
+<span style="font-size: 12px; font-weight: 800; border: 1px solid #1B1B1B; padding: 1px 6px">{{s.typeLabel}}</span>
+<a href="tel:{{s.tel}}" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #1B1B1B; padding: 10px 0">{{s.phone}}</a>
+<span style="display: flex; gap: 4px">
+<button style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #1B1B1B; color: #FFF4D6; border: 2px solid #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">+ Bàn</button>
+<button aria-label="Sửa {{s.name}}" style="background: #FFFFFF; border: 2px solid #1B1B1B; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1B1B1B" stroke-width="2.5" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button>
+</span>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+</main>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = {
+type: 'all', newType: 'no', paste: 'https://www.google.com/maps/place/C%C6%A1m+T%E1%BA%A5m+C%C3%B4+Ba', name: '', phone: '',
+menu: [['Sườn', '45k'], ['Sườn bì chả', '55k'], ['Ba rọi quay', '50k'], ['Đùi gà', '50k'], ['Trà tắc', '10k']]
+};
+}
+renderVals() {
+const st = this.state;
+const T = { no: 'Ăn no', vat: 'Ăn vặt', uong: 'Đồ uống' };
+const color = { no: '#C62828', vat: '#FFCF33', uong: '#1B7A43' };
+const data = [
+{ name: 'Cơm Tấm Cô Ba', phone: '0909 382 114', type: 'no' },
+{ name: 'Bún Đậu Hàng Khay', phone: '0988 712 900', type: 'no' },
+{ name: 'Trà Sữa Nhà Mây', phone: '0933 505 888', type: 'uong' },
+{ name: 'Bánh Mì Cô Hai', phone: '0912 448 207', type: 'vat' },
+{ name: 'Phở Bò Phú Gia', phone: '0903 117 562', type: '' },
+{ name: 'Mì Cay Seoul', phone: '0977 260 315', type: '' }
+];
+const t = st.type;
+return {
+shopCount: data.length,
+paste: st.paste,
+onPaste: (e) => this.setState({ paste: e.target.value }),
+autofill: () => this.setState({ name: 'Cơm Tấm Cô Ba', phone: '0909 382 114' }),
+name: st.name, phone: st.phone,
+typeChips: ['no', 'vat', 'uong'].map((k) => ({
+label: T[k], on: st.newType === k ? 'true' : 'false',
+bg: st.newType === k ? '#1B1B1B' : '#FFFFFF', ink: st.newType === k ? '#FFF4D6' : '#1B1B1B',
+pick: () => this.setState({ newType: k })
+})),
+readMenu: () => this.setState({ menu: [['Sườn', '45k'], ['Sườn bì chả', '55k'], ['Ba rọi quay', '50k'], ['Đùi gà', '50k'], ['Trà tắc', '10k'], ['Canh khổ qua', '15k']] }),
+menu: st.menu.map((m, i) => ({ name: m[0], price: m[1], remove: () => this.setState({ menu: st.menu.filter((_, j) => j !== i) }) })),
+filters: ['all', 'no', 'vat', 'uong'].map((k) => ({
+label: k === 'all' ? 'Tất cả' : T[k],
+pressed: t === k ? 'true' : 'false',
+bg: t === k ? '#1B1B1B' : '#FFFFFF', ink: t === k ? '#FFF4D6' : '#1B1B1B',
+pick: () => this.setState({ type: k })
+})),
+shops: data.filter((s) => t === 'all' || s.type === t).map((s) => Object.assign({}, s, {
+tel: s.phone.replace(/\s/g, ''),
+typeLabel: T[s.type] || '—',
+head: color[s.type] || '#FFFFFF'
+}))
+};
+}
+}
+</script>
+</body>
+</html>

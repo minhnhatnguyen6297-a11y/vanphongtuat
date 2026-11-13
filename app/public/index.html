@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hôm Nay Ăn Gì</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Cùng origin HTTP(S) → LIVE (cookie + WS). file:// hoặc gán false để mock.
+    window.__HNG_LIVE__ =
+      window.__HNG_LIVE__ ??
+      (location.protocol === 'http:' || location.protocol === 'https:');
+  </script>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

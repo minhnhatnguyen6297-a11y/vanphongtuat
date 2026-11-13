@@ -1,0 +1,45 @@
+HÔM NAY ĂN GÌ — HƯỚNG DẪN GỌN
+================================
+
+MÁY CHỦ (1 máy trong văn phòng)
+---------------------------------
+1) Cài Node.js LTS: https://nodejs.org
+2) Double-click:  MAY-CHU.cmd  (cho phép Admin)
+3) Chọn IP LAN kiểu 192.168.x.x (tránh Tailscale/Hyper-V nếu có)
+4) XONG → ĐÓNG cửa sổ được.
+
+  • KHÔNG cần giữ terminal sống.
+  • Tắt/bật máy chủ → Task "HNG-Server" TỰ chạy lại.
+  • Chỉ chạy lại MAY-CHU.cmd khi: lỗi / đổi IP / cập nhật code lớn.
+
+  URL: https://<IP>:8443
+  DB : C:\hng\data\hng.db
+  Log: C:\hng\logs\
+
+
+MÁY CON (mỗi máy Chrome)
+-------------------------
+1) Copy cả thư mục  client-pack  từ máy chủ (USB / share)
+2) Double-click:  MAY-CON.cmd  (Admin) — một lần / máy
+3) Chrome mở URL trong URL.txt
+
+  • Cập nhật app trên máy chủ → máy con chỉ cần F5 (không cài lại).
+  • Chỉ chạy lại MAY-CON khi máy chủ làm lại CA (chứng chỉ gốc).
+
+
+LƯU Ý
+-----
+• Mạng Wi-Fi/Ethernet phải Private (MAY-CHU tự cố gắng đổi).
+• Firewall chỉ mở cổng 8443 profile Private.
+• Firefox: about:config → security.enterprise_roots.enabled = true
+• Không commit / không share thư mục C:\hng-ca\ (khóa CA).
+• Backup DB tự có trong C:\hng\backup (và/hoặc data\backup).
+
+
+SỰ CỐ NHANH
+-----------
+Không vào được từ máy khác:
+  1) Máy chủ chạy MAY-CHU.cmd lại
+  2) Kiểm tra IP còn đúng trong URL.txt
+  3) Máy con đã chạy MAY-CON.cmd chưa
+  4) Cùng Wi-Fi/LAN, tắt VPN lạ nếu cần

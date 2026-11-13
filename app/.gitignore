@@ -1,0 +1,17 @@
+node_modules/
+dist/
+data/*.db
+data/*.db-*
+data/backup/
+.env
+*.log
+playwright-report/
+test-results/
+C:/hng-ca/
+*.pfx
+*.pem
+*.cer
+client-pack/hng-root.cer
+client-pack/URL.txt
+public/app.js
+public/app.js.map

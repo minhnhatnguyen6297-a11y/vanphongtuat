@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bàn hôm nay — Hôm Nay Ăn Gì</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+body{margin:0;background:#FFF4D6}
+a{color:#B71C1C}a:hover{color:#7F1010}
+input:focus,button:focus-visible,a:focus-visible{outline:3px solid #1F5FD1;outline-offset:2px}
+input[type=range]{accent-color:#C62828}
+.hn-shell{max-width:1280px;margin:0 auto;padding:16px clamp(16px,3vw,32px) 32px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 62px;gap:16px 20px;align-items:start}
+.hn-head{grid-column:1 / -1}
+.hn-title,.hn-main{grid-column:1;min-width:0}
+.hn-rail{grid-column:2;grid-row:2 / span 2;position:sticky;top:16px;display:flex;flex-direction:column;gap:12px}
+.hn-rail a{width:60px;height:60px;box-sizing:border-box;border:3px solid #1B1B1B;box-shadow:4px 4px 0 #1B1B1B;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.hn-rail a:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #1B1B1B}
+@media (max-width:760px){
+.hn-shell{grid-template-columns:minmax(0,1fr);padding-bottom:96px}
+.hn-rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:20;flex-direction:row;justify-content:space-around;background:#C62828;border-top:4px solid #1B1B1B;padding:8px 10px}
+.hn-rail a{width:52px;height:52px;box-shadow:3px 3px 0 #1B1B1B}
+}
+</style>
+</helmet>
+<div style="background: #FFF4D6; color: #1B1B1B; font-family: 'Be Vietnam Pro', sans-serif; min-height: 100vh">
+<div class="hn-shell">
+
+<header class="hn-head" style="background: #C62828; border: 4px solid #1B1B1B; box-shadow: 6px 6px 0 #1B1B1B; padding: 10px 16px; display: flex; align-items: center; gap: 12px">
+<a href="ViaHe-Ban.dc.html" style="font-family: Bungee, sans-serif; font-size: clamp(24px, 3vw, 34px); line-height: 1; color: #FFCF33; text-shadow: 3px 3px 0 #1B1B1B; text-decoration: none; margin-right: auto">HÔM NAY ĂN GÌ</a>
+<button aria-label="Minh, Chủ xị" title="Minh · Chủ xị" style="width: 44px; height: 44px; border-radius: 50%; background: #FFCF33; color: #1B1B1B; border: 3px solid #1B1B1B; display: flex; align-items: center; justify-content: center; font-family: 'Be Vietnam Pro', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer">M</button>
+</header>
+
+<section class="hn-title" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px">
+<span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px; background: #1B1B1B; color: #FFF4D6; padding: 4px 10px">#12 · 10/11</span>
+<h1 style="margin: 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: clamp(30px, 4.4vw, 52px); line-height: 1; color: #FFCF33; -webkit-text-stroke: 2px #1B1B1B; text-shadow: 4px 4px 0 #C62828; transform: rotate(-2deg); transform-origin: left center">CHỌN ĐI CÁC CHÁU!</h1>
+</section>
+
+<nav class="hn-rail" aria-label="Chuyển màn">
+<a href="ViaHe-Ban.dc.html" aria-current="page" aria-label="Bàn hôm nay" title="Bàn hôm nay" style="background: #FFCF33; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"></path><path d="M13 3l-3 6M19 4l-6 5"></path></svg></a>
+<a href="ViaHe-VongQuay.dc.html" aria-label="Vòng quay" title="Vòng quay" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"></path><circle cx="12" cy="12" r="2.5" fill="currentColor"></circle></svg></a>
+<a href="ViaHe-TinhTien.dc.html" aria-label="Tính tiền" title="Tính tiền" style="background: #C62828; color: #FFFFFF"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6M9 16h3"></path></svg></a>
+<a href="ViaHe-SoGhi.dc.html" aria-label="Sổ ghi" title="Sổ ghi" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h12a2 2 0 0 1 2 2v16H7a2 2 0 0 1-2-2z"></path><path d="M5 17a2 2 0 0 1 2-2h12M9 7h6M9 11h4"></path></svg></a>
+<a href="ViaHe-KhoQuan.dc.html" aria-label="Kho quán" title="Kho quán" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path><path d="M5 12v9h14v-9M10 21v-5h4v5"></path></svg></a>
+</nav>
+
+<main class="hn-main">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 20px; align-items: start">
+
+<!-- vùng vote -->
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<h2 style="margin: 0 auto 0 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: 22px">VOTE QUÁN</h2>
+<button style="font-family: Bungee, sans-serif; font-size: 13px; background: #FFCF33; color: #1B1B1B; border: 3px solid #1B1B1B; box-shadow: 3px 3px 0 #1B1B1B; padding: 6px 12px; min-height: 44px; cursor: pointer">+ KÊ BÀN MỚI</button>
+<a href="ViaHe-SoGhi.dc.html" style="font-family: Bungee, sans-serif; font-size: 13px; text-decoration: none; background: #1B1B1B; color: #FFF4D6; border: 3px solid #1B1B1B; box-shadow: 3px 3px 0 #1F5FD1; padding: 6px 12px; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 6px"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path></svg>LỊCH SỬ BÀN</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px">
+<sc-for list="{{shops}}" as="s" hint-placeholder-count="3">
+<button onClick="{{s.pick}}" aria-pressed="{{s.mine}}" style="position: relative; text-align: left; font-family: 'Be Vietnam Pro', sans-serif; color: #1B1B1B; background: #FFFFFF; border: 3px solid #1B1B1B; box-shadow: {{s.shadow}}; padding: 0; cursor: pointer; display: flex; flex-direction: column">
+<span style="background: {{s.color}}; color: #FFFFFF; border-bottom: 3px solid #1B1B1B; padding: 8px 10px; font-family: Bungee, sans-serif; font-size: 15px; line-height: 1.15; width: 100%; box-sizing: border-box">{{s.name}}</span>
+<sc-if value="{{s.lead}}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; top: -12px; right: -8px; background: #FFCF33; color: #1B1B1B; border: 3px solid #1B1B1B; font-family: Bungee, sans-serif; font-size: 11px; padding: 2px 8px; transform: rotate(8deg)">DẪN ĐẦU</span>
+</sc-if>
+<span style="padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #3D3D3D">{{s.history}}</span>
+<span style="display: flex; align-items: flex-end; gap: 2px; min-height: 26px" role="img" aria-label="{{s.seatLabel}}">
+<sc-for list="{{s.seats}}" as="seat" hint-placeholder-count="2">
+<svg width="24" height="24" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 8h20l-2 5H7z" fill="{{s.color}}" stroke="#1B1B1B" stroke-width="2" stroke-linejoin="round"></path><path d="M8 13l-3 14M22 13l3 14M10 20h10" fill="none" stroke="#1B1B1B" stroke-width="2" stroke-linecap="round"></path></svg>
+</sc-for>
+<span style="font-family: Bungee, sans-serif; font-size: 20px; margin-left: auto; line-height: 1">{{s.count}}</span>
+</span>
+<span style="height: 8px; border: 2px solid #1B1B1B; background: #FFF4D6"><span style="display: block; height: 100%; width: {{s.pct}}; background: {{s.color}}"></span></span>
+<sc-if value="{{s.mine}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 12px; font-weight: 800; background: #1B1B1B; color: #FFF4D6; text-align: center; padding: 4px">GHẾ CỦA BẠN</span>
+</sc-if>
+</span>
+</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="font-family: Bungee, sans-serif; font-size: 12px">GỢI Ý</span>
+<sc-for list="{{suggest}}" as="g" hint-placeholder-count="3">
+<button title="{{g.why}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #FFFFFF; color: #1B1B1B; border: 2px dashed #1B1B1B; padding: 6px 10px; min-height: 40px; cursor: pointer">+ {{g.name}}</button>
+</sc-for>
+</div>
+</section>
+
+<!-- vùng order -->
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px">
+<h2 style="margin: 0 auto 0 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: 22px">GỌI MÓN · {{leadShort}}</h2>
+<button style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #FFFFFF; color: #1B1B1B; border: 3px solid #1B1B1B; padding: 6px 12px; min-height: 44px; cursor: pointer; display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12"></rect><path d="M16 8V4H4v12h4"></path></svg>Copy order</button>
+</div>
+<div style="background: #FFFFFF; border: 2px solid #1B1B1B; box-shadow: 4px 4px 0 #1B1B1B; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px">
+<sc-for list="{{orders}}" as="o" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: minmax(0, 9.5em) 1fr auto; gap: 8px; align-items: baseline; padding: 6px 4px; border-bottom: 1px dashed #1B1B1B; background: {{o.bg}}">
+<b style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{o.user}}</b>
+<span>{{o.text}}</span>
+<span style="font-weight: 700">{{o.priceText}}</span>
+</div>
+</sc-for>
+<div style="display: flex; justify-content: space-between; padding-top: 8px; font-weight: 700"><span>{{orderCount}} suất</span><span>{{orderSum}}</span></div>
+</div>
+</section>
+
+<!-- thực đơn: thuộc vùng gọi món, trải ngang -->
+<section aria-label="Thực đơn" style="grid-column: 1 / -1; background: #FFCF33; border: 3px solid #1B1B1B; box-shadow: 5px 5px 0 #1B1B1B; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="7">
+<button onClick="{{m.add}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: {{m.bg}}; color: {{m.fg}}; border: 2px solid #1B1B1B; padding: 6px 10px; min-height: 44px; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2">{{m.name}}<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700">{{m.priceText}}</span></button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<input type="text" placeholder="Món khác / ghi chú" style="flex: 1 1 260px; min-width: 0; font-family: 'Be Vietnam Pro', sans-serif; font-size: 14px; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 8px; min-height: 44px; box-sizing: border-box">
+<button style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 12px; font-weight: 700; background: #FFFFFF; color: #1B1B1B; border: 1px solid #1B1B1B; padding: 4px 8px; min-height: 36px; cursor: pointer">+ ít cay</button>
+<button style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 12px; font-weight: 700; background: #FFFFFF; color: #1B1B1B; border: 1px solid #1B1B1B; padding: 4px 8px; min-height: 36px; cursor: pointer">+ không hành</button>
+<button style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 12px; font-weight: 700; background: #FFFFFF; color: #1B1B1B; border: 1px solid #1B1B1B; padding: 4px 8px; min-height: 36px; cursor: pointer">+ thêm cơm</button>
+<button style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 12px; font-weight: 700; background: #FFFFFF; color: #1B1B1B; border: 1px solid #1B1B1B; padding: 4px 8px; min-height: 36px; cursor: pointer">+ 50% đường</button>
+<button style="font-family: Bungee, sans-serif; font-size: 15px; background: #C62828; color: #FFFFFF; border: 3px solid #1B1B1B; box-shadow: 3px 3px 0 #1B1B1B; padding: 8px 18px; min-height: 44px; cursor: pointer">GỌI</button>
+</div>
+</section>
+</div>
+</main>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { myVote: 'coba', mine: ['Sườn bì chả', 'Ốp la'] };
+}
+renderVals() {
+const me = 'Minh';
+const fmt = (n) => n.toLocaleString('vi-VN') + 'đ';
+const base = [
+{ id: 'coba', name: 'CƠM TẤM CÔ BA', short: 'CÔ BA', color: '#C62828', history: '8 lần · lần cuối 05/11', others: ['Lan HR', 'Tuấn Dev', 'Hoàng Design'] },
+{ id: 'bundau', name: 'BÚN ĐẬU HÀNG KHAY', short: 'BÚN ĐẬU', color: '#1F5FD1', history: '4 lần · lần cuối 08/11', others: ['Hương Kế Toán'] },
+{ id: 'nhamay', name: 'TRÀ SỮA NHÀ MÂY', short: 'NHÀ MÂY', color: '#1B7A43', history: '3 lần · lần cuối 09/11', others: ['Thảo Marketing'] }
+];
+const voteTotal = base.reduce((n, s) => n + s.others.length, 0) + 1;
+const shops = base.map((s) => {
+const mine = this.state.myVote === s.id;
+const count = s.others.length + (mine ? 1 : 0);
+const seats = [];
+for (let i = 0; i < count; i++) seats.push(i);
+return Object.assign({}, s, {
+mine: mine, count: count, seats: seats, seatLabel: count + ' phiếu',
+pct: Math.round(count / voteTotal * 100) + '%',
+shadow: mine ? '5px 5px 0 #1B1B1B, 0 0 0 3px #FFCF33 inset' : '5px 5px 0 #1B1B1B',
+pick: () => this.setState({ myVote: s.id })
+});
+});
+let lead = shops[0];
+shops.forEach((s) => { if (s.count > lead.count) lead = s; });
+shops.forEach((s) => { s.lead = s === lead; });
+const menuBase = [
+['Sườn', 45000], ['Sườn bì chả', 55000], ['Ba rọi quay', 50000], ['Đùi gà', 50000], ['Ốp la', 10000], ['Canh khổ qua', 15000], ['Trà tắc', 10000]
+];
+const picked = this.state.mine;
+const menu = menuBase.map(([name, price]) => {
+const on = picked.indexOf(name) >= 0;
+return {
+name: name, priceText: (price / 1000) + 'k',
+bg: on ? '#1B1B1B' : '#FFFFFF', fg: on ? '#FFF4D6' : '#1B1B1B',
+add: () => this.setState({ mine: on ? picked.filter((x) => x !== name) : picked.concat([name]) })
+};
+});
+const priceOf = (n) => { const m = menuBase.find((x) => x[0] === n); return m ? m[1] : 0; };
+const myPrice = picked.reduce((t, n) => t + priceOf(n), 0);
+const rows = [
+{ user: me, text: picked.length ? picked.join(' + ') : '—', price: myPrice, mineRow: true },
+{ user: 'Lan HR', text: 'Sườn, ít cơm', price: 45000 },
+{ user: 'Tuấn Dev', text: 'Ba rọi quay + Trà tắc', price: 60000 },
+{ user: 'Hương Kế Toán', text: 'Đùi gà, không hành', price: 50000 },
+{ user: 'Hoàng Design', text: 'Sườn + Canh khổ qua', price: 60000 },
+{ user: 'Thảo Marketing', text: 'Cơm chay', price: 0 }
+];
+const orders = rows.map((r) => ({
+user: r.user, text: r.text, priceText: r.price ? (r.price / 1000) + 'k' : '?',
+bg: r.mineRow ? '#FFF4D6' : 'transparent'
+}));
+return {
+shops: shops,
+leadShort: lead.short,
+suggest: [
+{ name: 'Phở Bò Phú Gia', why: '21 ngày chưa ăn' },
+{ name: 'Mì Cay Seoul', why: 'Chưa thử' },
+{ name: 'Bánh Mì Cô Hai', why: 'Hay thắng' }
+],
+menu: menu,
+orders: orders,
+orderCount: rows.length,
+orderSum: fmt(rows.reduce((t, r) => t + r.price, 0))
+};
+}
+}
+</script>
+</body>
+</html>

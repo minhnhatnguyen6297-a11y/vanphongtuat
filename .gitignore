@@ -1,0 +1,34 @@
+# Dependencies & build
+**/node_modules/
+app/dist/
+app/public/app.js
+app/public/app.js.map
+app/public/fonts/
+
+# Runtime / secrets
+**/.env
+**/*.log
+**/*.db
+**/*.db-*
+**/data/backup/
+app/data/
+
+# TLS / CA (không đưa lên git)
+**/hng-ca/
+**/*.pfx
+**/*.pem
+**/*.cer
+client-pack/hng-root.cer
+app/client-pack/hng-root.cer
+app/client-pack/URL.txt
+
+# Test / tool output
+**/playwright-report/
+**/test-results/
+.DS_Store
+Thumbs.db
+
+# Local agent / IDE
+.claude/
+.superpowers/
+.cursor/

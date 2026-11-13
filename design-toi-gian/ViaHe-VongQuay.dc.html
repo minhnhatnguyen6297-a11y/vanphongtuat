@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Vòng quay — Hôm Nay Ăn Gì</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+body{margin:0;background:#FFF4D6}
+a{color:#B71C1C}a:hover{color:#7F1010}
+input:focus,button:focus-visible,a:focus-visible{outline:3px solid #1F5FD1;outline-offset:2px}
+input[type=range]{accent-color:#C62828}
+.hn-shell{max-width:1280px;margin:0 auto;padding:16px clamp(16px,3vw,32px) 32px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 62px;gap:16px 20px;align-items:start}
+.hn-head{grid-column:1 / -1}
+.hn-title,.hn-main{grid-column:1;min-width:0}
+.hn-rail{grid-column:2;grid-row:2 / span 2;position:sticky;top:16px;display:flex;flex-direction:column;gap:12px}
+.hn-rail a{width:60px;height:60px;box-sizing:border-box;border:3px solid #1B1B1B;box-shadow:4px 4px 0 #1B1B1B;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.hn-rail a:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #1B1B1B}
+@media (max-width:760px){
+.hn-shell{grid-template-columns:minmax(0,1fr);padding-bottom:96px}
+.hn-rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:20;flex-direction:row;justify-content:space-around;background:#C62828;border-top:4px solid #1B1B1B;padding:8px 10px}
+.hn-rail a{width:52px;height:52px;box-shadow:3px 3px 0 #1B1B1B}
+}
+</style>
+</helmet>
+<div style="background: #FFF4D6; color: #1B1B1B; font-family: 'Be Vietnam Pro', sans-serif; min-height: 100vh">
+<div class="hn-shell">
+
+<header class="hn-head" style="background: #C62828; border: 4px solid #1B1B1B; box-shadow: 6px 6px 0 #1B1B1B; padding: 10px 16px; display: flex; align-items: center; gap: 12px">
+<a href="ViaHe-Ban.dc.html" style="font-family: Bungee, sans-serif; font-size: clamp(24px, 3vw, 34px); line-height: 1; color: #FFCF33; text-shadow: 3px 3px 0 #1B1B1B; text-decoration: none; margin-right: auto">HÔM NAY ĂN GÌ</a>
+<button aria-label="Minh, Chủ xị" title="Minh · Chủ xị" style="width: 44px; height: 44px; border-radius: 50%; background: #FFCF33; color: #1B1B1B; border: 3px solid #1B1B1B; display: flex; align-items: center; justify-content: center; font-family: 'Be Vietnam Pro', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer">M</button>
+</header>
+
+<section class="hn-title" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px">
+<span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px; background: #1B1B1B; color: #FFF4D6; padding: 4px 10px">VÒNG QUAY</span>
+<h1 style="margin: 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: clamp(30px, 4.4vw, 52px); line-height: 1; color: #FFCF33; -webkit-text-stroke: 2px #1B1B1B; text-shadow: 4px 4px 0 #C62828; transform: rotate(-2deg); transform-origin: left center">QUAY XONG KHÔNG CÃI!</h1>
+</section>
+
+<nav class="hn-rail" aria-label="Chuyển màn">
+<a href="ViaHe-Ban.dc.html" aria-label="Bàn hôm nay" title="Bàn hôm nay" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"></path><path d="M13 3l-3 6M19 4l-6 5"></path></svg></a>
+<a href="ViaHe-VongQuay.dc.html" aria-current="page" aria-label="Vòng quay" title="Vòng quay" style="background: #FFCF33; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"></path><circle cx="12" cy="12" r="2.5" fill="currentColor"></circle></svg></a>
+<a href="ViaHe-TinhTien.dc.html" aria-label="Tính tiền" title="Tính tiền" style="background: #C62828; color: #FFFFFF"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6M9 16h3"></path></svg></a>
+<a href="ViaHe-SoGhi.dc.html" aria-label="Sổ ghi" title="Sổ ghi" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h12a2 2 0 0 1 2 2v16H7a2 2 0 0 1-2-2z"></path><path d="M5 17a2 2 0 0 1 2-2h12M9 7h6M9 11h4"></path></svg></a>
+<a href="ViaHe-KhoQuan.dc.html" aria-label="Kho quán" title="Kho quán" style="background: #FFFFFF; color: #1B1B1B"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path><path d="M5 12v9h14v-9M10 21v-5h4v5"></path></svg></a>
+</nav>
+
+<main class="hn-main">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<!-- vùng bàn xoay -->
+<section aria-label="Bàn xoay" style="position: relative; flex: 1 1 480px; min-width: 0; background: #1F5FD1; border: 4px solid #1B1B1B; box-shadow: 6px 6px 0 #1B1B1B; padding: 24px 18px 18px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 16px">
+<button onClick="{{onSound}}" aria-pressed="{{soundPressed}}" aria-label="{{soundLabel}}" title="{{soundLabel}}" style="position: absolute; top: 10px; right: 10px; z-index: 5; background: #FFFFFF; border: 3px solid #1B1B1B; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B1B1B" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#FFCF33"/><path d="M16 9c1.5 1.5 1.5 4.5 0 6" style="opacity: {{waveOn}}"/><path d="M18.5 6.5c3 3 3 8 0 11" style="opacity: {{waveOn}}"/><path d="M16 9l5 6M21 9l-5 6" style="opacity: {{waveOff}}"/></svg></button>
+<div style="position: relative; width: min(380px, 100%); aspect-ratio: 1 / 1">
+<div aria-hidden="true" style="position: absolute; left: 50%; top: -18px; transform: translateX(-50%); z-index: 3; width: 0; height: 0; border-left: 26px solid transparent; border-right: 26px solid transparent; border-top: 44px solid #1B1B1B"></div>
+<div aria-hidden="true" style="position: absolute; left: 50%; top: -11px; transform: translateX(-50%); z-index: 4; width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent; border-top: 29px solid #FFCF33"></div>
+<div aria-hidden="true" style="position: absolute; inset: 0; border-radius: 50%; border: 6px solid #1B1B1B; box-shadow: 6px 6px 0 #1B1B1B; box-sizing: border-box; overflow: hidden; background: {{wheelBg}}; transform: {{wheelRot}}; transition: {{wheelTrans}}">
+<sc-for list="{{segs}}" as="s" hint-placeholder-count="3">
+<div style="position: absolute; left: 50%; top: 50%; width: 50%; height: 3px; margin-top: -1.5px; background: #1B1B1B; transform-origin: 0 50%; transform: rotate({{s.sep}}deg)"></div>
+<div style="position: absolute; left: 50%; top: 50%; width: 50%; height: 0; transform-origin: 0 0; transform: rotate({{s.rot}}deg)">
+<span style="position: absolute; right: 22px; top: 0; transform: translateY(-50%); max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; font-size: 14px; font-weight: 800; color: {{s.ink}}">{{s.name}}</span>
+</div>
+</sc-for>
+</div>
+<div aria-hidden="true" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; width: 84px; height: 84px; border-radius: 50%; background: #FFCF33; border: 4px solid #1B1B1B; box-sizing: border-box; display: flex; align-items: center; justify-content: center; text-align: center; font-family: Bungee, sans-serif; font-size: 12px; line-height: 1.15">NHÂN<br>PHẨM</div>
+</div>
+<button onClick="{{spin}}" aria-live="polite" style="font-family: Bungee, sans-serif; font-size: 22px; background: {{spinBg}}; color: #1B1B1B; border: 4px solid #1B1B1B; box-shadow: 5px 5px 0 #1B1B1B; padding: 10px 28px; min-height: 56px; min-width: min(320px, 100%); cursor: pointer">{{spinLabel}}</button>
+<sc-if value="{{hasWinner}}" hint-placeholder-val="{{ true }}">
+<div role="status" style="width: 100%; background: #FFF4D6; border: 4px solid #1B1B1B; padding: 14px 16px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; position: relative">
+<span style="position: absolute; top: -16px; left: 14px; background: #C62828; color: #FFFFFF; border: 3px solid #1B1B1B; font-family: Bungee, sans-serif; font-size: 13px; padding: 3px 10px; transform: rotate(-4deg)">TRỜI ĐÃ ĐỊNH</span>
+<div style="margin-right: auto; min-width: 0">
+<div style="font-family: Bungee, sans-serif; font-size: clamp(22px, 2.6vw, 30px); line-height: 1.1">{{winner}}</div>
+<div style="font-size: 14px; color: #3D3D3D; margin-top: 2px">{{verdict}}</div>
+</div>
+<sc-if value="{{hasAct}}" hint-placeholder-val="{{ true }}">
+<button onClick="{{doAct}}" style="font-family: Bungee, sans-serif; font-size: 14px; background: {{actBg}}; color: #FFFFFF; border: 3px solid #1B1B1B; box-shadow: 3px 3px 0 #1B1B1B; padding: 8px 14px; min-height: 44px; cursor: pointer">{{actLabel}}</button>
+</sc-if>
+</div>
+</sc-if>
+</section>
+
+<!-- vùng các ô -->
+<section style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<div style="background: #FFFFFF; border: 3px solid #1B1B1B; box-shadow: 4px 4px 0 #1B1B1B; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div role="group" aria-label="Chọn vòng quay" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{profileChips}}" as="c" hint-placeholder-count="3">
+<button onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: {{c.bg}}; color: {{c.ink}}; border: 2px solid #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">{{c.label}}</button>
+</sc-for>
+<button onClick="{{newProfile}}" style="font-family: Bungee, sans-serif; font-size: 12px; background: #FFCF33; color: #1B1B1B; border: 2px solid #1B1B1B; box-shadow: 2px 2px 0 #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">+ VÒNG MỚI</button>
+</div>
+<label style="display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tên vòng quay</span>
+<input type="text" value="{{title}}" onChange="{{onTitle}}" style="font-family: Bungee, sans-serif; font-size: 18px; background: transparent; color: #1B1B1B; border: 0; border-bottom: 3px solid #1B1B1B; padding: 4px 2px; min-height: 44px; width: 100%; box-sizing: border-box"></label>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 8px; border: 2px solid #1B1B1B; background: #FFF4D6; padding: 4px 6px">
+<span aria-hidden="true" style="flex: 0 0 16px; height: 16px; border-radius: 50%; border: 2px solid #1B1B1B; box-sizing: border-box; background: {{r.dot}}"></span>
+<label style="flex: 1 1 auto; min-width: 0; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tên ô</span>
+<input type="text" value="{{r.name}}" onChange="{{r.onName}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; font-weight: 800; background: transparent; color: #1B1B1B; border: 0; padding: 6px 2px; min-height: 40px; width: 100%; box-sizing: border-box"></label>
+<label style="flex: 0 0 84px; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tỷ lệ {{r.name}}</span>
+<input type="range" min="1" max="100" value="{{r.w}}" onChange="{{r.onW}}" style="width: 84px; min-height: 40px"></label>
+<span style="flex: 0 0 40px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px">{{r.pct}}</span>
+<button onClick="{{r.remove}}" aria-label="Bỏ ô {{r.name}}" style="flex: 0 0 40px; height: 40px; background: #FFFFFF; border: 2px solid #1B1B1B; cursor: pointer; display: flex; align-items: center; justify-content: center">
+<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="#1B1B1B" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+</li>
+</sc-for>
+</ul>
+<div style="display: flex; gap: 6px">
+<label style="flex: 1 1 auto; min-width: 0; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ô mới</span>
+<input type="text" value="{{newName}}" onChange="{{onNewName}}" placeholder="Thêm ô…" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 8px 10px; min-height: 44px; width: 100%; box-sizing: border-box"></label>
+<button onClick="{{add}}" style="font-family: Bungee, sans-serif; font-size: 14px; background: #1B1B1B; color: #FFF4D6; border: 3px solid #1B1B1B; padding: 6px 14px; min-height: 44px; cursor: pointer">THÊM</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<button onClick="{{equalize}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #FFCF33; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">Chia đều</button>
+<sc-if value="{{showByVote}}" hint-placeholder-val="{{ true }}">
+<button onClick="{{byVote}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 800; background: #FFFFFF; color: #1B1B1B; border: 2px solid #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">Theo vote</button>
+</sc-if>
+<sc-for list="{{chips}}" as="k" hint-placeholder-count="2">
+<button onClick="{{k.add}}" style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 13px; font-weight: 700; background: #FFFFFF; color: #1B1B1B; border: 2px dashed #1B1B1B; padding: 4px 10px; min-height: 40px; cursor: pointer">+ {{k.label}}</button>
+</sc-for>
+</div>
+<sc-if value="{{hasLog}}" hint-placeholder-val="{{ true }}">
+<div style="border-top: 3px solid #1B1B1B; padding-top: 8px; display: flex; flex-direction: column; gap: 4px">
+<h3 style="margin: 0; font-family: Bungee, sans-serif; font-weight: 400; font-size: 13px">ĐÃ QUAY</h3>
+<sc-for list="{{log}}" as="g" hint-placeholder-count="2">
+<div style="display: flex; gap: 10px; font-size: 14px"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700; flex: 0 0 52px">{{g.when}}</span><b>{{g.res}}</b></div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</section>
+</div>
+</main>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = {
+pid: 'lunch', angle: 0, spinning: false, winner: '', spins: 0,
+sound: true, acted: false, newName: '',
+profiles: [
+{ id: 'lunch', title: 'Trưa nay ăn gì?', kind: 'shop', act: 'CHỐT QUÁN NÀY',
+items: [{ name: 'Cơm Tấm Cô Ba', w: 30, votes: 3 }, { name: 'Bún Đậu Hàng Khay', w: 20, votes: 2 }, { name: 'Trà Sữa Nhà Mây', w: 10, votes: 1 }],
+log: [{ when: '06/11', res: 'Bánh Mì Cô Hai' }] },
+{ id: 'ship', title: 'Ai đi lấy đồ?', kind: 'person', act: 'GHI NGƯỜI ĐI LẤY',
+items: [{ name: 'Minh', w: 20 }, { name: 'Lan HR', w: 20 }, { name: 'Hoàng', w: 10 }, { name: 'Tuấn', w: 20 }, { name: 'Hương', w: 20 }],
+log: [{ when: '08/11', res: 'Hoàng' }] },
+{ id: 'kara', title: 'Ai hát bài mở màn?', kind: 'free',
+items: [{ name: 'Sếp', w: 20 }, { name: 'Lan HR', w: 20 }, { name: 'Ma mới', w: 20 }],
+log: [] }
+]
+};
+}
+cur() { return this.state.profiles.find((p) => p.id === this.state.pid) || this.state.profiles[0]; }
+updP(fn, extra) {
+const pid = this.state.pid;
+const profiles = this.state.profiles.map((p) => p.id === pid ? fn(Object.assign({}, p)) : p);
+this.setState(Object.assign({ profiles: profiles }, extra || {}));
+}
+upd(fn, extra) { this.updP((p) => { p.items = fn(p.items.slice()); return p; }, Object.assign({ winner: '', spins: 0 }, extra || {})); }
+audio() { try { this.ac = this.ac || new (window.AudioContext || window.webkitAudioContext)(); if (this.ac.state === 'suspended') this.ac.resume(); return this.ac; } catch (e) { return null; } }
+beep(ac, at, f, dur, vol) {
+const o = ac.createOscillator(); const g = ac.createGain();
+o.type = 'square'; o.frequency.value = f;
+g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+o.connect(g); g.connect(ac.destination); o.start(at); o.stop(at + dur + 0.02);
+}
+ticks() { const ac = this.audio(); if (!ac) return; const now = ac.currentTime; const N = 44; for (let k = 1; k < N; k++) this.beep(ac, now + 4.2 * (1 - Math.pow(1 - k / N, 1 / 3)), 1400, 0.02, 0.04); }
+ding() { const ac = this.audio(); if (!ac) return; const n = ac.currentTime; this.beep(ac, n, 660, 0.16, 0.08); this.beep(ac, n + 0.15, 990, 0.3, 0.08); }
+spin() {
+const st = this.state; if (st.spinning) return;
+const p = this.cur(); const items = p.items; if (items.length < 2) return;
+const ws = items.map((i) => Number(i.w) || 0); const total = ws.reduce((s, w) => s + w, 0) || 1;
+const r = Math.random() * total; let idx = items.length - 1; let acc = 0;
+for (let i = 0; i < ws.length; i++) { acc += ws[i]; if (r < acc) { idx = i; break; } }
+let a0 = 0; for (let i = 0; i < idx; i++) a0 += ws[i] / total * 360;
+const mid = a0 + ws[idx] / total * 360 * (0.2 + Math.random() * 0.6);
+const now = ((st.angle % 360) + 360) % 360;
+const target = st.angle + 360 * 6 + (((360 - mid - now) % 360) + 360) % 360;
+const again = st.winner ? st.spins + 1 : 0;
+this.setState({ angle: target, spinning: true, winner: '', spins: again, acted: false });
+if (st.sound) this.ticks();
+clearTimeout(this.timer);
+this.timer = setTimeout(() => {
+const res = items[idx].name;
+this.updP((q) => { q.log = [{ when: 'Nay', res: res }].concat(q.log || []).slice(0, 5); return q; }, { spinning: false, winner: res });
+if (this.state.sound) this.ding();
+}, 4300);
+}
+renderVals() {
+const st = this.state;
+const pal = [['#C62828', '#FFFFFF'], ['#FFCF33', '#1B1B1B'], ['#1F5FD1', '#FFFFFF'], ['#1B7A43', '#FFFFFF'], ['#FFF4D6', '#1B1B1B'], ['#F28C28', '#1B1B1B']];
+const p = this.cur(); const items = p.items;
+const ws = items.map((i) => Number(i.w) || 0); const total = ws.reduce((s, w) => s + w, 0) || 1;
+const colorOf = (i) => (i === items.length - 1 && i > 0 && i % pal.length === 0) ? pal[2] : pal[i % pal.length];
+let acc = 0; const stops = []; const segs = [];
+items.forEach((it, i) => {
+const c = colorOf(i); const a0 = acc / total * 360; acc += ws[i]; const a1 = acc / total * 360;
+stops.push(c[0] + ' ' + a0.toFixed(2) + 'deg ' + a1.toFixed(2) + 'deg');
+segs.push({ name: it.name, ink: c[1], rot: ((a0 + a1) / 2 - 90).toFixed(2), sep: (a0 - 90).toFixed(2) });
+});
+const clamp = (v) => Math.max(1, Math.min(100, Number(v) || 1));
+const pool = p.kind === 'shop' ? ['Phở Bò Phú Gia', 'Mì Cay Seoul'] : (p.kind === 'person' ? ['Thảo'] : []);
+const chips = pool.filter((n) => !items.some((x) => x.name === n)).map((n) => ({ label: n, add: () => this.upd((l) => l.concat([{ name: n, w: 10 }])) }));
+const verdict = st.spins === 0 ? 'Không cãi.' : (st.spins === 1 ? 'Quay lại lần 2. Cả bàn thấy hết.' : 'Lần thứ ' + (st.spins + 1) + '. Có người chụp màn hình rồi.');
+const tooFew = items.length < 2;
+return {
+onSound: () => this.setState({ sound: !st.sound }),
+soundPressed: st.sound ? 'true' : 'false',
+soundLabel: st.sound ? 'Tắt tiếng' : 'Bật tiếng',
+waveOn: st.sound ? 1 : 0, waveOff: st.sound ? 0 : 1,
+profileChips: st.profiles.map((x) => ({
+label: x.title, pressed: x.id === st.pid ? 'true' : 'false',
+bg: x.id === st.pid ? '#1B1B1B' : '#FFFFFF', ink: x.id === st.pid ? '#FFF4D6' : '#1B1B1B',
+pick: () => { if (!this.state.spinning) this.setState({ pid: x.id, winner: '', spins: 0, acted: false }); }
+})),
+newProfile: () => { if (st.spinning) return; const id = 'u' + Date.now(); this.setState({ profiles: st.profiles.concat([{ id: id, title: 'Vòng mới', kind: 'free', items: [], log: [] }]), pid: id, winner: '', spins: 0 }); },
+title: p.title,
+onTitle: (e) => this.updP((q) => { q.title = e.target.value || 'Vòng quay'; return q; }),
+wheelBg: stops.length ? 'conic-gradient(' + stops.join(', ') + ')' : '#FFF4D6',
+wheelRot: 'rotate(' + st.angle + 'deg)',
+wheelTrans: st.spinning ? 'transform 4.2s cubic-bezier(0.12, 0.7, 0.1, 1)' : 'none',
+segs: segs,
+spin: () => this.spin(),
+spinLabel: tooFew ? 'THÊM ÍT NHẤT 2 Ô' : (st.spinning ? 'ĐANG QUAY…' : (st.winner ? 'QUAY LẠI' : 'QUAY NGAY')),
+spinBg: (st.spinning || tooFew) ? '#FFF4D6' : '#FFCF33',
+hasWinner: !!st.winner && !st.spinning,
+winner: st.winner, verdict: verdict,
+hasAct: !!p.act,
+actLabel: st.acted ? 'XONG' : (p.act || ''),
+actBg: st.acted ? '#1B1B1B' : '#1B7A43',
+doAct: () => this.setState({ acted: true }),
+rows: items.map((it, i) => ({
+name: it.name, w: ws[i], pct: Math.round(ws[i] / total * 100) + '%', dot: colorOf(i)[0],
+onName: (e) => this.upd((l) => { l[i] = Object.assign({}, l[i], { name: e.target.value }); return l; }),
+onW: (e) => this.upd((l) => { l[i] = Object.assign({}, l[i], { w: clamp(e.target.value) }); return l; }),
+remove: () => this.upd((l) => { l.splice(i, 1); return l; })
+})),
+equalize: () => this.upd((l) => l.map((x) => Object.assign({}, x, { w: 20 }))),
+showByVote: items.some((x) => x.votes != null),
+byVote: () => this.upd((l) => l.map((x) => Object.assign({}, x, { w: x.votes != null ? Math.max(1, x.votes * 10) : 5 }))),
+chips: chips,
+newName: st.newName,
+onNewName: (e) => this.setState({ newName: e.target.value }),
+add: () => { const n = String(this.state.newName || '').trim(); if (!n) return; this.upd((l) => l.concat([{ name: n, w: 20 }]), { newName: '' }); },
+hasLog: (p.log || []).length > 0,
+log: p.log || []
+};
+}
+}
+</script>
+</body>
+</html>

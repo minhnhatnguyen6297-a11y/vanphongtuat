@@ -1,0 +1,37 @@
+{
+  "name": "hom-nay-an-gi",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/server/index.js",
+    "test": "tsx --test tests/unit/split.test.ts tests/unit/maps.test.ts tests/unit/vietqr.test.ts tests/server/ops.test.ts tests/server/auth.test.ts tests/server/perms-matrix.test.ts tests/server/chat-scope.test.ts tests/server/delete-refs.test.ts tests/server/game-caro.test.ts tests/server/game-ca-ngua.test.ts tests/server/game-ti-phu.test.ts",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
+    "test:concurrent": "tsx --test tests/server/concurrent.test.ts",
+    "test:backup-smoke": "node scripts/backup-restore-smoke.mjs",
+    "e2e": "playwright test",
+    "admin": "tsx src/server/admin-cli.ts",
+    "seed": "tsx src/server/seed.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.1.1",
+    "qrcode-generator": "^1.5.2",
+    "ws": "^8.18.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@fontsource/be-vietnam-pro": "^5.3.0",
+    "@fontsource/bungee": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@playwright/test": "^1.49.1",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "esbuild": "^0.24.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

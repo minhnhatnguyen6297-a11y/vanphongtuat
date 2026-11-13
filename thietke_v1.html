@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hôm Nay Ăn Gì?</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #FFF7ED;
+      --primary: #F97316;
+      --primary-hover: #EA580C;
+      --text-main: #0F172A;
+      --border-color: #E2E8F0;
+      --radius-card: 0.875rem;
+      --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06);
+      --border-width: 1px;
+    }
+
+    body.theme-foodie {
+      --bg-main: #FFFBF7;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #FFF4EC;
+      --primary: #F97316;
+      --primary-hover: #EA580C;
+      --text-main: #0F172A;
+      --border-color: #FED7AA;
+      --radius-card: 0.875rem;
+      --shadow-card: 0 4px 14px rgba(249, 115, 22, 0.07);
+      --border-width: 1px;
+    }
+
+    body.theme-pastel {
+      --bg-main: #F6F8F5;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #FCE7F3;
+      --primary: #EC4899;
+      --primary-hover: #DB2777;
+      --text-main: #1E293B;
+      --border-color: #E2E8F0;
+      --radius-card: 1.15rem;
+      --shadow-card: 0 4px 14px rgba(236, 72, 153, 0.07);
+      --border-width: 1px;
+    }
+
+    body.theme-retro {
+      --bg-main: #FEFCE8;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #FEF08A;
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --text-main: #0F172A;
+      --border-color: #0F172A;
+      --radius-card: 0.65rem;
+      --shadow-card: 3px 3px 0px #0F172A;
+      --border-width: 2px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+    }
+
+    h1, h2, h3, .font-heading {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    }
+
+    .app-card {
+      background-color: var(--bg-card);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 0.65rem;
+      border: var(--border-width) solid transparent;
+      transition: all 0.15s ease;
+    }
+    body.theme-retro .btn-primary {
+      border-color: #0F172A;
+      box-shadow: 2px 2px 0px #0F172A;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .nav-item.active {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+    body.theme-retro .nav-item.active {
+      border: 2px solid #0F172A;
+      box-shadow: 2px 2px 0px #0F172A;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="theme-foodie min-h-screen flex flex-col md:flex-row">
+
+  <!-- ==========================================
+       SIDEBAR BÊN TRÁI (THỨ TỰ DỌC)
+  =========================================== -->
+  <aside class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 shrink-0 flex flex-col justify-between md:min-h-screen md:sticky md:top-0 z-30">
+    <div>
+      <!-- Brand -->
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold" style="background-color: var(--bg-subtle);">
+            🍱
+          </div>
+          <div>
+            <h1 class="text-base font-extrabold leading-tight">Hôm Nay Ăn Gì?</h1>
+            <span class="text-[11px] text-slate-400 font-medium">Nội bộ văn phòng</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertical Navigation -->
+      <nav class="p-3 space-y-1">
+        <button id="nav-vote" onclick="switchTab('vote')" class="nav-item active w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 flex items-center justify-between transition">
+          <span class="flex items-center gap-2.5"><span>🗳️</span> Phiên Vote & Gọi Món</span>
+          <span id="activeSessionsBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-white/20 font-bold">2</span>
+        </button>
+
+        <button id="nav-history" onclick="switchTab('history')" class="nav-item w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 flex items-center justify-between transition">
+          <span class="flex items-center gap-2.5"><span>🕘</span> Lịch Sử Phiên Vote</span>
+          <span id="historyCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">4</span>
+        </button>
+
+        <button id="nav-wheel" onclick="switchTab('wheel')" class="nav-item w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2.5 transition">
+          <span>🎡</span> Vòng Quay
+        </button>
+
+        <button id="nav-shops" onclick="switchTab('shops')" class="nav-item w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2.5 transition">
+          <span>🏪</span> Kho Quán Ăn
+        </button>
+
+        <button id="nav-members" onclick="switchTab('members')" class="nav-item w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2.5 transition">
+          <span>👥</span> Thành Viên
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Sidebar Controls: User + Role + Theme -->
+    <div class="p-3 border-t border-slate-100 space-y-2.5 bg-slate-50/60">
+      <!-- Current User -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div id="headerUserAvatar" class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            M
+          </div>
+          <div class="truncate">
+            <div id="headerUserName" class="text-xs font-bold text-slate-800 truncate">Minh (Bạn)</div>
+            <div id="headerUserMode" class="text-[10px] text-slate-500 truncate">minh.office@gmail.com</div>
+          </div>
+        </div>
+        <button onclick="openLoginModal()" class="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 shrink-0">
+          Đổi
+        </button>
+      </div>
+
+      <!-- Role Switcher -->
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <span class="text-slate-500 font-medium">Quyền:</span>
+        <select id="roleSelect" onchange="changeUserRole(this.value)" class="flex-1 bg-white text-slate-800 font-semibold text-xs rounded-lg px-2 py-1 border border-slate-300 focus:outline-none">
+          <option value="host">👑 Chủ xị</option>
+          <option value="cohost">🛡️ Phó chủ xị</option>
+          <option value="member">🙋 Thành viên / Khách</option>
+        </select>
+      </div>
+
+      <!-- Theme Switcher -->
+      <div class="grid grid-cols-3 gap-1 pt-1">
+        <button id="themeBtnFoodie" onclick="setTheme('foodie')" class="px-2 py-1 rounded-md text-[11px] font-bold bg-orange-500 text-white">
+          Foodie
+        </button>
+        <button id="themeBtnPastel" onclick="setTheme('pastel')" class="px-2 py-1 rounded-md text-[11px] font-semibold bg-white border border-slate-200 text-slate-600">
+          Pastel
+        </button>
+        <button id="themeBtnRetro" onclick="setTheme('retro')" class="px-2 py-1 rounded-md text-[11px] font-semibold bg-white border border-slate-200 text-slate-600">
+          Retro
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==========================================
+       MAIN CONTENT AREA
+  =========================================== -->
+  <main class="flex-1 p-4 sm:p-6 max-w-6xl w-full mx-auto space-y-4">
+
+    <!-- ==========================================
+         1. MÀN HÌNH PHIÊN VOTE, GỌI MÓN & CHIA TIỀN
+    =========================================== -->
+    <section id="screen-vote" class="space-y-4">
+
+      <!-- Thanh Quản Lý Các Phiên Đang Mở + Nút Tạo Phiên Mới -->
+      <div class="app-card p-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1.5" id="sessionSwitcherBar">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="openNewSessionModal()" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center gap-1">
+            <span>＋</span> Tạo Phiên Vote
+          </button>
+        </div>
+      </div>
+
+      <!-- Header Của Phiên Hiện Tại + Sub-Tab (1. Vote & Gọi Món | 2. Chia Tiền Đơn Này) -->
+      <div class="app-card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span id="currentSessionStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+              Đang mở
+            </span>
+            <h2 id="currentSessionTitle" class="text-base sm:text-lg font-extrabold text-slate-900">
+              Trưa 09/11 • Ăn Trưa Văn Phòng
+            </h2>
+            <span id="currentSessionTime" class="text-xs text-slate-400 font-medium">Chốt 11:15</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Sub-view Switcher inside this Session Record -->
+            <div class="inline-flex rounded-xl bg-slate-100 p-1">
+              <button id="subTabOrderBtn" onclick="switchSessionSubView('order')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition">
+                🗳️ Vote & Gọi Món
+              </button>
+              <button id="subTabBillBtn" onclick="switchSessionSubView('bill')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+                🧾 Chia Tiền (<span id="sessionBillCountText">5</span>)
+              </button>
+            </div>
+
+            <button id="toggleSessionLockBtn" onclick="toggleCurrentSessionStatus()" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 bg-white hover:bg-slate-50">
+              Chốt phiên
+            </button>
+          </div>
+        </div>
+
+        <!-- SUB-VIEW 1A: VOTE QUÁN + XEM MENU + CHAT GỌI MÓN -->
+        <div id="sessionSubViewOrder" class="pt-4 space-y-4">
+          <!-- Danh sách quán trong phiên Vote này -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Danh sách quán trong phiên</span>
+              <button onclick="switchTab('wheel')" class="text-xs font-bold text-orange-600 hover:underline">
+                🎡 Quay chọn quán
+              </button>
+            </div>
+            <div id="voteShopsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Khu vực Menu (Trái) & Chat Gọi Món (Phải) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2 border-t border-slate-100">
+            <!-- Menu của quán đang chọn -->
+            <div class="lg:col-span-7 flex flex-col justify-between bg-slate-50/70 rounded-xl p-3.5 border border-slate-200/80">
+              <div>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500">Menu:</span>
+                    <select id="menuShopSelector" onchange="selectShopForMenu(this.value)" class="text-xs sm:text-sm font-bold rounded-lg border border-slate-300 px-2.5 py-1 bg-white">
+                      <!-- Populated by JS -->
+                    </select>
+                  </div>
+                  <button onclick="openZoomMenuModal()" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-100">
+                    🔍 Phóng to
+                  </button>
+                </div>
+
+                <div id="activeShopQuickInfo" class="mb-2.5 px-3 py-2 rounded-lg bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <!-- Populated by JS -->
+                </div>
+
+                <div class="rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center">
+                  <canvas id="menuPreviewCanvas" width="620" height="380" class="w-full h-auto max-h-[340px] object-contain cursor-pointer" onclick="openZoomMenuModal()"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Gọi Món của phiên này -->
+            <div class="lg:col-span-5 flex flex-col justify-between bg-slate-50/70 rounded-xl p-3.5 border border-slate-200/80">
+              <div>
+                <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-extrabold">Gọi Món</h3>
+                    <span id="orderCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-bold">5 suất</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="switchSessionSubView('bill')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">
+                      🧾 Chia tiền
+                    </button>
+                    <button onclick="openExportTextModal()" class="btn-primary px-2.5 py-1.5 text-xs font-bold">
+                      📋 Xuất Text
+                    </button>
+                  </div>
+                </div>
+
+                <div id="orderChatList" class="space-y-2 my-3 max-h-[270px] min-h-[210px] overflow-y-auto pr-1">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <div>
+                <div class="flex flex-wrap items-center gap-1 mb-2">
+                  <button onclick="appendQuickNote('không hành')" class="text-[11px] px-2 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-100">+ không hành</button>
+                  <button onclick="appendQuickNote('ít cơm')" class="text-[11px] px-2 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-100">+ ít cơm</button>
+                  <button onclick="appendQuickNote('50% đường ít đá')" class="text-[11px] px-2 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-100">+ 50% đường</button>
+                  <button onclick="appendQuickNote('thêm ốp la')" class="text-[11px] px-2 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-100">+ ốp la</button>
+                </div>
+
+                <div class="flex gap-1.5">
+                  <input id="chatOrderInput" type="text" placeholder="Nhập món + ghi chú..."
+                    onkeydown="if(event.key==='Enter') sendOrderChat()"
+                    class="flex-1 text-xs sm:text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:border-orange-500" />
+                  <input id="chatOrderPriceInput" type="number" step="1000" placeholder="Giá (đ)" value="50000"
+                    class="w-24 text-xs sm:text-sm rounded-lg border border-slate-300 px-2 py-2 bg-white text-right" />
+                  <button onclick="sendOrderChat()" class="btn-primary px-3.5 py-2 text-xs font-bold shrink-0">
+                    Gửi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-VIEW 1B: CHIA TIỀN & BILL (GẮN TRỰC TIẾP VỚI LƯỢT GỌI MÓN NÀY) -->
+        <div id="sessionSubViewBill" class="hidden pt-4">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <!-- Cột trái: Chụp Bill / Quét QR & Tổng kết Bill của Phiên -->
+            <div class="lg:col-span-4 bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3.5">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-extrabold">Hóa Đơn Phiên Này</h3>
+                <label class="cursor-pointer btn-primary px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1">
+                  <span>📷</span> Chụp Bill / Quét QR
+                  <input type="file" accept="image/*" class="hidden" onchange="simulateAiBillScanFromFile()" />
+                </label>
+              </div>
+
+              <div class="flex gap-1.5">
+                <button onclick="simulateAiBillScan('auto')" class="flex-1 py-2 px-2.5 rounded-lg text-xs font-bold bg-white border border-slate-300 hover:bg-slate-100">
+                  🤖 AI khớp giá từ Bill
+                </button>
+                <button onclick="equalizeSessionOrderPrices()" class="py-2 px-2.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100">
+                  Chia đều
+                </button>
+              </div>
+
+              <div class="space-y-2 text-xs pt-2 border-t border-slate-200">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-600 font-medium">Tiền món (<span id="billItemCount">5</span> suất):</span>
+                  <span id="billSubtotalText" class="font-bold text-slate-900">280.000đ</span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-slate-600 font-medium">Phí ship (đ):</span>
+                  <input id="billShipInput" type="number" step="1000" value="15000" oninput="updateCurrentSessionBill()"
+                    class="w-28 text-right font-bold rounded-lg border border-slate-300 px-2 py-1 bg-white" />
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-emerald-700 font-medium">Giảm giá (đ):</span>
+                  <input id="billDiscountInput" type="number" step="1000" value="30000" oninput="updateCurrentSessionBill()"
+                    class="w-28 text-right font-bold text-emerald-700 rounded-lg border border-emerald-300 px-2 py-1 bg-white" />
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-200 text-sm">
+                  <span class="font-extrabold">Tổng thanh toán:</span>
+                  <span id="billFinalTotalText" class="font-extrabold text-orange-600">265.000đ</span>
+                </div>
+              </div>
+
+              <!-- QR Nhận tiền của chủ đơn -->
+              <div class="p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
+                <canvas id="qrMockCanvas" width="68" height="68" class="rounded border border-slate-200 p-1 shrink-0"></canvas>
+                <div class="space-y-1 flex-1 text-xs">
+                  <div class="font-bold text-slate-800">QR Nhận Tiền Đơn Này</div>
+                  <input id="hostBankName" type="text" value="Techcombank - 1903888999"
+                    class="w-full rounded border border-slate-200 px-2 py-1 text-xs font-semibold" />
+                  <div id="paidProgressText" class="text-[11px] font-bold text-emerald-700">Đã thu: 2 / 5 suất</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cột phải: Bảng Chia Tiền Theo Đúng Lượt Gọi Món Của Phiên -->
+            <div class="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                  <h3 class="text-sm font-extrabold">Chi Tiết Chia Tiền Theo Món Đã Đặt</h3>
+                  <button onclick="copySplitSummaryText()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white hover:bg-slate-800">
+                    📋 Copy bảng chia tiền
+                  </button>
+                </div>
+
+                <div class="overflow-x-auto mt-2">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="border-b border-slate-200 text-slate-400">
+                        <th class="py-2 pr-2">Người đặt</th>
+                        <th class="py-2 px-2">Món</th>
+                        <th class="py-2 px-2 text-right">Giá món</th>
+                        <th class="py-2 px-2 text-right">Thực trả</th>
+                        <th class="py-2 pl-2 text-center">Thanh toán</th>
+                      </tr>
+                    </thead>
+                    <tbody id="splitResultTableBody" class="divide-y divide-slate-100">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         2. MÀN HÌNH LỊCH SỬ PHIÊN VOTE
+    =========================================== -->
+    <section id="screen-history" class="hidden space-y-4">
+      <div class="app-card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+          <h2 class="text-base sm:text-lg font-extrabold">🕘 Lịch Sử Các Phiên Vote & Đặt Món</h2>
+          <div class="flex items-center gap-1.5">
+            <button id="histFilterAll" onclick="setHistoryFilter('all')" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-900 text-white">Tất cả</button>
+            <button id="histFilterOpen" onclick="setHistoryFilter('open')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600">Đang mở</button>
+            <button id="histFilterClosed" onclick="setHistoryFilter('closed')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600">Đã chốt</button>
+          </div>
+        </div>
+
+        <div id="historySessionsList" class="divide-y divide-slate-100 mt-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         3. MÀN HÌNH VÒNG QUAY NHÂN PHẨM
+    =========================================== -->
+    <section id="screen-wheel" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Bàn Xoay -->
+        <div class="lg:col-span-7 app-card p-4 flex flex-col items-center justify-between">
+          <div class="w-full flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div id="wheelProfilesList" class="flex flex-wrap gap-1.5">
+              <!-- Populated by JS -->
+            </div>
+            <button id="soundToggleBtn" onclick="toggleWheelSound()" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200">
+              🔊 Bật tiếng
+            </button>
+          </div>
+
+          <div class="relative flex items-center justify-center my-4">
+            <div class="absolute -top-3 z-20 text-3xl select-none">🔻</div>
+            <canvas id="wheelCanvas" width="340" height="340" class="max-w-full h-auto rounded-full"></canvas>
+          </div>
+
+          <div class="w-full max-w-sm space-y-2.5">
+            <button id="spinWheelBtn" onclick="spinWheel()" class="btn-primary w-full py-3 text-sm font-extrabold tracking-wide shadow">
+              🎲 QUAY NGAY
+            </button>
+            <div id="wheelResultBanner" class="hidden p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+              <span id="wheelWinnerText" class="text-sm font-extrabold text-emerald-900"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng Chỉnh Tỷ Lệ % & Lưu Profile -->
+        <div class="lg:col-span-5 app-card p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 class="text-sm font-extrabold">Tùy Chỉnh Ô & Tỷ Lệ %</h3>
+              <span id="wheelPermissionBadge" class="text-[11px] px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">
+                Chủ xị / Phó
+              </span>
+            </div>
+
+            <div id="wheelLockedNotice" class="hidden my-2.5 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+              <span>Chỉ Chủ xị / Phó mới chỉnh được %</span>
+              <button onclick="changeUserRole('host')" class="px-2 py-1 rounded bg-amber-200 font-bold text-amber-950">Mở quyền</button>
+            </div>
+
+            <div id="wheelItemsEditor" class="space-y-2 my-3 max-h-[280px] overflow-y-auto pr-1">
+              <!-- Populated by JS -->
+            </div>
+
+            <div id="wheelAddControls" class="space-y-2 pt-2 border-t border-slate-100">
+              <div class="flex gap-1.5">
+                <input id="newWheelItemName" type="text" placeholder="Tên lựa chọn..."
+                  class="flex-1 text-xs rounded-lg border border-slate-300 px-2.5 py-2" />
+                <input id="newWheelItemWeight" type="number" min="1" max="100" value="20"
+                  class="w-16 text-xs rounded-lg border border-slate-300 px-2 py-2 text-center" />
+                <button onclick="addWheelItem()" class="btn-primary px-3 py-2 text-xs font-bold">＋ Thêm</button>
+              </div>
+              <button onclick="equalizeWheelWeights()" class="w-full py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700">
+                ⚖️ Chia đều %
+              </button>
+            </div>
+          </div>
+
+          <div id="wheelSaveProfileBox" class="pt-3 mt-3 border-t border-slate-100 flex gap-1.5">
+            <input id="newProfileNameInput" type="text" placeholder="Tên Profile vòng quay mới..."
+              class="flex-1 text-xs rounded-lg border border-slate-300 px-2.5 py-2" />
+            <button onclick="saveNewWheelProfile()" class="px-3 py-2 rounded-lg text-xs font-bold bg-slate-900 text-white">
+              Lưu Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         4. MÀN HÌNH KHO QUÁN ĂN (IMPORT GOOGLE MAPS + MENU ĐƠN GIẢN)
+    =========================================== -->
+    <section id="screen-shops" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Danh sách quán -->
+        <div class="lg:col-span-7 app-card p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <h2 class="text-base font-extrabold">Kho Quán Ăn</h2>
+            <input id="searchShopInput" oninput="renderDirectoryShops()" type="text" placeholder="🔍 Tìm quán, SĐT..."
+              class="text-xs rounded-lg border border-slate-300 px-3 py-1.5 w-48" />
+          </div>
+
+          <div id="directoryShopsList" class="space-y-2.5 mt-3">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Form Thêm Quán + Tự Export Từ Link Google Maps -->
+        <div class="lg:col-span-5 app-card p-4 space-y-3">
+          <h3 class="text-sm font-extrabold pb-2 border-b border-slate-100">Thêm Profile Quán Mới</h3>
+
+          <!-- Import từ Google Maps Link -->
+          <div class="p-3 rounded-xl bg-blue-50/60 border border-blue-200 space-y-2">
+            <label class="block text-xs font-bold text-blue-900">📍 Tạo nhanh từ Link Google Maps</label>
+            <div class="flex gap-1.5">
+              <input id="gmapUrlInput" type="text" placeholder="Dán link Google Maps (VD: https://maps.app.goo.gl/...)"
+                class="flex-1 text-xs rounded-lg border border-blue-300 px-2.5 py-1.5 bg-white" />
+              <button type="button" onclick="importShopFromGoogleMaps()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shrink-0">
+                Export Profile
+              </button>
+            </div>
+          </div>
+
+          <!-- Thông tin Profile Quán -->
+          <div class="space-y-2.5 text-xs">
+            <div>
+              <label class="font-bold text-slate-700 block mb-1">Tên quán *</label>
+              <input id="shopFormName" type="text" placeholder="Tên quán..."
+                class="w-full rounded-lg border border-slate-300 px-2.5 py-2" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Số điện thoại *</label>
+                <input id="shopFormPhone" type="text" placeholder="0909..."
+                  class="w-full rounded-lg border border-slate-300 px-2.5 py-2" />
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Phân loại</label>
+                <select id="shopFormCategory" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 bg-white">
+                  <option value="Cơm trưa">🍱 Cơm trưa</option>
+                  <option value="Bún / Phở / Mì">🍜 Bún / Phở / Mì</option>
+                  <option value="Trà sữa / Cà phê">🧋 Trà sữa / Cà phê</option>
+                  <option value="Ăn vặt">🍕 Ăn vặt</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="font-bold text-slate-700 block mb-1">Địa chỉ</label>
+              <input id="shopFormAddress" type="text" placeholder="Địa chỉ quán..."
+                class="w-full rounded-lg border border-slate-300 px-2.5 py-2" />
+            </div>
+
+            <div>
+              <label class="font-bold text-slate-700 block mb-1">Ghi chú lưu kèm</label>
+              <input id="shopFormNote" type="text" placeholder="Freeship, STK quán, giờ mở cửa..."
+                class="w-full rounded-lg border border-slate-300 px-2.5 py-2" />
+            </div>
+
+            <!-- Đính kèm ảnh Menu đơn giản (Đã bỏ cắt/chỉnh ảnh) -->
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+              <div>
+                <span class="font-bold text-slate-700 block">Ảnh Menu đính kèm</span>
+                <span id="uploadedMenuFileName" class="text-[11px] text-slate-400">Chưa chọn tệp</span>
+              </div>
+              <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-bold hover:bg-slate-100 shrink-0">
+                📎 Đính kèm ảnh
+                <input type="file" accept="image/*" class="hidden" onchange="handleSimpleMenuUpload(event)" />
+              </label>
+            </div>
+
+            <button onclick="saveNewShop()" class="btn-primary w-full py-2.5 font-extrabold text-xs sm:text-sm">
+              Lưu Profile Quán
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         5. MÀN HÌNH THÀNH VIÊN
+    =========================================== -->
+    <section id="screen-members" class="hidden">
+      <div class="app-card p-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h2 class="text-base font-extrabold">Thành Viên Văn Phòng</h2>
+          <button onclick="openLoginModal()" class="btn-primary px-3 py-1.5 text-xs font-bold">
+            ＋ Thêm người / Chế độ Khách
+          </button>
+        </div>
+
+        <div id="membersListContainer" class="divide-y divide-slate-100 mt-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       MODAL TẠO PHIÊN VOTE MỚI
+  =========================================== -->
+  <div id="newSessionModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="app-card max-w-md w-full p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-extrabold">Tạo Phiên Vote Mới</h3>
+        <button onclick="closeNewSessionModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Tên phiên vote *</label>
+          <input id="newSessionTitleInput" type="text" placeholder="VD: Tối 09/11 • Ăn Tăng Ca"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Giờ chốt</label>
+          <input id="newSessionDeadlineInput" type="text" value="Chốt 16:30"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeNewSessionModal()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100">Hủy</button>
+        <button onclick="createNewSession()" class="btn-primary px-4 py-1.5 text-xs font-bold">Tạo phiên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL XUẤT TEXT GỬI ZALO / MESSENGER
+  =========================================== -->
+  <div id="exportTextModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="app-card max-w-lg w-full p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-extrabold">Xuất Text Đặt Đơn</h3>
+        <button onclick="closeExportTextModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="flex items-center gap-1.5 text-xs">
+        <button id="fmtDetailedBtn" onclick="setExportFormat('detailed')" class="px-2.5 py-1 rounded-lg bg-orange-500 text-white font-bold">
+          Gửi chủ quán
+        </button>
+        <button id="fmtWithNameBtn" onclick="setExportFormat('with_names')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold">
+          Kèm tên người đặt
+        </button>
+      </div>
+
+      <textarea id="exportedOrderTextarea" rows="8" readonly
+        class="w-full rounded-xl border border-slate-300 p-3 text-xs font-mono bg-slate-50 focus:outline-none"></textarea>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closeExportTextModal()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100">Đóng</button>
+        <button onclick="copyExportedOrderText()" class="btn-primary px-4 py-1.5 text-xs font-bold">📋 Copy Text</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL ĐĂNG NHẬP GMAIL / KHÁCH
+  =========================================== -->
+  <div id="loginModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="app-card max-w-sm w-full p-4 space-y-3.5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-extrabold">Đổi Tài Khoản / Chế Độ Khách</h3>
+        <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-2">
+        <input id="gmailInput" type="email" placeholder="Nhập Gmail..." value="lan.nguyen@gmail.com"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs" />
+        <button onclick="loginWithGmail()" class="w-full py-2 rounded-lg bg-slate-900 text-white font-bold text-xs">
+          Đăng nhập bằng Gmail
+        </button>
+      </div>
+
+      <div class="border-t border-slate-100 pt-3 space-y-2">
+        <input id="guestNameInput" type="text" placeholder="Tên hiển thị (Chế độ Khách)..."
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs" />
+        <button onclick="loginAsGuest()" class="btn-primary w-full py-2 font-bold text-xs">
+          Vào chế độ Khách
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL PHÓNG TO MENU
+  =========================================== -->
+  <div id="zoomMenuModal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeZoomMenuModal()">
+    <div class="bg-white rounded-2xl max-w-3xl w-full p-4 space-y-2.5" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between">
+        <h3 id="zoomModalTitle" class="text-sm font-extrabold">Menu</h3>
+        <button onclick="closeZoomMenuModal()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-bold">✕</button>
+      </div>
+      <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex justify-center">
+        <canvas id="zoomMenuCanvas" width="740" height="460" class="max-w-full h-auto"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastBox" class="fixed bottom-4 right-4 z-50 hidden px-3.5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-lg">
+    <span id="toastText"></span>
+  </div>
+
+  <script>
+    // ====================================================
+    // DỮ LIỆU KHO QUÁN & ĐA PHIÊN VOTE (SESSIONS)
+    // ====================================================
+    let currentUser = {
+      name: 'Minh (Bạn)',
+      email: 'minh.office@gmail.com',
+      mode: 'Gmail',
+      role: 'host'
+    };
+
+    let shops = [
+      {
+        id: 'shop1',
+        name: 'Cơm Tấm Sườn Cây Cô Ba',
+        category: 'Cơm trưa',
+        phone: '0909 382 114',
+        address: '128 Nguyễn Thị Minh Khai, Q.3',
+        note: 'Freeship từ 5 hộp • Nước mắm kẹo',
+        menuItems: [
+          { name: 'Cơm Sườn Nướng Mật Ong', price: '45.000đ' },
+          { name: 'Cơm Sườn Bì Chả Đặc Biệt', price: '55.000đ' },
+          { name: 'Cơm Ba Rọi Quay Giòn Bì', price: '50.000đ' },
+          { name: 'Cơm Đùi Gà Rô Ti + Ốp La', price: '50.000đ' },
+          { name: 'Canh Khổ Qua / Trứng Ốp La', price: '10.000đ' }
+        ]
+      },
+      {
+        id: 'shop2',
+        name: 'Bún Đậu Mắm Tôm Hàng Khay',
+        category: 'Bún / Phở / Mì',
+        phone: '0988 712 900',
+        address: '42 Lê Văn Sỹ, Q.3',
+        note: 'Có nước mắm thường • Đặt trước 10h45',
+        menuItems: [
+          { name: 'Mẹt Bún Đậu Thịt Luộc', price: '42.000đ' },
+          { name: 'Mẹt Bún Đậu Tá Lả Đặc Biệt', price: '58.000đ' },
+          { name: 'Chả Cốm Hà Nội thêm', price: '20.000đ' },
+          { name: 'Nước Mơ / Nước Sấu Đá', price: '15.000đ' }
+        ]
+      },
+      {
+        id: 'shop3',
+        name: 'Trà Sữa & Ăn Vặt Nhà Mây',
+        category: 'Trà sữa / Cà phê',
+        phone: '0933 505 888',
+        address: '89 Pasteur, Q.1',
+        note: 'Mã VP20 giảm 30k',
+        menuItems: [
+          { name: 'Trà Sữa Ô Long Trân Châu Hoàng Kim', price: '38.000đ' },
+          { name: 'Trà Đào Cam Sả Size L', price: '35.000đ' },
+          { name: 'Matcha Latte Kem Cheese', price: '42.000đ' },
+          { name: 'Bánh Tráng Trộn Bò Khô', price: '28.000đ' }
+        ]
+      }
+    ];
+
+    // Mỗi Phiên Vote là 1 Record độc lập (gồm Vote + Gọi Món + Hóa Đơn Chia Tiền riêng)
+    let sessions = [
+      {
+        id: 'ses_lunch_0911',
+        title: 'Trưa 09/11 • Ăn Trưa Văn Phòng',
+        deadline: 'Chốt 11:15',
+        status: 'open', // 'open' | 'closed'
+        activeShopId: 'shop1',
+        votesByShop: {
+          shop1: ['Minh (Bạn)', 'Lan HR', 'Tuấn Dev'],
+          shop2: ['Hương Kế Toán', 'Hoàng Design'],
+          shop3: ['Thảo Marketing']
+        },
+        orders: [
+          { id: 101, user: 'Minh (Bạn)', text: '1 Cơm sườn bì chả đặc biệt (thêm ốp la)', price: 65000, paid: true },
+          { id: 102, user: 'Lan HR', text: '1 Cơm sườn nướng mật ong (ít cơm)', price: 45000, paid: true },
+          { id: 103, user: 'Tuấn Dev', text: '1 Cơm ba rọi quay + 1 Trà tắc', price: 65000, paid: false },
+          { id: 104, user: 'Hương Kế Toán', text: '1 Cơm đùi gà rô ti (không hành)', price: 50000, paid: false },
+          { id: 105, user: 'Hoàng Design', text: '1 Cơm sườn nướng + 1 Canh khổ qua', price: 55000, paid: false }
+        ],
+        bill: { ship: 15000, discount: 30000 }
+      },
+      {
+        id: 'ses_tea_0911',
+        title: 'Chiều 09/11 • Trà Chiều Tầng 5',
+        deadline: 'Chốt 15:00',
+        status: 'open',
+        activeShopId: 'shop3',
+        votesByShop: {
+          shop1: [],
+          shop2: ['Tuấn Dev'],
+          shop3: ['Minh (Bạn)', 'Lan HR', 'Thảo Marketing', 'Hương Kế Toán']
+        },
+        orders: [
+          { id: 201, user: 'Lan HR', text: '1 Trà đào cam sả size L (ít đá)', price: 35000, paid: true },
+          { id: 202, user: 'Thảo Marketing', text: '1 Matcha Latte kem cheese (50% đường)', price: 42000, paid: false },
+          { id: 203, user: 'Minh (Bạn)', text: '1 Trà sữa Ô Long trân châu hoàng kim', price: 38000, paid: true }
+        ],
+        bill: { ship: 12000, discount: 25000 }
+      },
+      {
+        id: 'ses_lunch_0811',
+        title: 'Trưa 08/11 • Bún Đậu Cuối Tuần',
+        deadline: '08/11/2026',
+        status: 'closed',
+        activeShopId: 'shop2',
+        votesByShop: {
+          shop1: ['Tuấn Dev'],
+          shop2: ['Minh (Bạn)', 'Lan HR', 'Hương Kế Toán', 'Hoàng Design'],
+          shop3: []
+        },
+        orders: [
+          { id: 301, user: 'Minh (Bạn)', text: '1 Mẹt bún đậu tá lả + 1 Nước mơ', price: 73000, paid: true },
+          { id: 302, user: 'Lan HR', text: '1 Mẹt bún đậu thịt luộc (nước mắm)', price: 42000, paid: true },
+          { id: 303, user: 'Hương Kế Toán', text: '1 Mẹt bún đậu tá lả', price: 58000, paid: true },
+          { id: 304, user: 'Hoàng Design', text: '1 Mẹt bún đậu tá lả + Chả cốm thêm', price: 78000, paid: true }
+        ],
+        bill: { ship: 10000, discount: 20000 }
+      },
+      {
+        id: 'ses_tea_0711',
+        title: 'Chiều 07/11 • Liên Hoan Trà Sữa',
+        deadline: '07/11/2026',
+        status: 'closed',
+        activeShopId: 'shop3',
+        votesByShop: {
+          shop1: [],
+          shop2: [],
+          shop3: ['Minh (Bạn)', 'Lan HR', 'Tuấn Dev', 'Hoàng Design']
+        },
+        orders: [
+          { id: 401, user: 'Tuấn Dev', text: '1 Trà sữa Ô Long + 1 Bánh tráng trộn', price: 66000, paid: true },
+          { id: 402, user: 'Hoàng Design', text: '1 Trà đào cam sả', price: 35000, paid: true },
+          { id: 403, user: 'Lan HR', text: '1 Matcha Latte kem cheese', price: 42000, paid: false }
+        ],
+        bill: { ship: 15000, discount: 30000 }
+      }
+    ];
+
+    let currentSessionId = 'ses_lunch_0911';
+    let currentSessionSubView = 'order'; // 'order' | 'bill'
+    let historyFilter = 'all';
+    let exportFormatMode = 'detailed';
+
+    // Vòng quay Profiles
+    let wheelProfiles = [
+      {
+        id: 'wp1',
+        title: 'Trưa Nay Ăn Gì?',
+        items: [
+          { name: 'Cơm Tấm Cô Ba', weight: 35, color: '#F97316' },
+          { name: 'Bún Đậu Hàng Khay', weight: 25, color: '#10B981' },
+          { name: 'Phở Bò Phú Gia', weight: 20, color: '#3B82F6' },
+          { name: 'Mì Cay Hàn Quốc', weight: 12, color: '#EC4899' },
+          { name: 'Gà Rán + Pizza', weight: 8, color: '#8B5CF6' }
+        ]
+      },
+      {
+        id: 'wp2',
+        title: 'Trà Chiều Uống Gì?',
+        items: [
+          { name: 'Trà Sữa Nhà Mây', weight: 40, color: '#EC4899' },
+          { name: 'Cà Phê Muối', weight: 30, color: '#F59E0B' },
+          { name: 'Nước Ép / Sinh Tố', weight: 20, color: '#10B981' },
+          { name: 'Tàu Hũ Đá', weight: 10, color: '#6366F1' }
+        ]
+      },
+      {
+        id: 'wp3',
+        title: 'Ai Đi Lấy Đồ Ship?',
+        items: [
+          { name: 'Tuấn Dev', weight: 25, color: '#3B82F6' },
+          { name: 'Hoàng Design', weight: 25, color: '#F97316' },
+          { name: 'Minh', weight: 25, color: '#10B981' },
+          { name: 'Hùng Thực Tập', weight: 25, color: '#8B5CF6' }
+        ]
+      }
+    ];
+
+    let activeWheelProfileId = 'wp1';
+    let currentWheelAngle = 0;
+    let isWheelSpinning = false;
+    let wheelSoundEnabled = true;
+
+    let members = [
+      { name: 'Minh (Bạn)', email: 'minh.office@gmail.com', mode: 'Gmail', role: 'host' },
+      { name: 'Lan HR', email: 'lan.hr@gmail.com', mode: 'Gmail', role: 'cohost' },
+      { name: 'Tuấn Dev', email: 'tuan.dev@gmail.com', mode: 'Gmail', role: 'member' },
+      { name: 'Hương Kế Toán', email: 'Chế độ Khách', mode: 'Khách', role: 'member' },
+      { name: 'Hoàng Design', email: 'Chế độ Khách', mode: 'Khách', role: 'member' }
+    ];
+
+    function getCurrentSession() {
+      return sessions.find(s => s.id === currentSessionId) || sessions[0];
+    }
+
+    // ====================================================
+    // CHUYỂN ĐỔI THEME & SIDEBAR TABS
+    // ====================================================
+    function setTheme(themeName) {
+      document.body.classList.remove('theme-foodie', 'theme-pastel', 'theme-retro');
+      document.body.classList.add('theme-' + themeName);
+
+      const btnFoodie = document.getElementById('themeBtnFoodie');
+      const btnPastel = document.getElementById('themeBtnPastel');
+      const btnRetro = document.getElementById('themeBtnRetro');
+
+      [btnFoodie, btnPastel, btnRetro].forEach(b => {
+        b.className = 'px-2 py-1 rounded-md text-[11px] font-semibold bg-white border border-slate-200 text-slate-600';
+      });
+
+      if (themeName === 'foodie') {
+        btnFoodie.className = 'px-2 py-1 rounded-md text-[11px] font-bold bg-orange-500 text-white';
+      } else if (themeName === 'pastel') {
+        btnPastel.className = 'px-2 py-1 rounded-md text-[11px] font-bold bg-pink-500 text-white';
+      } else {
+        btnRetro.className = 'px-2 py-1 rounded-md text-[11px] font-bold bg-indigo-600 text-white';
+      }
+      drawWheel();
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['vote', 'history', 'wheel', 'shops', 'members'];
+      tabs.forEach(t => {
+        document.getElementById('screen-' + t).classList.toggle('hidden', t !== tabId);
+        document.getElementById('nav-' + t).classList.toggle('active', t === tabId);
+      });
+
+      if (tabId === 'vote') {
+        renderSessionWorkspace();
+      } else if (tabId === 'history') {
+        renderHistoryList();
+      } else if (tabId === 'wheel') {
+        drawWheel();
+      } else if (tabId === 'shops') {
+        renderDirectoryShops();
+      }
+    }
+
+    function changeUserRole(newRole) {
+      currentUser.role = newRole;
+      document.getElementById('roleSelect').value = newRole;
+      renderWheelEditor();
+      renderMembersList();
+      showToast('Đã đổi quyền xem: ' + (newRole === 'host' ? 'Chủ xị' : newRole === 'cohost' ? 'Phó chủ xị' : 'Thành viên'));
+    }
+
+    // ====================================================
+    // QUẢN LÝ ĐA PHIÊN VOTE & SUB-VIEW (GỌI MÓN / CHIA TIỀN)
+    // ====================================================
+    function renderSessionSwitcherBar() {
+      const bar = document.getElementById('sessionSwitcherBar');
+      const openCount = sessions.filter(s => s.status === 'open').length;
+      document.getElementById('activeSessionsBadge').textContent = openCount;
+      document.getElementById('historyCountBadge').textContent = sessions.length;
+
+      // Hiển thị các phiên đang mở + phiên đang được chọn (nếu là phiên lịch sử)
+      const visibleSessions = sessions.filter(s => s.status === 'open' || s.id === currentSessionId);
+
+      bar.innerHTML = visibleSessions.map(ses => {
+        const active = ses.id === currentSessionId;
+        const dot = ses.status === 'open'
+          ? '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>'
+          : '<span class="w-2 h-2 rounded-full bg-slate-400"></span>';
+        return `
+          <button onclick="selectSession('${ses.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${active ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+            ${dot}
+            <span>${ses.title}</span>
+            <span class="text-[10px] opacity-75">(${ses.orders.length})</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectSession(sessionId, subView = 'order') {
+      currentSessionId = sessionId;
+      currentSessionSubView = subView;
+      switchTab('vote');
+      switchSessionSubView(subView);
+    }
+
+    function switchSessionSubView(viewName) {
+      currentSessionSubView = viewName;
+      const orderView = document.getElementById('sessionSubViewOrder');
+      const billView = document.getElementById('sessionSubViewBill');
+      const btnOrder = document.getElementById('subTabOrderBtn');
+      const btnBill = document.getElementById('subTabBillBtn');
+
+      if (viewName === 'order') {
+        orderView.classList.remove('hidden');
+        billView.classList.add('hidden');
+        btnOrder.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition';
+        btnBill.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+      } else {
+        orderView.classList.add('hidden');
+        billView.classList.remove('hidden');
+        btnBill.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition';
+        btnOrder.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        renderCurrentSessionBill();
+        drawMockQr();
+      }
+    }
+
+    function renderSessionWorkspace() {
+      const ses = getCurrentSession();
+      renderSessionSwitcherBar();
+
+      document.getElementById('currentSessionTitle').textContent = ses.title;
+      document.getElementById('currentSessionTime').textContent = ses.deadline;
+      document.getElementById('sessionBillCountText').textContent = ses.orders.length;
+
+      const statusBadge = document.getElementById('currentSessionStatusBadge');
+      const lockBtn = document.getElementById('toggleSessionLockBtn');
+      if (ses.status === 'open') {
+        statusBadge.textContent = 'Đang mở';
+        statusBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+        lockBtn.textContent = 'Chốt phiên';
+      } else {
+        statusBadge.textContent = 'Đã chốt';
+        statusBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700';
+        lockBtn.textContent = 'Mở lại phiên';
+      }
+
+      renderVoteShops();
+      renderActiveShopMenu();
+      renderOrderChat();
+      renderCurrentSessionBill();
+    }
+
+    function toggleCurrentSessionStatus() {
+      const ses = getCurrentSession();
+      ses.status = ses.status === 'open' ? 'closed' : 'open';
+      renderSessionWorkspace();
+      showToast(ses.status === 'closed' ? 'Đã chốt phiên vote!' : 'Đã mở lại phiên vote!');
+    }
+
+    function openNewSessionModal() {
+      document.getElementById('newSessionModal').classList.remove('hidden');
+    }
+
+    function closeNewSessionModal() {
+      document.getElementById('newSessionModal').classList.add('hidden');
+    }
+
+    function createNewSession() {
+      const titleInp = document.getElementById('newSessionTitleInput');
+      const dlInp = document.getElementById('newSessionDeadlineInput');
+      const title = titleInp.value.trim() || 'Phiên Vote Mới';
+      const deadline = dlInp.value.trim() || 'Hôm nay';
+
+      const votesByShop = {};
+      shops.forEach(s => votesByShop[s.id] = []);
+
+      const newSes = {
+        id: 'ses_' + Date.now(),
+        title,
+        deadline,
+        status: 'open',
+        activeShopId: shops[0].id,
+        votesByShop,
+        orders: [],
+        bill: { ship: 15000, discount: 0 }
+      };
+
+      sessions.unshift(newSes);
+      currentSessionId = newSes.id;
+      titleInp.value = '';
+      closeNewSessionModal();
+      renderSessionWorkspace();
+      switchSessionSubView('order');
+      showToast('Đã tạo phiên vote mới: ' + title);
+    }
+
+    // ====================================================
+    // VOTE QUÁN, MENU & CHAT GỌI MÓN TRONG PHIÊN
+    // ====================================================
+    function renderVoteShops() {
+      const ses = getCurrentSession();
+      const grid = document.getElementById('voteShopsGrid');
+
+      let totalVotes = 0;
+      shops.forEach(s => {
+        const arr = ses.votesByShop[s.id] || [];
+        totalVotes += arr.length;
+      });
+      if (totalVotes === 0) totalVotes = 1;
+
+      grid.innerHTML = shops.map(shop => {
+        const voters = ses.votesByShop[shop.id] || [];
+        const hasVoted = voters.includes(currentUser.name);
+        const pct = Math.round((voters.length / totalVotes) * 100);
+        const isCurrentMenu = shop.id === ses.activeShopId;
+
+        return `
+          <div class="p-3 rounded-xl border ${isCurrentMenu ? 'border-orange-400 bg-orange-50/40' : 'border-slate-200 bg-white'} flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${shop.category}</span>
+                  <h4 class="font-extrabold text-sm text-slate-800 mt-1">${shop.name}</h4>
+                </div>
+                <span class="text-xs font-extrabold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 shrink-0">
+                  ${voters.length} phiếu
+                </span>
+              </div>
+
+              <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden my-2">
+                <div class="h-full bg-orange-500" style="width: ${pct}%"></div>
+              </div>
+
+              <p class="text-[11px] text-slate-500 truncate mb-2.5">
+                ${voters.length ? voters.join(', ') : 'Chưa có phiếu'}
+              </p>
+            </div>
+
+            <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100">
+              <button onclick="toggleVoteShop('${shop.id}')" class="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition ${hasVoted ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'}">
+                ${hasVoted ? '✓ Đã Vote' : 'Vote'}
+              </button>
+              <button onclick="selectShopForMenu('${shop.id}')" class="py-1.5 px-2.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50">
+                Menu
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const selector = document.getElementById('menuShopSelector');
+      selector.innerHTML = shops.map(s => `<option value="${s.id}" ${s.id === ses.activeShopId ? 'selected' : ''}>${s.name}</option>`).join('');
+    }
+
+    function toggleVoteShop(shopId) {
+      const ses = getCurrentSession();
+      if (ses.status === 'closed') {
+        showToast('Phiên này đã chốt!');
+        return;
+      }
+      if (!ses.votesByShop[shopId]) ses.votesByShop[shopId] = [];
+      const voters = ses.votesByShop[shopId];
+      const idx = voters.indexOf(currentUser.name);
+      if (idx >= 0) {
+        voters.splice(idx, 1);
+      } else {
+        voters.push(currentUser.name);
+        ses.activeShopId = shopId;
+      }
+      renderVoteShops();
+      renderActiveShopMenu();
+    }
+
+    function selectShopForMenu(shopId) {
+      const ses = getCurrentSession();
+      ses.activeShopId = shopId;
+      renderVoteShops();
+      renderActiveShopMenu();
+    }
+
+    function renderActiveShopMenu() {
+      const ses = getCurrentSession();
+      const shop = shops.find(s => s.id === ses.activeShopId) || shops[0];
+
+      const infoBox = document.getElementById('activeShopQuickInfo');
+      infoBox.innerHTML = `
+        <div class="truncate">
+          <span class="font-bold text-orange-700">📞 ${shop.phone}</span>
+          <span class="text-slate-300 mx-1">|</span>
+          <span class="text-slate-600">${shop.address}</span>
+          <span class="text-slate-300 mx-1">|</span>
+          <span class="text-slate-500">${shop.note}</span>
+        </div>
+        <button onclick="copyTextToClipboard('${shop.phone}', 'Đã copy SĐT: ${shop.phone}')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 font-bold text-[11px] shrink-0">
+          Copy SĐT
+        </button>
+      `;
+
+      drawMenuGraphicOnCanvas(document.getElementById('menuPreviewCanvas'), shop);
+    }
+
+    function drawMenuGraphicOnCanvas(canvas, shop) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.fillStyle = '#FFFDF9';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#F97316';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      ctx.fillStyle = '#EA580C';
+      ctx.fillRect(10, 10, w - 20, 56);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 19px Inter, sans-serif';
+      ctx.fillText('MENU: ' + shop.name.toUpperCase(), 24, 36);
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('📞 ' + shop.phone + ' • 📍 ' + shop.address, 24, 54);
+
+      const items = shop.menuItems || [];
+      ctx.textBaseline = 'middle';
+      items.forEach((item, index) => {
+        const y = 96 + index * 44;
+        if (index % 2 === 0) {
+          ctx.fillStyle = '#FFF7ED';
+          ctx.fillRect(22, y - 16, w - 44, 32);
+        }
+        ctx.fillStyle = '#0F172A';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.fillText((index + 1) + '. ' + item.name, 32, y);
+
+        ctx.fillStyle = '#EA580C';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.fillText(item.price, w - 110, y);
+      });
+    }
+
+    function openZoomMenuModal() {
+      const ses = getCurrentSession();
+      const shop = shops.find(s => s.id === ses.activeShopId) || shops[0];
+      document.getElementById('zoomModalTitle').textContent = shop.name;
+      document.getElementById('zoomMenuModal').classList.remove('hidden');
+      drawMenuGraphicOnCanvas(document.getElementById('zoomMenuCanvas'), shop);
+    }
+
+    function closeZoomMenuModal() {
+      document.getElementById('zoomMenuModal').classList.add('hidden');
+    }
+
+    function renderOrderChat() {
+      const ses = getCurrentSession();
+      const list = document.getElementById('orderChatList');
+      document.getElementById('orderCountBadge').textContent = ses.orders.length + ' suất';
+      document.getElementById('sessionBillCountText').textContent = ses.orders.length;
+
+      if (ses.orders.length === 0) {
+        list.innerHTML = `<div class="text-xs text-slate-400 text-center py-10">Chưa có món nào trong phiên này</div>`;
+        return;
+      }
+
+      list.innerHTML = ses.orders.map((item, idx) => `
+        <div class="p-2.5 rounded-lg bg-white border border-slate-200 flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-extrabold text-slate-800">${idx + 1}. ${item.user}</span>
+              <span class="text-[11px] font-bold text-orange-700 bg-orange-50 px-1.5 rounded">${(item.price / 1000)}k</span>
+            </div>
+            <p class="text-xs text-slate-700 mt-0.5">${item.text}</p>
+          </div>
+          <button onclick="removeOrderChat(${item.id})" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-1">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function appendQuickNote(noteText) {
+      const inp = document.getElementById('chatOrderInput');
+      inp.value = inp.value.trim() ? inp.value.trim() + ', ' + noteText : noteText;
+      inp.focus();
+    }
+
+    function sendOrderChat() {
+      const ses = getCurrentSession();
+      const inp = document.getElementById('chatOrderInput');
+      const priceInp = document.getElementById('chatOrderPriceInput');
+      const val = inp.value.trim();
+      if (!val) return;
+
+      ses.orders.push({
+        id: Date.now(),
+        user: currentUser.name,
+        text: val,
+        price: Number(priceInp.value) || 50000,
+        paid: false
+      });
+      inp.value = '';
+      renderOrderChat();
+      renderSessionSwitcherBar();
+      renderCurrentSessionBill();
+    }
+
+    function removeOrderChat(orderId) {
+      const ses = getCurrentSession();
+      ses.orders = ses.orders.filter(o => o.id !== orderId);
+      renderOrderChat();
+      renderSessionSwitcherBar();
+      renderCurrentSessionBill();
+    }
+
+    // ====================================================
+    // CHIA TIỀN GẮN TRONG PHIÊN GỌI MÓN
+    // ====================================================
+    function updateCurrentSessionBill() {
+      const ses = getCurrentSession();
+      ses.bill.ship = Number(document.getElementById('billShipInput').value || 0);
+      ses.bill.discount = Number(document.getElementById('billDiscountInput').value || 0);
+      renderCurrentSessionBill();
+    }
+
+    function renderCurrentSessionBill() {
+      const ses = getCurrentSession();
+      document.getElementById('billShipInput').value = ses.bill.ship;
+      document.getElementById('billDiscountInput').value = ses.bill.discount;
+      document.getElementById('billItemCount').textContent = ses.orders.length;
+
+      const subtotal = ses.orders.reduce((s, o) => s + (o.price || 0), 0);
+      const finalTotal = Math.max(0, subtotal + ses.bill.ship - ses.bill.discount);
+
+      document.getElementById('billSubtotalText').textContent = subtotal.toLocaleString('vi-VN') + 'đ';
+      document.getElementById('billFinalTotalText').textContent = finalTotal.toLocaleString('vi-VN') + 'đ';
+
+      const tbody = document.getElementById('splitResultTableBody');
+      let paidCount = 0;
+
+      if (ses.orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Chưa có lượt gọi món nào trong phiên này</td></tr>`;
+        document.getElementById('paidProgressText').textContent = '0 / 0 suất';
+        return;
+      }
+
+      tbody.innerHTML = ses.orders.map(order => {
+        if (order.paid) paidCount++;
+        const ratio = subtotal > 0 ? (order.price / subtotal) : (1 / ses.orders.length);
+        const finalShare = Math.round((finalTotal * ratio) / 500) * 500;
+
+        return `
+          <tr>
+            <td class="py-2 pr-2 font-bold text-slate-800">${order.user}</td>
+            <td class="py-2 px-2 text-slate-600">${order.text}</td>
+            <td class="py-2 px-2 text-right">
+              <input type="number" step="1000" value="${order.price}"
+                onchange="updateSingleOrderPrice(${order.id}, this.value)"
+                class="w-20 text-right rounded border border-slate-200 px-1.5 py-0.5 text-xs font-semibold" />
+            </td>
+            <td class="py-2 px-2 text-right font-extrabold text-orange-600">${finalShare.toLocaleString('vi-VN')}đ</td>
+            <td class="py-2 pl-2 text-center">
+              <button onclick="toggleOrderPaid(${order.id})" class="px-2 py-0.5 rounded-md text-[11px] font-bold ${order.paid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${order.paid ? '✓ Đã trả' : 'Chưa trả'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('paidProgressText').textContent = `Đã thu: ${paidCount} / ${ses.orders.length} suất`;
+    }
+
+    function updateSingleOrderPrice(orderId, newPrice) {
+      const ses = getCurrentSession();
+      const ord = ses.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.price = Math.max(0, Number(newPrice) || 0);
+        renderCurrentSessionBill();
+        renderOrderChat();
+      }
+    }
+
+    function toggleOrderPaid(orderId) {
+      const ses = getCurrentSession();
+      const ord = ses.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.paid = !ord.paid;
+        renderCurrentSessionBill();
+      }
+    }
+
+    function simulateAiBillScanFromFile() {
+      simulateAiBillScan('auto');
+    }
+
+    function simulateAiBillScan() {
+      const ses = getCurrentSession();
+      ses.bill.ship = 15000;
+      ses.bill.discount = 35000;
+      renderCurrentSessionBill();
+      showToast('🤖 Đã quét Bill & tự khớp tiền cho ' + ses.orders.length + ' suất trong phiên!');
+    }
+
+    function equalizeSessionOrderPrices() {
+      const ses = getCurrentSession();
+      ses.orders.forEach(o => o.price = 45000);
+      renderCurrentSessionBill();
+      renderOrderChat();
+      showToast('Đã đặt đồng giá 45.000đ cho các suất!');
+    }
+
+    function copySplitSummaryText() {
+      const ses = getCurrentSession();
+      const subtotal = ses.orders.reduce((s, o) => s + (o.price || 0), 0) || 1;
+      const finalTotal = Math.max(0, subtotal + ses.bill.ship - ses.bill.discount);
+      const bank = document.getElementById('hostBankName').value;
+
+      const lines = [`🧾 CHIA TIỀN - ${ses.title.toUpperCase()}:`];
+      ses.orders.forEach((o, i) => {
+        const share = Math.round((finalTotal * (o.price / subtotal)) / 500) * 500;
+        lines.push(`${i + 1}. ${o.user}: ${share.toLocaleString('vi-VN')}đ (${o.paid ? 'Đã TT' : 'Chưa TT'})`);
+      });
+      lines.push(`🏦 CK: ${bank}`);
+      copyTextToClipboard(lines.join('\n'), 'Đã copy bảng chia tiền của phiên!');
+    }
+
+    // ====================================================
+    // LỊCH SỬ PHIÊN VOTE (TAB 2)
+    // ====================================================
+    function setHistoryFilter(filter) {
+      historyFilter = filter;
+      ['All', 'Open', 'Closed'].forEach(k => {
+        const btn = document.getElementById('histFilter' + k);
+        const active = filter === k.toLowerCase();
+        btn.className = active
+          ? 'px-3 py-1 rounded-lg text-xs font-bold bg-slate-900 text-white'
+          : 'px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600';
+      });
+      renderHistoryList();
+    }
+
+    function renderHistoryList() {
+      const container = document.getElementById('historySessionsList');
+      const filtered = sessions.filter(s => {
+        if (historyFilter === 'open') return s.status === 'open';
+        if (historyFilter === 'closed') return s.status === 'closed';
+        return true;
+      });
+
+      container.innerHTML = filtered.map(ses => {
+        const shop = shops.find(sh => sh.id === ses.activeShopId) || shops[0];
+        const subtotal = ses.orders.reduce((s, o) => s + (o.price || 0), 0);
+        const total = Math.max(0, subtotal + ses.bill.ship - ses.bill.discount);
+        const paidCount = ses.orders.filter(o => o.paid).length;
+
+        return `
+          <div class="py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${ses.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
+                  ${ses.status === 'open' ? 'Đang mở' : 'Đã chốt'}
+                </span>
+                <span class="font-extrabold text-sm text-slate-900">${ses.title}</span>
+                <span class="text-xs text-slate-400">(${ses.deadline})</span>
+              </div>
+              <div class="text-xs text-slate-600">
+                🏪 Quán: <b>${shop.name}</b> • 📦 <b>${ses.orders.length} suất</b> • 💰 Tổng bill: <b class="text-orange-600">${total.toLocaleString('vi-VN')}đ</b> • Đã thu: <b>${paidCount}/${ses.orders.length}</b>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="selectSession('${ses.id}', 'order')" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 bg-white hover:bg-slate-50">
+                Xem đơn
+              </button>
+              <button onclick="selectSession('${ses.id}', 'bill')" class="btn-primary px-3 py-1.5 text-xs font-bold">
+                🧾 Chia tiền
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ====================================================
+    // XUẤT TEXT GỬI QUÁN
+    // ====================================================
+    function openExportTextModal() {
+      document.getElementById('exportTextModal').classList.remove('hidden');
+      updateExportedOrderText();
+    }
+
+    function closeExportTextModal() {
+      document.getElementById('exportTextModal').classList.add('hidden');
+    }
+
+    function setExportFormat(fmt) {
+      exportFormatMode = fmt;
+      document.getElementById('fmtDetailedBtn').className = fmt === 'detailed'
+        ? 'px-2.5 py-1 rounded-lg bg-orange-500 text-white font-bold'
+        : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold';
+      document.getElementById('fmtWithNameBtn').className = fmt === 'with_names'
+        ? 'px-2.5 py-1 rounded-lg bg-orange-500 text-white font-bold'
+        : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold';
+      updateExportedOrderText();
+    }
+
+    function updateExportedOrderText() {
+      const ses = getCurrentSession();
+      const shop = shops.find(s => s.id === ses.activeShopId) || shops[0];
+      const lines = [];
+      if (exportFormatMode === 'detailed') {
+        lines.push(`ĐƠN ĐẶT HÀNG - ${shop.name.toUpperCase()}`);
+        lines.push(`----------------------------------`);
+        ses.orders.forEach((o, i) => lines.push(`${i + 1}. ${o.text}`));
+        lines.push(`----------------------------------`);
+        lines.push(`Tổng: ${ses.orders.length} phần • SĐT nhận: ${shop.phone}`);
+      } else {
+        lines.push(`DANH SÁCH ĐẶT MÓN (${ses.title}):`);
+        ses.orders.forEach((o, i) => lines.push(`${i + 1}. [${o.user}]: ${o.text} (${o.price / 1000}k)`));
+      }
+      document.getElementById('exportedOrderTextarea').value = lines.join('\n');
+    }
+
+    function copyExportedOrderText() {
+      const txt = document.getElementById('exportedOrderTextarea').value;
+      copyTextToClipboard(txt, 'Đã copy nội dung đơn hàng!');
+    }
+
+    // ====================================================
+    // VÒNG QUAY NHÂN PHẨM (TAB 3)
+    // ====================================================
+    function getActiveWheelProfile() {
+      return wheelProfiles.find(p => p.id === activeWheelProfileId) || wheelProfiles[0];
+    }
+
+    function renderWheelProfilesBar() {
+      const container = document.getElementById('wheelProfilesList');
+      container.innerHTML = wheelProfiles.map(p => {
+        const active = p.id === activeWheelProfileId;
+        return `
+          <button onclick="selectWheelProfile('${p.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${active ? 'bg-orange-500 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+            ${p.title}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectWheelProfile(profileId) {
+      activeWheelProfileId = profileId;
+      document.getElementById('wheelResultBanner').classList.add('hidden');
+      renderWheelProfilesBar();
+      renderWheelEditor();
+      drawWheel();
+    }
+
+    function renderWheelEditor() {
+      const profile = getActiveWheelProfile();
+      const canEdit = (currentUser.role === 'host' || currentUser.role === 'cohost');
+
+      document.getElementById('wheelPermissionBadge').textContent = canEdit ? '🔓 Được sửa %' : '🔒 Chỉ xem';
+      document.getElementById('wheelLockedNotice').classList.toggle('hidden', canEdit);
+      document.getElementById('wheelAddControls').classList.toggle('opacity-50', !canEdit);
+      document.getElementById('wheelAddControls').classList.toggle('pointer-events-none', !canEdit);
+      document.getElementById('wheelSaveProfileBox').classList.toggle('opacity-50', !canEdit);
+      document.getElementById('wheelSaveProfileBox').classList.toggle('pointer-events-none', !canEdit);
+
+      const totalWeight = profile.items.reduce((sum, it) => sum + Number(it.weight || 1), 0) || 1;
+      const listEl = document.getElementById('wheelItemsEditor');
+
+      listEl.innerHTML = profile.items.map((item, idx) => {
+        const pct = Math.round((item.weight / totalWeight) * 100);
+        return `
+          <div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-full shrink-0" style="background-color: ${item.color}"></span>
+            <input type="text" value="${item.name}" ${canEdit ? '' : 'disabled'}
+              onchange="updateWheelItemName(${idx}, this.value)"
+              class="flex-1 text-xs font-bold bg-transparent focus:outline-none text-slate-800" />
+            <input type="range" min="1" max="100" value="${item.weight}" ${canEdit ? '' : 'disabled'}
+              oninput="updateWheelItemWeight(${idx}, this.value)"
+              class="w-20 accent-orange-500 cursor-pointer" />
+            <span class="text-xs font-extrabold text-orange-700 w-10 text-right">${pct}%</span>
+            ${canEdit ? `<button onclick="removeWheelItem(${idx})" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-1">✕</button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateWheelItemName(idx, val) {
+      const profile = getActiveWheelProfile();
+      if (profile.items[idx]) {
+        profile.items[idx].name = val;
+        drawWheel();
+      }
+    }
+
+    function updateWheelItemWeight(idx, val) {
+      const profile = getActiveWheelProfile();
+      if (profile.items[idx]) {
+        profile.items[idx].weight = Math.max(1, Number(val));
+        renderWheelEditor();
+        drawWheel();
+      }
+    }
+
+    function addWheelItem() {
+      if (currentUser.role === 'member') return;
+      const nameInp = document.getElementById('newWheelItemName');
+      const weightInp = document.getElementById('newWheelItemWeight');
+      const name = nameInp.value.trim();
+      if (!name) return;
+      const colors = ['#F97316', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6', '#F59E0B'];
+      const profile = getActiveWheelProfile();
+      profile.items.push({
+        name,
+        weight: Math.max(1, Number(weightInp.value) || 20),
+        color: colors[profile.items.length % colors.length]
+      });
+      nameInp.value = '';
+      renderWheelEditor();
+      drawWheel();
+    }
+
+    function removeWheelItem(idx) {
+      const profile = getActiveWheelProfile();
+      if (profile.items.length <= 2) return;
+      profile.items.splice(idx, 1);
+      renderWheelEditor();
+      drawWheel();
+    }
+
+    function equalizeWheelWeights() {
+      const profile = getActiveWheelProfile();
+      profile.items.forEach(it => it.weight = 25);
+      renderWheelEditor();
+      drawWheel();
+    }
+
+    function saveNewWheelProfile() {
+      const inp = document.getElementById('newProfileNameInput');
+      const title = inp.value.trim();
+      if (!title) return;
+      const current = getActiveWheelProfile();
+      const newId = 'wp_' + Date.now();
+      wheelProfiles.push({
+        id: newId,
+        title,
+        items: JSON.parse(JSON.stringify(current.items))
+      });
+      inp.value = '';
+      activeWheelProfileId = newId;
+      renderWheelProfilesBar();
+      renderWheelEditor();
+      drawWheel();
+      showToast('Đã lưu Profile: ' + title);
+    }
+
+    function drawWheel() {
+      const canvas = document.getElementById('wheelCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const profile = getActiveWheelProfile();
+      const items = profile.items;
+      const totalWeight = items.reduce((s, it) => s + Number(it.weight || 1), 0) || 1;
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.min(cx, cy) - 8;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let startAngle = currentWheelAngle;
+
+      items.forEach(item => {
+        const sliceAngle = (item.weight / totalWeight) * Math.PI * 2;
+        const endAngle = startAngle + sliceAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        const pct = Math.round((item.weight / totalWeight) * 100);
+        const label = item.name.length > 15 ? item.name.slice(0, 14) + '…' : item.name;
+        ctx.fillText(`${label} (${pct}%)`, radius - 14, 4);
+        ctx.restore();
+
+        startAngle = endAngle;
+      });
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#0F172A';
+      ctx.stroke();
+    }
+
+    function playTickSound(freq = 520, duration = 0.03) {
+      if (!wheelSoundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!window._audioCtx) window._audioCtx = new AudioCtx();
+        const ctx = window._audioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.07, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleWheelSound() {
+      wheelSoundEnabled = !wheelSoundEnabled;
+      document.getElementById('soundToggleBtn').textContent = wheelSoundEnabled ? '🔊 Bật tiếng' : '🔇 Tắt tiếng';
+    }
+
+    function spinWheel() {
+      if (isWheelSpinning) return;
+      isWheelSpinning = true;
+      document.getElementById('wheelResultBanner').classList.add('hidden');
+
+      const extraSpins = (5 + Math.random() * 4) * Math.PI * 2;
+      const startAngle = currentWheelAngle;
+      const targetAngle = startAngle + extraSpins;
+      const duration = 3000;
+      const startTime = performance.now();
+      let lastTickSlice = -1;
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentWheelAngle = startAngle + (targetAngle - startAngle) * easeOut;
+        drawWheel();
+
+        const currentStep = Math.floor(currentWheelAngle / 0.45);
+        if (currentStep !== lastTickSlice) {
+          lastTickSlice = currentStep;
+          playTickSound(440 + (1 - progress) * 240, 0.025);
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isWheelSpinning = false;
+          announceWheelWinner();
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function announceWheelWinner() {
+      const profile = getActiveWheelProfile();
+      const totalWeight = profile.items.reduce((s, it) => s + Number(it.weight || 1), 0) || 1;
+      const pointerAngle = (Math.PI * 1.5 - (currentWheelAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+      let acc = 0;
+      let winner = profile.items[0];
+      for (const item of profile.items) {
+        const slice = (item.weight / totalWeight) * Math.PI * 2;
+        if (pointerAngle >= acc && pointerAngle <= acc + slice) {
+          winner = item;
+          break;
+        }
+        acc += slice;
+      }
+
+      playTickSound(880, 0.15);
+      document.getElementById('wheelWinnerText').textContent = '🎉 Kết quả: ' + winner.name;
+      document.getElementById('wheelResultBanner').classList.remove('hidden');
+    }
+
+    // ====================================================
+    // KHO QUÁN ĂN & IMPORT GOOGLE MAPS LINK (TAB 4)
+    // ====================================================
+    function renderDirectoryShops() {
+      const q = (document.getElementById('searchShopInput')?.value || '').toLowerCase().trim();
+      const list = document.getElementById('directoryShopsList');
+
+      const filtered = shops.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.phone.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q)
+      );
+
+      list.innerHTML = filtered.map(shop => `
+        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between gap-3">
+          <div class="space-y-0.5 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-800">${shop.category}</span>
+              <h4 class="font-extrabold text-sm text-slate-800 truncate">${shop.name}</h4>
+            </div>
+            <p class="text-xs text-slate-600 truncate">📞 <b class="text-orange-700">${shop.phone}</b> • 📍 ${shop.address}</p>
+            <p class="text-[11px] text-slate-400 truncate">${shop.note}</p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="copyTextToClipboard('${shop.phone}', 'Đã copy SĐT: ${shop.phone}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-300">
+              Copy SĐT
+            </button>
+            <button onclick="selectShopForMenu('${shop.id}'); switchTab('vote');" class="btn-primary px-2.5 py-1.5 text-xs font-bold">
+              Menu
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function importShopFromGoogleMaps() {
+      const urlInp = document.getElementById('gmapUrlInput');
+      const rawUrl = urlInp.value.trim();
+
+      // Trích xuất tên từ URL Google Maps nếu có hoặc điền mẫu tự động
+      let extractedName = 'Phở Hòa Pasteur';
+      if (rawUrl.includes('/place/')) {
+        const part = rawUrl.split('/place/')[1].split('/')[0];
+        if (part) extractedName = decodeURIComponent(part.replace(/\+/g, ' '));
+      } else if (rawUrl && !rawUrl.startsWith('http')) {
+        extractedName = rawUrl;
+      }
+
+      document.getElementById('shopFormName').value = extractedName;
+      document.getElementById('shopFormPhone').value = '028 3829 7943';
+      document.getElementById('shopFormCategory').value = 'Bún / Phở / Mì';
+      document.getElementById('shopFormAddress').value = '260C Pasteur, Phường 8, Quận 3 (Từ Google Maps)';
+      document.getElementById('shopFormNote').value = 'Đã đồng bộ tọa độ & thông tin từ Google Maps';
+      urlInp.value = '';
+      showToast('📍 Đã tự động trích xuất Profile quán từ Google Maps!');
+    }
+
+    function handleSimpleMenuUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      document.getElementById('uploadedMenuFileName').textContent = file.name;
+      showToast('Đã đính kèm ảnh menu: ' + file.name);
+    }
+
+    function saveNewShop() {
+      const name = document.getElementById('shopFormName').value.trim();
+      const phone = document.getElementById('shopFormPhone').value.trim();
+      const category = document.getElementById('shopFormCategory').value;
+      const address = document.getElementById('shopFormAddress').value.trim() || 'Đang cập nhật';
+      const note = document.getElementById('shopFormNote').value.trim() || 'Menu đính kèm';
+
+      if (!name || !phone) {
+        showToast('Vui lòng nhập Tên quán và SĐT!');
+        return;
+      }
+
+      const newShop = {
+        id: 'shop_' + Date.now(),
+        name,
+        category,
+        phone,
+        address,
+        note,
+        menuItems: [
+          { name: 'Món đặc sản 1', price: '45.000đ' },
+          { name: 'Món đặc sản 2', price: '55.000đ' },
+          { name: 'Nước uống', price: '15.000đ' }
+        ]
+      };
+
+      shops.unshift(newShop);
+      sessions.forEach(s => {
+        if (!s.votesByShop[newShop.id]) s.votesByShop[newShop.id] = [];
+      });
+
+      document.getElementById('shopFormName').value = '';
+      document.getElementById('shopFormPhone').value = '';
+      document.getElementById('shopFormAddress').value = '';
+      document.getElementById('shopFormNote').value = '';
+      document.getElementById('uploadedMenuFileName').textContent = 'Chưa chọn tệp';
+
+      renderDirectoryShops();
+      renderVoteShops();
+      showToast('Đã lưu Profile quán: ' + name);
+    }
+
+    // ====================================================
+    // THÀNH VIÊN & ĐĂNG NHẬP (TAB 5)
+    // ====================================================
+    function renderMembersList() {
+      const container = document.getElementById('membersListContainer');
+      const canManageRoles = currentUser.role === 'host';
+
+      container.innerHTML = members.map((m, idx) => {
+        const badge = m.role === 'host'
+          ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-bold">👑 Chủ xị</span>'
+          : m.role === 'cohost'
+          ? '<span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[11px] font-bold">🛡️ Phó</span>'
+          : '<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-semibold">Thành viên</span>';
+
+        return `
+          <div class="py-2.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-800 font-bold flex items-center justify-center text-xs">
+                ${m.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold text-xs sm:text-sm text-slate-800">${m.name}</span>
+                  ${badge}
+                  <span class="text-[10px] px-1.5 py-0.5 rounded ${m.mode === 'Gmail' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'} font-semibold">${m.mode}</span>
+                </div>
+                <p class="text-[11px] text-slate-400">${m.email}</p>
+              </div>
+            </div>
+            ${canManageRoles && m.role !== 'host' ? `
+              <button onclick="toggleMemberCohost(${idx})" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-white hover:bg-slate-50">
+                ${m.role === 'cohost' ? 'Hạ quyền' : 'Cấp quyền Phó'}
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleMemberCohost(idx) {
+      if (members[idx]) {
+        members[idx].role = members[idx].role === 'cohost' ? 'member' : 'cohost';
+        renderMembersList();
+      }
+    }
+
+    function openLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('loginModal').classList.add('hidden');
+    }
+
+    function loginWithGmail() {
+      const email = document.getElementById('gmailInput').value.trim() || 'dongnghiep@gmail.com';
+      const rawName = email.split('@')[0].replace('.', ' ');
+      const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
+      currentUser.name = displayName;
+      currentUser.email = email;
+      currentUser.mode = 'Gmail';
+      updateHeaderUser();
+      members.push({ name: displayName, email, mode: 'Gmail', role: currentUser.role });
+      renderMembersList();
+      closeLoginModal();
+      showToast('Đã đăng nhập: ' + email);
+    }
+
+    function loginAsGuest() {
+      const name = document.getElementById('guestNameInput').value.trim() || 'Khách';
+      currentUser.name = name;
+      currentUser.email = 'Chế độ Khách';
+      currentUser.mode = 'Khách';
+      updateHeaderUser();
+      members.push({ name: currentUser.name, email: 'Chế độ Khách', mode: 'Khách', role: currentUser.role });
+      renderMembersList();
+      closeLoginModal();
+      showToast('Đã vào chế độ Khách: ' + currentUser.name);
+    }
+
+    function updateHeaderUser() {
+      document.getElementById('headerUserName').textContent = currentUser.name;
+      document.getElementById('headerUserMode').textContent = currentUser.email;
+      document.getElementById('headerUserAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+      renderSessionWorkspace();
+    }
+
+    function drawMockQr() {
+      const c = document.getElementById('qrMockCanvas');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 68, 68);
+      ctx.fillStyle = '#0F172A';
+      const pattern = [
+        [1,1,1,1,1,0,1,0,1,1,1],
+        [1,0,0,0,1,0,0,1,1,0,1],
+        [1,0,1,0,1,0,1,0,1,0,1],
+        [1,0,0,0,1,0,1,1,0,0,1],
+        [1,1,1,1,1,0,0,1,1,1,1],
+        [0,0,0,0,0,0,1,0,0,0,0],
+        [1,1,0,1,0,1,1,0,1,1,0],
+        [0,1,1,0,1,0,0,1,0,1,1],
+        [1,1,1,1,1,0,1,0,1,0,1],
+        [1,0,0,0,1,0,0,1,1,1,0],
+        [1,1,1,1,1,0,1,1,0,1,1]
+      ];
+      const cell = 5.2;
+      for (let r = 0; r < 11; r++) {
+        for (let col = 0; col < 11; col++) {
+          if (pattern[r][col]) {
+            ctx.fillRect(5 + col * cell, 5 + r * cell, cell - 0.5, cell - 0.5);
+          }
+        }
+      }
+    }
+
+    function copyTextToClipboard(text, message) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast(message)).catch(() => fallbackCopy(text, message));
+      } else {
+        fallbackCopy(text, message);
+      }
+    }
+
+    function fallbackCopy(text, message) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(message);
+      } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      document.getElementById('toastText').textContent = msg;
+      box.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => box.classList.add('hidden'), 2600);
+    }
+
+    window.onload = function() {
+      renderSessionWorkspace();
+      renderHistoryList();
+      renderWheelProfilesBar();
+      renderWheelEditor();
+      drawWheel();
+      renderDirectoryShops();
+      drawMockQr();
+      renderMembersList();
+    };
+  </script>
+</body>
+</html>
