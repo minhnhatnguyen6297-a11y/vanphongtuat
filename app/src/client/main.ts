@@ -40,11 +40,52 @@ function titles(): { chip: string; fun: string } {
   }
 }
 
+type FocusSnap =
+  | { kind: 'chat'; scope: string; start: number | null; end: number | null }
+  | { kind: 'id'; id: string; start: number | null; end: number | null }
+  | null;
+
+function captureFocus(): FocusSnap {
+  const ae = document.activeElement as HTMLInputElement | HTMLTextAreaElement | null;
+  if (!ae || !app?.contains(ae)) return null;
+  const start = 'selectionStart' in ae ? ae.selectionStart : null;
+  const end = 'selectionEnd' in ae ? ae.selectionEnd : null;
+  if (ae.matches('[data-chat-input]')) {
+    const scope = ae.closest('[data-chat-scope]')?.getAttribute('data-chat-scope');
+    if (scope) return { kind: 'chat', scope, start, end };
+  }
+  if (ae.id) return { kind: 'id', id: ae.id, start, end };
+  return null;
+}
+
+function restoreFocus(snap: FocusSnap): void {
+  if (!snap || !app) return;
+  let el: HTMLInputElement | HTMLTextAreaElement | null = null;
+  if (snap.kind === 'chat') {
+    el = app.querySelector(
+      `[data-chat-scope="${CSS.escape(snap.scope)}"] [data-chat-input]`,
+    ) as HTMLInputElement | null;
+  } else {
+    el = app.querySelector(`#${CSS.escape(snap.id)}`) as HTMLInputElement | null;
+  }
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (snap.start != null && snap.end != null && 'setSelectionRange' in el) {
+    try {
+      el.setSelectionRange(snap.start, snap.end);
+    } catch {
+      /* number inputs etc. */
+    }
+  }
+}
+
 function renderShell(): void {
   if (!state.me) {
     void renderLogin(app!);
     return;
   }
+
+  const focusSnap = captureFocus();
 
   const t = titles();
   let main = '';
@@ -111,6 +152,8 @@ function renderShell(): void {
     default:
       bindBan(app!);
   }
+
+  restoreFocus(focusSnap);
 }
 
 function setupPaste(): void {

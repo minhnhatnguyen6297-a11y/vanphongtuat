@@ -122,9 +122,10 @@ export function renderKho(): string {
       <section class="hn-panel-yellow" style="display:flex;flex-direction:column;gap:10px">
         <h2 class="hn-h2" style="font-size:20px">${editing ? 'SỬA QUÁN' : '+ THÊM QUÁN'}</h2>
         <div style="display:flex;gap:6px">
-          <input class="hn-input" id="kho-paste" data-focus="shop" value="${esc(form.paste)}" placeholder="Dán link Maps / ảnh quán" style="flex:1;border-style:dashed;border-width:3px;min-height:48px">
+          <input class="hn-input" id="kho-paste" data-focus="shop" value="${esc(form.paste)}" placeholder="Link Maps hoặc dán ảnh → AI đọc quán" style="flex:1;border-style:dashed;border-width:3px;min-height:48px">
           <button type="button" class="hn-btn hn-btn-ink" data-act="fill" style="min-height:48px;box-shadow:none">ĐIỀN</button>
         </div>
+        <p class="hn-hint" style="margin:0">AI: Ctrl+V ảnh quán vào ô trên, hoặc dùng nút menu bên dưới.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <label style="flex:2 1 180px;display:flex;flex-direction:column;gap:2px;font-size:13px;font-weight:800">Tên quán
             <input class="hn-input" id="kho-name" value="${esc(form.name)}" style="font-weight:700">
@@ -137,8 +138,8 @@ export function renderKho(): string {
         <div style="background:#fff;border:2px solid #1B1B1B;padding:8px;display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;align-items:center;gap:6px">
             <span style="font-family:var(--font-display);font-size:13px;margin-right:auto">MENU</span>
-            <button type="button" class="hn-btn hn-btn-white" data-act="paste-menu" style="min-height:40px;font-size:13px">Dán ảnh Ctrl+V</button>
-            <button type="button" class="hn-btn hn-btn-white" data-act="pick-menu" style="min-height:40px;font-size:13px">Chọn ảnh</button>
+            <button type="button" class="hn-btn hn-btn-white" data-act="paste-menu" style="min-height:40px;font-size:13px">AI · Ctrl+V ảnh</button>
+            <button type="button" class="hn-btn hn-btn-white" data-act="pick-menu" style="min-height:40px;font-size:13px">AI · Chọn ảnh</button>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px" data-focus="menu">${menuChips}
             <button type="button" class="hn-btn-ghost" data-act="add-menu" style="min-height:36px">+ món</button>

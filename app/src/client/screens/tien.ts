@@ -110,14 +110,14 @@ export function renderTien(): string {
           </div>
           <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
             <div style="display:flex;gap:6px">
-              <button type="button" class="hn-btn hn-btn-white" data-act="paste" style="flex:1">Dán ảnh</button>
-              <button type="button" class="hn-btn hn-btn-white" data-act="pick" style="flex:1">Chọn ảnh</button>
+              <button type="button" class="hn-btn hn-btn-white" data-act="paste" style="flex:1">AI · Dán ảnh bill</button>
+              <button type="button" class="hn-btn hn-btn-white" data-act="pick" style="flex:1">AI · Chọn ảnh</button>
             </div>
-            <span style="font-size:12px;color:#3D3D3D">Hoặc Ctrl+V khi đang ở màn này</span>
+            <span style="font-size:12px;color:#3D3D3D">Ctrl+V ảnh bill → AI đọc tổng (host vẫn xác nhận)</span>
             ${
               state.ui.aiBillTotal != null
                 ? `<span style="font-size:13px;font-weight:800;background:#fff;border:2px solid #1B1B1B;padding:4px 8px;align-self:flex-start">AI đọc: ${esc(fmtVnd(state.ui.aiBillTotal))}</span>`
-                : ''
+                : `<span style="font-size:12px;font-weight:700;color:#3D3D3D">Chưa có kết quả AI</span>`
             }
           </div>
         </div>

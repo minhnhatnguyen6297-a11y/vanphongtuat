@@ -99,4 +99,34 @@ describe('shop.delete / wheel.delete', () => {
     });
     assert.equal(ok.ok, true);
   });
+
+  it('xóa vòng shop gắn bàn không tự tạo lại khi addShop', () => {
+    dispatchCommand(db, chu.member, {
+      opId: crypto.randomUUID(),
+      name: 'table.create',
+      args: { shopIds: ['shop1'] },
+    });
+    const before = db
+      .prepare(`SELECT id FROM wheels WHERE kind = 'shop'`)
+      .all() as { id: string }[];
+    assert.equal(before.length, 1);
+    assert.equal(
+      dispatchCommand(db, chu.member, {
+        opId: crypto.randomUUID(),
+        name: 'wheel.delete',
+        args: { id: before[0]!.id },
+      }).ok,
+      true,
+    );
+    assert.equal(
+      dispatchCommand(db, chu.member, {
+        opId: crypto.randomUUID(),
+        name: 'table.addShop',
+        args: { shopId: 'shop2' },
+      }).ok,
+      true,
+    );
+    const after = db.prepare(`SELECT id FROM wheels WHERE kind = 'shop'`).all();
+    assert.equal(after.length, 0);
+  });
 });

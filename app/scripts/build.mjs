@@ -6,10 +6,39 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outdir = join(root, 'public');
 const distServer = join(root, 'dist/server');
+const fontsOut = join(outdir, 'fonts');
 
 mkdirSync(outdir, { recursive: true });
-mkdirSync(join(outdir, 'fonts'), { recursive: true });
+mkdirSync(fontsOut, { recursive: true });
 mkdirSync(distServer, { recursive: true });
+
+/** CSS expects `/fonts/<name>.woff2`; @fontsource files end with `-normal.woff2`. */
+const FONT_COPIES = [
+  ['@fontsource/bungee/files/bungee-vietnamese-400-normal.woff2', 'bungee-vietnamese-400.woff2'],
+  ['@fontsource/bungee/files/bungee-latin-400-normal.woff2', 'bungee-latin-400.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-400-normal.woff2', 'be-vietnam-pro-vietnamese-400.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-400-normal.woff2', 'be-vietnam-pro-latin-400.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-500-normal.woff2', 'be-vietnam-pro-vietnamese-500.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-500-normal.woff2', 'be-vietnam-pro-latin-500.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-700-normal.woff2', 'be-vietnam-pro-vietnamese-700.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-700-normal.woff2', 'be-vietnam-pro-latin-700.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-800-normal.woff2', 'be-vietnam-pro-vietnamese-800.woff2'],
+  ['@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-800-normal.woff2', 'be-vietnam-pro-latin-800.woff2'],
+  ['@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2', 'jetbrains-mono-latin-400.woff2'],
+  ['@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2', 'jetbrains-mono-latin-700.woff2'],
+];
+
+let fontsCopied = 0;
+for (const [srcRel, destName] of FONT_COPIES) {
+  const src = join(root, 'node_modules', srcRel);
+  if (!existsSync(src)) {
+    console.warn('font missing:', srcRel);
+    continue;
+  }
+  cpSync(src, join(fontsOut, destName));
+  fontsCopied++;
+}
+console.log(`fonts → public/fonts/ (${fontsCopied}/${FONT_COPIES.length})`);
 
 // Server bundle (Node)
 await esbuild.build({

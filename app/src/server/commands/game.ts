@@ -150,6 +150,10 @@ export const gameLeave: Handler = (ctx, args: CommandArgs<'game.leave'>): CmdOk 
     db.prepare(`DELETE FROM game_rooms WHERE id = ?`).run(room.id);
     return { result: { left: true, closed: true }, scopes: ['games'] };
   }
+  // Đang chơi: giữ ghế host/player để vào lại không bị đẩy sang spectator.
+  if (room.status === 'playing' && (seat === 'host' || seat === 'player')) {
+    return { result: { left: true, seatKept: true, seat }, scopes: ['games'] };
+  }
   db.prepare(`DELETE FROM game_members WHERE room_id = ? AND member_id = ?`).run(
     room.id,
     member.id,

@@ -4,6 +4,17 @@ import type { ChatMsg } from '../../shared/types.js';
 import { cmd } from '../ws.js';
 import { toast } from './toast.js';
 
+const drafts = new Map<string, string>();
+
+export function getChatDraft(scope: string): string {
+  return drafts.get(scope) || '';
+}
+
+export function setChatDraft(scope: string, value: string): void {
+  if (!value) drafts.delete(scope);
+  else drafts.set(scope, value);
+}
+
 export function chatMessagesFor(scope: string): ChatMsg[] {
   return state.chatByScope[scope] || [];
 }
@@ -14,6 +25,7 @@ export function renderChatPanel(scope: string, opts?: { title?: string }): strin
   const canSend = canPerm('chat.send');
   const canMod = canPerm('chat.mod');
   const meId = state.me?.id;
+  const draft = getChatDraft(scope);
 
   const rows = msgs
     .map((m) => {
@@ -43,7 +55,7 @@ export function renderChatPanel(scope: string, opts?: { title?: string }): strin
       ${rows || '<span class="hn-chat-empty">Chưa có tin</span>'}
     </div>
     <div class="hn-chat-compose">
-      <input class="hn-input" data-chat-input maxlength="500" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>
+      <input class="hn-input" data-chat-input maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>
       <button type="button" class="hn-btn hn-btn-ink" data-chat-send ${canSend ? '' : 'disabled'}>GỬI</button>
     </div>
   </section>`;
@@ -53,6 +65,9 @@ export function bindChatPanel(root: HTMLElement): void {
   root.querySelectorAll('[data-chat-scope]').forEach((panel) => {
     const scope = (panel as HTMLElement).dataset.chatScope!;
     const input = panel.querySelector('[data-chat-input]') as HTMLInputElement | null;
+    input?.addEventListener('input', () => {
+      setChatDraft(scope, input.value);
+    });
     const send = async () => {
       if (!canPerm('chat.send') || !input) return;
       const body = input.value.trim();
@@ -63,6 +78,7 @@ export function bindChatPanel(root: HTMLElement): void {
         return;
       }
       input.value = '';
+      setChatDraft(scope, '');
     };
     panel.querySelector('[data-chat-send]')?.addEventListener('click', () => void send());
     input?.addEventListener('keydown', (e) => {

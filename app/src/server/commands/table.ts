@@ -124,11 +124,11 @@ export const tableAddShop: Handler = (ctx, args: CommandArgs<'table.addShop'>): 
     member.id,
   );
   bumpTableVersion(db, tableId);
+  // Chỉ sync vòng shop còn tồn tại — không tạo lại vòng đã xóa.
   const shopWheel = db
     .prepare(`SELECT id FROM wheels WHERE table_id = ? AND kind = 'shop'`)
     .get(tableId) as { id: string } | undefined;
   if (shopWheel) syncShopWheelItems(db, shopWheel.id, tableId);
-  else ensureTableWheels(ctx, tableId);
   return {
     result: { tableId, shopId: args.shopId },
     scopes: ['table:current', 'wheels', `table:${tableId}`],

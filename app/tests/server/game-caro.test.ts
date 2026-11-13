@@ -123,4 +123,24 @@ describe('game caro 5a', () => {
     const afterEnd = dispatchCommand(db, dan.member, op('game.move', { roomId, row: 1, col: 1 }));
     assert.equal(afterEnd.ok, false);
   });
+
+  it('leave khi đang chơi giữ ghế; join lại không thành spectator', () => {
+    const create = dispatchCommand(db, chu.member, op('game.create', { kind: 'caro', title: 'Rejoin' }));
+    const roomId = (create as { result: { id: string } }).result.id;
+    assert.equal(dispatchCommand(db, dan.member, op('game.join', { roomId, as: 'play' })).ok, true);
+    assert.equal(dispatchCommand(db, chu.member, op('game.start', { roomId })).ok, true);
+
+    const leave = dispatchCommand(db, dan.member, op('game.leave', { roomId }));
+    assert.equal(leave.ok, true);
+    assert.equal((leave as { result: { seatKept?: boolean } }).result.seatKept, true);
+
+    const seat = db
+      .prepare(`SELECT seat FROM game_members WHERE room_id = ? AND member_id = ?`)
+      .get(roomId, dan.id) as { seat: string };
+    assert.equal(seat.seat, 'player');
+
+    const rejoin = dispatchCommand(db, dan.member, op('game.join', { roomId, as: 'play' }));
+    assert.equal(rejoin.ok, true);
+    assert.equal((rejoin as { result: { seat: string } }).result.seat, 'player');
+  });
 });

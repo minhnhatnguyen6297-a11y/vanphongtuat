@@ -59,6 +59,11 @@ function renderLobby(): string {
           ? rooms
               .map((r) => {
                 const players = r.members.filter((m) => m.seat !== 'spectator');
+                const mySeat = r.members.find((m) => m.memberId === state.me?.id)?.seat;
+                const canRejoinPlay = mySeat === 'host' || mySeat === 'player';
+                const playEnabled = canPlay && (r.status === 'open' || canRejoinPlay);
+                const playLabel =
+                  canRejoinPlay && r.status === 'playing' ? 'VÀO LẠI' : 'CHƠI';
                 const faces = players
                   .map((p) => {
                     const m = memberById(p.memberId);
@@ -79,7 +84,7 @@ function renderLobby(): string {
                   <span class="hn-avatar-stack" role="group" aria-label="${players.length} người chơi">${faces || '<span class="hn-member-meta">Chưa ai</span>'}</span>
                   <span class="hn-member-meta">${esc(statusLabel)}</span>
                   <span style="flex:1"></span>
-                  <button type="button" class="hn-btn hn-btn-ink" data-enter="${esc(r.id)}" data-as="play" ${canPlay && r.status === 'open' ? '' : 'disabled'}>CHƠI</button>
+                  <button type="button" class="hn-btn hn-btn-ink" data-enter="${esc(r.id)}" data-as="play" ${playEnabled ? '' : 'disabled'}>${playLabel}</button>
                   <button type="button" class="hn-btn hn-btn-white" data-enter="${esc(r.id)}" data-as="spectate" ${canSpec ? '' : 'disabled'}>XEM</button>
                 </div>`;
               })
@@ -349,7 +354,15 @@ export function bindSanh(root: HTMLElement): void {
       const as = (el.dataset.as || 'spectate') as 'play' | 'spectate';
       const ack = await cmd('game.join', { roomId, as });
       if (!ack.ok) {
-        toast(ack.error === 'forbidden' ? 'Không vào được' : ack.error === 'room_full' ? 'Phòng đầy' : 'Lỗi vào phòng');
+        toast(
+          ack.error === 'forbidden'
+            ? 'Không vào được'
+            : ack.error === 'room_full'
+              ? 'Phòng đầy'
+              : ack.error === 'already_started'
+                ? 'Ván đã bắt đầu — dùng VÀO LẠI nếu bạn đang chơi'
+                : 'Lỗi vào phòng',
+        );
         return;
       }
       patch((s) => {

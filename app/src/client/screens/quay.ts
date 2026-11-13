@@ -10,6 +10,8 @@ let audioCtx: AudioContext | null = null;
 let lastTick = 0;
 let animAngle = 0;
 let spinRaf = 0;
+let spinAnim: { id: string; from: number; to: number } | null = null;
+let spinDoneTimer = 0;
 
 function resumeAudio(): void {
   if (!audioCtx) audioCtx = new AudioContext();
@@ -32,6 +34,16 @@ function beep(freq: number, dur = 0.05, type: OscillatorType = 'square'): void {
 
 type Seg = { start: number; end: number; mid: number; color: string; name: string };
 
+function inkFor(hex: string): string {
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return '#1B1B1B';
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return L > 0.55 ? '#1B1B1B' : '#FFF4D6';
+}
+
 /** Một nguồn góc cho conic / vạch / nhãn / đích quay (0° = đỉnh, theo chiều kim đồng hồ). */
 function segmentLayout(items: { weight: number; name?: string }[]): Seg[] {
   const total = items.reduce((s, i) => s + i.weight, 0) || 1;
@@ -53,13 +65,21 @@ function segmentLayout(items: { weight: number; name?: string }[]): Seg[] {
 function conic(items: { weight: number }[]): string {
   const segs = segmentLayout(items);
   if (!segs.length) return 'conic-gradient(#FFF4D6, #FFF4D6)';
-  return `conic-gradient(from -90deg, ${segs.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(', ')})`;
+  // Hard color stops (no blend between wedges)
+  const stops = segs
+    .flatMap((s) => [`${s.color} ${s.start}deg`, `${s.color} ${s.end}deg`])
+    .join(', ');
+  return `conic-gradient(from -90deg, ${stops})`;
+}
+
+function landingAngle(resultIndex: number, items: { weight: number }[]): number {
+  const segs = segmentLayout(items);
+  const mid = segs[resultIndex]?.mid ?? 0;
+  return (360 - mid + 360) % 360;
 }
 
 function spinAngle(resultIndex: number, items: { weight: number }[]): number {
-  const segs = segmentLayout(items);
-  const mid = segs[resultIndex]?.mid ?? 0;
-  return 360 * 5 + (360 - mid);
+  return 360 * 5 + landingAngle(resultIndex, items);
 }
 
 function easeOutCubic(t: number): number {
@@ -73,27 +93,54 @@ function stopSpinRaf(): void {
   }
 }
 
+function ensureSpinAnim(spinning: Spin): { from: number; to: number } {
+  const itemsSnap = JSON.parse(spinning.itemsJson) as { weight: number }[];
+  const landing = landingAngle(spinning.resultIndex, itemsSnap);
+  if (spinAnim && spinAnim.id === spinning.id) return spinAnim;
+  const from = animAngle;
+  let to = from + 360 * 5;
+  const mod = ((to % 360) + 360) % 360;
+  to += (landing - mod + 360) % 360;
+  if (to - from < 360 * 4) to += 360;
+  spinAnim = { id: spinning.id, from, to };
+  return spinAnim;
+}
+
 function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
   stopSpinRaf();
-  const itemsSnap = JSON.parse(spinning.itemsJson) as { weight: number }[];
-  const target = spinAngle(spinning.resultIndex, itemsSnap);
+  const anim = ensureSpinAnim(spinning);
   const start = spinning.startedAt;
   const dur = Math.max(1, reduced ? Math.min(spinning.durationMs, 600) : spinning.durationMs);
   face.style.transition = 'none';
   const tick = () => {
     const p = Math.min(1, (Date.now() - start) / dur);
-    const angle = target * (reduced ? p : easeOutCubic(p));
+    const eased = reduced ? p : easeOutCubic(p);
+    const angle = anim.from + (anim.to - anim.from) * eased;
     face.style.transform = `rotate(${angle}deg)`;
     animAngle = angle;
-    if (p < 1) spinRaf = requestAnimationFrame(tick);
-    else {
-      spinRaf = 0;
-      animAngle = target;
-      face.style.transform = `rotate(${target}deg)`;
-      notify();
+    if (p < 1) {
+      spinRaf = requestAnimationFrame(tick);
+      return;
+    }
+    spinRaf = 0;
+    animAngle = anim.to;
+    face.style.transform = `rotate(${anim.to}deg)`;
+    if (!spinDoneTimer) {
+      spinDoneTimer = window.setTimeout(() => {
+        spinDoneTimer = 0;
+        notify();
+      }, 40);
     }
   };
   spinRaf = requestAnimationFrame(tick);
+}
+
+/** Slider % → weight, giữ tổng các ô khác. */
+function weightFromPct(pct: number, itemWeight: number, totalW: number): number {
+  const others = Math.max(0, totalW - itemWeight);
+  if (others <= 0) return Math.max(1, itemWeight);
+  const clamped = Math.max(1, Math.min(99, Math.round(pct)));
+  return Math.max(1, Math.round((clamped / (100 - clamped)) * others));
 }
 
 function activeSpin(wheelId: string) {
@@ -144,8 +191,14 @@ export function renderQuay(): string {
 
   const totalW = items.reduce((s, i) => s + i.weight, 0) || 1;
   const segs = layout.map((s, i) => {
-    const ink = i % 2 === 0 ? '#FFF4D6' : '#1B1B1B';
-    return { sep: s.start - 90, rot: s.mid - 90, name: s.name || items[i]?.name || '', ink };
+    const ink = inkFor(s.color);
+    return {
+      sep: s.start - 90,
+      rot: s.mid - 90,
+      name: s.name || items[i]?.name || '',
+      ink,
+      span: Math.max(8, s.end - s.start),
+    };
   });
 
   let spinLabel = 'QUAY NGAY';
@@ -192,13 +245,13 @@ export function renderQuay(): string {
 
   const rows = items
     .map((r, i) => {
-      const pct = Math.round((r.weight / totalW) * 100) + '%';
+      const pctNum = Math.max(1, Math.min(99, Math.round((r.weight / totalW) * 100)));
       const dot = SHOP_COLORS[i % SHOP_COLORS.length];
       return `<li style="display:flex;align-items:center;gap:8px;border:2px solid #1B1B1B;background:#FFF4D6;padding:4px 6px">
         <span aria-hidden="true" style="flex:0 0 16px;height:16px;border-radius:50%;border:2px solid #1B1B1B;background:${dot}"></span>
         <input class="hn-input" data-iname="${r.id}" value="${esc(r.name)}" style="flex:1;border:0;background:transparent;min-height:40px;font-weight:800">
-        <input type="range" min="1" max="100" value="${r.weight}" data-iw="${r.id}" style="width:84px;min-height:40px">
-        <span style="flex:0 0 40px;text-align:right;font-family:var(--font-mono);font-weight:700;font-size:14px">${pct}</span>
+        <input type="range" min="1" max="99" value="${pctNum}" data-iw="${r.id}" data-iw-weight="${r.weight}" aria-label="Tỷ lệ %" style="width:84px;min-height:40px">
+        <span data-pct-for="${r.id}" style="flex:0 0 40px;text-align:right;font-family:var(--font-mono);font-weight:700;font-size:14px">${pctNum}%</span>
         <button type="button" data-iremove="${r.id}" aria-label="Bỏ ô" style="flex:0 0 40px;height:40px;background:#fff;border:2px solid #1B1B1B;cursor:pointer;display:flex;align-items:center;justify-content:center">${ICONS.x}</button>
       </li>`;
     })
@@ -227,9 +280,9 @@ export function renderQuay(): string {
             ${segs
               .map(
                 (s) => `
-              <div style="position:absolute;left:50%;top:50%;width:50%;height:3px;margin-top:-1.5px;background:#1B1B1B;transform-origin:0 50%;transform:rotate(${s.sep}deg)"></div>
-              <div style="position:absolute;left:50%;top:50%;width:50%;height:0;transform-origin:0 0;transform:rotate(${s.rot}deg)">
-                <span style="position:absolute;right:22px;top:0;transform:translateY(-50%);max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;font-size:14px;font-weight:800;color:${s.ink}">${esc(s.name)}</span>
+              <div style="position:absolute;left:50%;top:50%;width:50%;height:3px;margin-top:-1.5px;background:#1B1B1B;transform-origin:0 50%;transform:rotate(${s.sep}deg);z-index:1"></div>
+              <div style="position:absolute;left:50%;top:50%;width:50%;height:0;transform-origin:0 0;transform:rotate(${s.rot}deg);z-index:2">
+                <span style="position:absolute;left:42%;top:0;transform:translate(-50%,-50%) rotate(90deg);max-width:${Math.min(110, s.span * 2.2)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;font-size:${s.span < 28 ? 11 : 13}px;font-weight:800;color:${s.ink};text-shadow:0 0 2px rgba(0,0,0,0.15)">${esc(s.name)}</span>
               </div>`,
               )
               .join('')}
@@ -350,12 +403,19 @@ export function bindQuay(root: HTMLElement): void {
   });
 
   root.querySelectorAll('[data-iw]').forEach((el) => {
-    el.addEventListener('change', async () => {
-      await cmd(
-        'wheel.item.update',
-        { id: (el as HTMLElement).dataset.iw, weight: Number((el as HTMLInputElement).value) },
-        wheel?.version,
-      );
+    const input = el as HTMLInputElement;
+    const id = input.dataset.iw!;
+    input.addEventListener('input', () => {
+      const label = root.querySelector(`[data-pct-for="${CSS.escape(id)}"]`);
+      if (label) label.textContent = `${input.value}%`;
+    });
+    input.addEventListener('change', async () => {
+      if (!wheel) return;
+      const item = wheel.items.find((x) => x.id === id);
+      if (!item) return;
+      const total = wheel.items.reduce((s, i) => s + i.weight, 0) || 1;
+      const weight = weightFromPct(Number(input.value), item.weight, total);
+      await cmd('wheel.item.update', { id, weight }, wheel.version);
     });
   });
 
