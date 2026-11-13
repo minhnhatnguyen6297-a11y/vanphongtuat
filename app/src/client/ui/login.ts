@@ -4,7 +4,6 @@ import { toast } from './toast.js';
 import { apiLogin, fetchLoginRoster } from '../api.js';
 import { connectWs } from '../ws.js';
 import { setRoute } from '../router.js';
-import { ICONS } from '../icons.js';
 
 let selectedUsername = '';
 
@@ -17,8 +16,8 @@ export async function renderLogin(mount: HTMLElement): Promise<void> {
 
   const paint = () => {
     mount.innerHTML = `<div class="hn-login-wrap">
-      <div class="hn-office-logo"><span>VĂN PHÒNG</span><strong>TUẤT</strong>${ICONS.paw}</div>
-      <form class="hn-login-card" aria-labelledby="login-title">
+      <div class="hn-office-logo"><img src="/art/login-wordmark.png" alt="Văn phòng Tuất"></div>
+      <form class="hn-login-card hn-paper-fold" aria-labelledby="login-title">
         <h1 id="login-title">ĐĂNG NHẬP</h1>
         <fieldset class="hn-login-roster">
           <legend>Chọn tên</legend>
@@ -33,7 +32,10 @@ export async function renderLogin(mount: HTMLElement): Promise<void> {
         </fieldset>
         <label class="hn-login-pin">
           PIN 6 số
-          <input class="hn-input" id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" ${roster.length ? '' : 'disabled'}>
+          <span class="hn-login-pin-box">
+            <input class="hn-input" id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" placeholder=" " ${roster.length ? '' : 'disabled'}>
+            <span class="hn-login-pin-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </span>
         </label>
         <button type="submit" class="hn-btn hn-btn-red" id="login-go" ${roster.length ? '' : 'disabled'}>VÀO SẢNH</button>
       </form>

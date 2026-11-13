@@ -3,6 +3,7 @@ import { state, memberById, canPerm } from '../store.js';
 import type { ChatMsg } from '../../shared/types.js';
 import { cmd } from '../ws.js';
 import { toast } from './toast.js';
+import { ICONS } from '../icons.js';
 
 const expandedChats = new Set<string>();
 
@@ -50,7 +51,7 @@ export function renderChatPanel(scope: string, opts?: { title?: string; collapsi
 
   if (opts?.collapsible) {
     return `<details class="hn-chat-fold" data-chat-scope="${esc(scope)}" ${expandedChats.has(scope) ? 'open' : ''}>
-      <summary class="hn-chat-title">${esc(title)}${msgs.length ? ` <span>(${msgs.length})</span>` : ''}</summary>
+      <summary class="hn-chat-title">${ICONS.chat} ${esc(title)}${msgs.length ? ` <span>(${msgs.length})</span>` : ''}</summary>
       ${content}
     </details>`;
   }

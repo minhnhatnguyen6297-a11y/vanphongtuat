@@ -19,6 +19,7 @@ const app = document.getElementById('app');
 if (!app) throw new Error('#app missing');
 
 let pasteUnbind: (() => void) | null = null;
+let renderedRoute: string | null = null;
 
 function titles(): { chip: string; fun: string } {
   switch (state.route) {
@@ -43,6 +44,7 @@ function titles(): { chip: string; fun: string } {
 
 function renderShell(): void {
   if (!state.me) {
+    renderedRoute = null;
     void renderLogin(app!);
     return;
   }
@@ -76,6 +78,8 @@ function renderShell(): void {
   }
 
   const route = state.route;
+  if (renderedRoute !== route) window.scrollTo(0, 0);
+  renderedRoute = route;
   const illustrated = route === 'ban' || route === 'quay' || route === 'tien';
   app!.innerHTML = `<div class="hn-scene${illustrated ? ' hn-scene-illustrated' : ''}" data-scene="${route}">
     ${illustrated ? `<div class="hn-scene-art" aria-hidden="true">

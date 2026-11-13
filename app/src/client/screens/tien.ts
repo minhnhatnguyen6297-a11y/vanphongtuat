@@ -17,6 +17,7 @@ import { copyText } from '../copy.js';
 import { chooseImage, readClipboardImage, type ImageBlob } from '../image.js';
 import { apiAi } from '../api.js';
 import { ICONS } from '../icons.js';
+import { renderFace } from '../ui/face.js';
 import { waitAi } from '../ws.js';
 import { toast } from '../ui/toast.js';
 import { openAvatarModal } from '../ui/avatar.js';
@@ -85,7 +86,8 @@ export function renderTien(): string {
             .join(' · ');
           const sel = state.ui.selectedPersonId === r.memberId;
           return `<button type="button" class="hn-person-row" data-person="${r.memberId}" aria-pressed="${sel}">
-            <b style="font-family:var(--font-body);font-size:15px">${esc(m?.displayName || '?')}</b>
+            <span class="hn-person-face">${renderFace({ avatarId: m?.avatarId, displayName: m?.displayName, size: 33 })}</span>
+            <b class="hn-person-name">${esc(m?.displayName || '?')}</b>
             <b style="font-size:17px">${esc(fmtVnd(r.share))}</b>
             <span style="font-size:12px;color:#3D3D3D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(texts)}</span>
             <span style="font-size:11px;font-weight:700;color:#B71C1C">${r.estimated && table.billMode === 'item' ? '~ giá TB' : ''}</span>
