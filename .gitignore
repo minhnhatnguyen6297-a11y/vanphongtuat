@@ -31,7 +31,9 @@ Thumbs.db
 # Local agent / IDE
 .claude/
 .superpowers/
-.cursor/
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
 
 # Local scrape / chat caches
 threads_cache.json
