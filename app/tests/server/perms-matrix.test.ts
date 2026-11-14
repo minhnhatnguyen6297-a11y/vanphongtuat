@@ -24,7 +24,9 @@ describe('perms matrix + hasPerm', () => {
     assert.equal(hasPerm(db, dan.id, 'table.setBill'), false);
     assert.equal(hasPerm(db, nole.id, 'wheel.spin'), false);
     assert.equal(hasPerm(db, dan.id, 'vote'), true);
+    assert.equal(hasPerm(db, dan.id, 'table.setWinner'), true);
     assert.equal(hasPerm(db, nole.id, 'order'), true);
+    assert.equal(hasPerm(db, nole.id, 'table.setWinner'), true);
   });
 
   it('grant tạm hết hạn → hasPerm false; còn hạn → true', () => {
@@ -40,17 +42,12 @@ describe('perms matrix + hasPerm', () => {
     assert.equal(hasPerm(db, dan.id, 'table.setBill'), false);
 
     const future = new Date(Date.now() + 60_000).toISOString();
-    db.prepare(
-      `INSERT INTO perm_grants(id, member_id, perm_key, granted_by, expires_at, created_at)
-       VALUES(?,?,?,?,?,?)`,
-    ).run(newId(), dan.id, 'wheel.spin', chu.id, future, nowIso());
-    // dan_den already has wheel.spin by default; use setWinner
     db.prepare(`DELETE FROM perm_grants`).run();
     db.prepare(
       `INSERT INTO perm_grants(id, member_id, perm_key, granted_by, expires_at, created_at)
        VALUES(?,?,?,?,?,?)`,
-    ).run(newId(), dan.id, 'table.setWinner', chu.id, future, nowIso());
-    assert.equal(hasPerm(db, dan.id, 'table.setWinner'), true);
+    ).run(newId(), dan.id, 'table.setBill', chu.id, future, nowIso());
+    assert.equal(hasPerm(db, dan.id, 'table.setBill'), true);
   });
 
   it('anti-escalation: không grant/request/approve/setMatrix NO_GRANT perms', () => {

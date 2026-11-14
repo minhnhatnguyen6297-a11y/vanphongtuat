@@ -252,7 +252,7 @@ export function renderBan(): string {
           <span class="hn-shop-progress"><span class="hn-bar" aria-hidden="true"><span style="width:${pct}%;background:${color}"></span></span><b>${pct}%</b></span>
           ${stats ? `<small class="hn-muted">${esc(stats)}</small>` : ''}
         </button>
-        ${canPerm('table.setWinner') && !table.winnerShopId ? `<button type="button" class="hn-btn hn-btn-white hn-shop-lock" data-lock="${id}" aria-label="Chốt ${esc(s.name)}">Chốt</button>` : ''}
+        ${!table.winnerShopId && canPerm('table.setWinner') ? `<button type="button" class="hn-btn hn-btn-red hn-shop-lock" data-lock="${id}" aria-label="Chốt ${esc(s.name)}">Chốt quán này</button>` : ''}
       </div>`;
     })
     .join('');

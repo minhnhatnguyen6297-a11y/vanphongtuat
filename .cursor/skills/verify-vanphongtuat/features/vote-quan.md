@@ -26,16 +26,17 @@ Preconditions:
 - **See.** Read each `button[data-vote]` accessible name. Screenshot `01-ban-minh.png`.
 - **Cast.** Lan clicks one `button[data-vote]`. That button's `aria-pressed` becomes `true`.
 - **Live.** Minh, who did not reload, sees that shop's phiếu text increase. Screenshot `02-ban-minh-after-lan.png`.
-- **Lock.** Minh clicks `getByRole('button', { name: 'Chốt <shop name>' })` for that shop. A badge `CHỐT` is visible on the card. Lan's page, without reload, shows `CHỐT` too.
-- **Menu.** The heading `THỰC ĐƠN` lists at least one `button[data-menu]` whose name is a dish of the locked shop, and `.hn-calling-shop` names that shop.
-- **Side effect.** Readonly SQL `votes` contains Lan's `shop_id`, and `tables.winner_shop_id` equals the locked shop id from `data-lock`.
-- **Dân đen.** On Lan's page, before she is promoted, `button[data-lock]` count is 0. She can vote. She cannot see Chốt.
+- **Lock.** Lan clicks `button[data-lock]` whose accessible name is `Chốt <tên quán>` (nhãn nút: `Chốt quán này`). A badge `CHỐT` is visible. Minh's page, without reload, shows `CHỐT` and the same `.hn-calling-shop`.
+- **Menu.** After that click, `button[data-menu]` lists dishes of the locked shop, not the previous calling shop.
+- **Side effect.** Readonly SQL `tables.winner_shop_id` equals the `data-lock` id Lan pressed.
+- **Countdown.** Kê bàn with `#ct-vote-sec` set to `2`, wait past 2 seconds. `.hn-badge-locked` stays absent and `button[data-lock]` is still visible. The countdown does not close the vote.
 
-If `button[data-lock]` count is 0 for Minh (chủ xị), the journey fails. Do not press a hidden control or call `table.setWinner` from the console to force a pass.
+If Lan sees zero `button[data-lock]` on an unlocked table, the journey fails. Do not call `table.setWinner` from the console.
 
 ## Gotchas
 
-- Dân đen (Lan, Tuấn, Hương, Hoàng, Thảo) are not given `table.setWinner` by the seed matrix. Only Minh, in this seed, is chủ xị. A test that logs in only as Lan and then expects a Chốt button is observing the permission, not a missing seed row.
+- Dân đen và nô lệ đều có nút `Chốt quán này`. Chỉ chủ xị mới thấy nút là journey sai.
+- Ô đếm ngược lúc kê bàn không tự khóa và không bắt buộc hiện đồng hồ. Hết số giây mà vẫn còn nút Chốt là đúng spec.
 - Clicking the same `button[data-vote]` again clears the vote (`aria-pressed` returns false). A double click is not a second vote.
 - Seed always creates a current table with shops. A journey that requires zero tables fails on this seed; do not delete rows to make an empty-board shot.
 - The menu shown before anyone chốt is whatever the screen already labels in `.hn-calling-shop`. Do not treat that label as proof that a vote was closed.

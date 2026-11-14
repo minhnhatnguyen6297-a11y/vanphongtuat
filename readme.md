@@ -1,37 +1,58 @@
 # Hôm Nay Ăn Gì?
 
-App đặt đồ ăn văn phòng chạy trên **LAN** (máy chủ Node.js + SQLite + WebSocket HTTPS).
+App vui để cả văn phòng chọn quán ăn trưa, gọi món, quay người đi lấy, và chia tiền. Chạy trên máy trong mạng nội bộ: Node.js, SQLite một file, WebSocket. Giao diện là Văn Phòng Tuất (neo-brutalism, chữ Việt).
 
-> Đây là app vui — không sổ nợ, không chốt sổ, không theo dõi đã trả/chưa trả.
+Không sổ nợ, không chốt sổ kế toán, không theo dõi đã trả hay chưa trả.
 
-## Tài liệu
+## Chạy dev
 
-| File | Vai trò |
-|---|---|
-| [`design-toi-gian/PLAN-toi-gian.md`](design-toi-gian/PLAN-toi-gian.md) | Plan đợt 1 (hiện hành) |
-| [`KIEN-TRUC-DE-XUAT.md`](KIEN-TRUC-DE-XUAT.md) | Kiến trúc đã review |
-| [`agents.md`](agents.md) | Quy chuẩn cho agent / lập trình viên |
-| [`design-toi-gian/ViaHe-*.dc.html`](design-toi-gian/) | Thiết kế 5 màn |
-| [`design-toi-gian/mocks/`](design-toi-gian/mocks/) | Mock PNG + DESIGN Van Phòng Tuất |
-| [`archive/`](archive/) | `thietke_v1/v2/v3` — tham khảo cũ, không sửa |
-| [`app/`](app/) | Mã nguồn chạy được |
-| [`app/docs/VAN-HANH.md`](app/docs/VAN-HANH.md) | Cài đặt & vận hành trên MAY3 |
-
-`archive/thietke_v1.html` / `archive/thietke_v2.html` chỉ để tham khảo UI/logic cũ.
-
-## Chạy nhanh (máy dev)
+Cần Node.js 22 trở lên.
 
 ```bash
 cd app
-npm install
-npm run seed   # nếu DB trống
-npm run dev
+npm ci
+npm run build
+HNG_DEV_HTTP=1 HNG_ORIGIN=http://127.0.0.1:8443 npm run dev
 ```
 
-Mở `https://localhost:8443` (chứng chỉ tự ký lúc dev). Tài khoản seed in PIN ra console lần đầu.
+Mở `http://127.0.0.1:8443`. DB trống thì server tự tạo dữ liệu giả và in PIN một lần ra console. Không commit PIN, `.env`, hay `app/data/`.
 
-## Phạm vi đợt 1
+`npm run dev` chỉ theo dõi server. Sửa file trong `src/client/` thì chạy lại `npm run build`.
 
-Bàn (vote/order) · Vòng quay · Tính tiền + VietQR · Sổ ghi · Kho quán · AI đọc ảnh (nếu có key) · HTTPS LAN.
+HTTPS cho máy văn phòng (chứng chỉ nội bộ) nằm ở [`app/docs/VAN-HANH.md`](app/docs/VAN-HANH.md).
 
-Không làm: mobile, chat, game sảnh, bot, webhook ngân hàng.
+## Test
+
+```bash
+cd app
+npm test          # unit và server
+npm run e2e       # trình duyệt, tự bật một server riêng
+```
+
+Muốn một agent bấm app và giữ bằng chứng: [`.cursor/skills/verify-vanphongtuat/SKILL.md`](.cursor/skills/verify-vanphongtuat/SKILL.md).
+
+## Điện thoại tạm
+
+Khi server đang nghe HTTP ở máy này, có thể mở tunnel không tài khoản:
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8443
+```
+
+Đặt `HNG_ORIGIN` bằng URL `https://….trycloudflare.com` rồi khởi động lại server, nếu không đăng nhập bị từ chối. Link chỉ sống khi process tunnel và máy còn chạy.
+
+## Bố cục
+
+| Thư mục | Nội dung |
+|---|---|
+| `app/` | Mã chạy được: server, client, migration, test |
+| `docs/spec/` | Spec từng màn, gồm lý do các quyết định không hiển nhiên |
+| `docs/qa/` | Quy chuẩn test và báo cáo đã bấm |
+| `design-toi-gian/` | Thiết kế màn và mock |
+| `archive/` | Bản thiết kế cũ, không sửa |
+| `agents.md` | Quy chuẩn giao diện và kiến trúc |
+| `AGENTS.md` | Việc agent cần biết trước khi sửa |
+
+## Phạm vi
+
+Bàn (vote, chốt quán, gọi món), vòng quay, tính tiền và VietQR, sổ ghi, kho quán. Chat, sảnh game, và phân quyền đã có trong mã. AI đọc ảnh chỉ khi có `HNG_AI_KEY`.

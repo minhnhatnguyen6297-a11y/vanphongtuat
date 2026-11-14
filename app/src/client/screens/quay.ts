@@ -257,7 +257,7 @@ export function renderQuay(): string {
     .join('');
 
   const log = state.spins
-    .filter((s) => s.wheelId === wheel!.id)
+    .filter((s) => s.wheelId === wheel!.id && s.id !== spinning?.id)
     .slice(0, 5)
     .map((s) => {
       const d = new Date(s.startedAt);
