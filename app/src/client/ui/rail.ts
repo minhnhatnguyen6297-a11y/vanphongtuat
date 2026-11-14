@@ -9,6 +9,7 @@ const ITEMS: { id: RouteId; label: string; icon: string }[] = [
   { id: 'so', label: 'Sổ ghi', icon: ICONS.so },
   { id: 'kho', label: 'Kho quán', icon: ICONS.kho },
   { id: 'sanh', label: 'Sảnh', icon: ICONS.sanh },
+  { id: 'typhu', label: 'Tỷ phú', icon: ICONS.typhu },
 ];
 
 export function renderRail(): string {
