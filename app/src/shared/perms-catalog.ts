@@ -77,6 +77,7 @@ const DAN_DEN: PermKey[] = [
   'order',
   'table.create',
   'table.addShop',
+  'table.setWinner',
   'shop.add',
   'shop.edit',
   'wheel.create',
@@ -87,7 +88,7 @@ const DAN_DEN: PermKey[] = [
   'game.spectate',
 ];
 
-const NO_LE: PermKey[] = ['vote', 'order', 'chat.send', 'game.spectate'];
+const NO_LE: PermKey[] = ['vote', 'order', 'table.setWinner', 'chat.send', 'game.spectate'];
 
 function allExcept(...deny: PermKey[]): Set<PermKey> {
   const s = new Set(ALL);

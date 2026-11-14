@@ -102,28 +102,52 @@ test('chia đều, bill là 10.000đ nhân số người, thì mỗi người 10
   expect(shares.reduce((s, x) => s + x, 0)).toBe(bill);
 });
 
-test('QA-02 dân đen không có cách kết thúc vote', async ({ page }) => {
-  test.fail(true, 'QA-02');
+test('dân đen bấm Chốt thì cả bàn thấy tem và thực đơn đổi', async ({ browser }) => {
   const { origin } = state();
-  await login(page, 'lan', 'Lan HR');
-  await page.goto(`${origin}/#/ban`);
-  const endings = await page.getByRole('button', { name: /Chốt|Đóng vote|Kết thúc/ }).count();
-  expect(endings).toBeGreaterThan(0);
+  const minh = await browser.newPage();
+  const lan = await browser.newPage();
+  await login(minh, 'minh', 'Minh (Bạn)');
+  await login(lan, 'lan', 'Lan HR');
+  await lan.goto(`${origin}/#/ban`);
+  await minh.goto(`${origin}/#/ban`);
+  const beforeChip = await lan.getByText(/#\d+/).first().innerText();
+  await lan.getByRole('button', { name: /KÊ BÀN MỚI/ }).click();
+  await lan.locator('#ct-go').click();
+  await expect(lan.locator('#ct-go')).toBeHidden();
+  await expect(lan.getByText(/#\d+/).first()).not.toHaveText(beforeChip);
+  const chot = lan.locator('button[data-lock]');
+  await expect(chot.first()).toBeVisible();
+  const callingBefore = (await lan.locator('.hn-calling-shop').innerText()).trim();
+  const cards = await lan.locator('button[data-vote]').evaluateAll((els) =>
+    els.map((el) => ({
+      id: el.getAttribute('data-vote') || '',
+      name: el.querySelector('b')?.textContent?.trim() || '',
+    })),
+  );
+  const other =
+    cards.find((c) => !c.name.toUpperCase().includes(callingBefore.toUpperCase())) || cards[cards.length - 1];
+  await lan.locator(`button[data-lock="${other.id}"]`).click();
+  await expect(lan.locator('.hn-badge-locked')).toBeVisible();
+  await expect(lan.locator('.hn-calling-shop')).not.toHaveText(callingBefore);
+  await expect(minh.locator('.hn-badge-locked')).toBeVisible();
+  await expect(minh.locator('.hn-calling-shop')).toHaveText(await lan.locator('.hn-calling-shop').innerText());
+  await minh.close();
+  await lan.close();
 });
 
-test('QA-01 đếm ngược 8 giây thì vote tự khóa', async ({ page }) => {
-  test.fail(true, 'QA-01');
+test('đếm ngược vote không tự khóa quán', async ({ page }) => {
   const { origin } = state();
   await login(page, 'minh', 'Minh (Bạn)');
   await page.goto(`${origin}/#/ban`);
   const before = await page.getByText(/#\d+/).first().innerText();
   await page.getByRole('button', { name: /KÊ BÀN MỚI/ }).click();
-  await page.locator('#ct-vote-sec').fill('8');
+  await page.locator('#ct-vote-sec').fill('2');
   await page.locator('#ct-go').click();
   await expect(page.locator('#ct-go')).toBeHidden();
   await expect(page.getByText(/#\d+/).first()).not.toHaveText(before);
-  await page.waitForTimeout(9000);
-  await expect(page.locator('.hn-badge-locked')).toBeVisible();
+  await page.waitForTimeout(3000);
+  await expect(page.locator('.hn-badge-locked')).toHaveCount(0);
+  await expect(page.locator('button[data-lock]').first()).toBeVisible();
 });
 
 async function ensureSpin(page: Page): Promise<void> {
@@ -177,8 +201,7 @@ test('vòng quay dừng thì tên khớp ô dưới kim và không hiện thẻ 
   expect(match.winner.length).toBeGreaterThan(0);
 });
 
-test('QA-03 nhật ký không được ghi tên khi đĩa còn quay', async ({ page }) => {
-  test.fail(true, 'QA-03');
+test('nhật ký vòng quay không lộ tên khi đĩa còn quay', async ({ page }) => {
   await login(page, 'minh', 'Minh (Bạn)');
   await ensureSpin(page);
   const before = await page.locator('.hn-wheel-log-row').count();

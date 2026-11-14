@@ -22,6 +22,7 @@
 ### Đã mở rộng (roles / chat / sảnh)
 - Phân quyền **toàn cục theo tầng** (`chu_xi` / `pho_xi` / `dan_den` / `no_le`) + ma trận `role_permissions`; grant tạm 24h; anti-escalation (`perm.*` / `member.admin` không grant).
 - **`tables.host_id` chỉ là người gánh lẻ** (nhãn / residual) — **không** authorize lệnh.
+- **Chốt quán** là tay: ai đang tham gia cũng bấm được. Bấm Chốt chọn quán nào thì thực đơn quán đó mở ra để gọi món. Đếm ngược lúc kê bàn **không** tự khóa vote.
 - Chat theo scope bàn (`tableId`) và vòng quay (`wheelId`); fanout event, không full-snap mỗi tin.
 - Sảnh game: Caro / Cá ngựa / Tỉ phú rút gọn — host cần `game.host`; chơi cần `game.play`.
 
@@ -73,9 +74,9 @@ Node.js trên MAY3  ── SQLite (WAL) ── backup 14 ngày
 ### Ma trận quyền (tóm tắt — toàn cục theo tầng)
 | Việc | Ai (mặc định) |
 |---|---|
-| Vote, gọi món mình, chat.send, spectate | Dân đen / Nô lệ (+ các tầng trên) |
+| Vote, gọi món mình, chốt quán, chat.send, spectate | Dân đen / Nô lệ (+ các tầng trên) |
 | Kê bàn, thêm quán bàn/kho, sửa vòng, quay, chơi game | Dân đen trở lên |
-| Sửa order người khác, set bill / chốt quán / pickup, xóa quán·vòng, chat.mod, host phòng game | Phó xị / Chủ xị |
+| Sửa order người khác, set bill / pickup, xóa quán·vòng, chat.mod, host phòng game | Phó xị / Chủ xị |
 | Sửa ma trận / set tầng (`perm.manage`) | Chỉ Chủ xị |
 | Duyệt xin phép (`perm.approve`) | Phó xị / Chủ xị |
 | Quản lý tài khoản (`member.admin`) | Phó xị / Chủ xị (`is_operator` ↔ `chu_xi`) |

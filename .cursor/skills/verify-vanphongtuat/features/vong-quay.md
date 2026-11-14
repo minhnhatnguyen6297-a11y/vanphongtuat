@@ -5,7 +5,7 @@ Người bấm QUAY NGAY. Đĩa xoay và chậm lại. Khi đĩa đã dừng, d�
 ## Sub-features
 
 - `spin-start` disables the button and labels it ĐANG QUAY.
-- `spin-hidden` keeps `.hn-wheel-winner` absent while the button says ĐANG QUAY.
+- `spin-hidden` keeps `.hn-wheel-winner` absent and does not add a `.hn-wheel-log-row` while the button says ĐANG QUAY.
 - `spin-ease` moves the disc faster at the start than at the end.
 - `spin-match` shows a winner equal to the segment under the pointer after the disc stops.
 - `spin-again` leaves the button as QUAY LẠI.
@@ -24,7 +24,7 @@ Preconditions:
 
 - **Before.** Screenshot `01-wheel.png`. Record the border colors of `.hn-wheel-disk` and `#wheel-face`.
 - **Start.** Click the spin button. The button name becomes `ĐANG QUAY…`.
-- **While moving.** About 400ms later, `.hn-wheel-winner` count is 0. Sample `#wheel-face` transform three times, 700ms apart. The first angle delta is greater than the last delta (ease-out). Screenshot `02-wheel-mid.png` during this window.
+- **While moving.** About 400ms later, `.hn-wheel-winner` count is 0 and `.hn-wheel-log-row` count is unchanged. Sample `#wheel-face` `--wheel-angle` three times. The first angle delta is greater than the last (ease-out). Screenshot `02-wheel-mid.png` during this window. No result name from this spin is visible.
 - **After stop.** Wait until the button name matches `/QUAY LẠI/` and `.hn-wheel-winner` is visible. Screenshot `03-wheel-done.png`.
 - **Match.** The winner text equals the `.hn-wheel-label` whose box center is closest to the point at the top-center of `#wheel-face`, just inside the rim, under `.hn-pointer-outer`. Compare those two strings. Do not compare the winner to a server field.
 - **Repeat.** Do this five times. Any mismatch or any winner visible during ĐANG QUAY fails the journey.

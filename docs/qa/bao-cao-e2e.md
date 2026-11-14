@@ -1,5 +1,13 @@
 # Báo cáo dùng thử — Hôm Nay Ăn Gì?
 
+## Quyết định của chủ (sau báo cáo này)
+
+- **QA-01 không phải lỗi.** Hết giờ đếm ngược mà không tự khóa quán là chủ đích. Không thêm tự đóng. Ô giây chỉ là ghi chú lúc kê bàn.
+- **QA-02 đã sửa theo hướng khác:** Chốt là tay, và mọi người tham gia đều bấm được, không chỉ chủ xị. Bấm Chốt chọn quán để mở thực đơn gọi món. Máy khác thấy tem CHỐT qua WebSocket.
+- **QA-03 đã sửa:** tên kết quả không hiện ở ĐÃ QUAY hay thẻ kết quả khi đĩa còn quay.
+
+Spec: [`docs/spec/ke-ban-vote.md`](../spec/ke-ban-vote.md), [`docs/spec/vong-quay.md`](../spec/vong-quay.md).
+
 Đã ngồi bấm trên Chrome thật, hai vòng. Vòng 1: bốn phiên song song (đăng nhập, bàn, vòng quay, tính tiền/kho). Vòng 2: kiểm lại chỗ chưa chắc. Vòng 2 không ra thêm lỗi High mới, nên dừng, không có vòng 3. Không sửa code app.
 
 Dữ liệu chỉ là seed giả, mỗi phiên một DB riêng. Tunnel điện thoại cổng 8443 không bị đụng.

@@ -914,7 +914,7 @@ input[type=range] { accent-color: var(--red); }
 .hn-shop-seats:empty { display: none; }
 .hn-shop-progress { display: grid; align-items: center; grid-template-columns: minmax(0, 1fr) 4ch; gap: 7px; }
 .hn-shop-progress b { text-align: right; }
-.hn-shop-lock { min-height: 36px; font-size: 12px; }
+.hn-shop-lock { min-height: 44px; font-size: 14px; padding: 6px 10px; white-space: nowrap; }
 
 .hn-badge {
   background: var(--yellow);
