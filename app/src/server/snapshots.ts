@@ -292,8 +292,23 @@ export function snapWheels(db: Db) {
   return { scope: 'wheels' as ScopeName, version, data };
 }
 
+export function snapVuon(db: Db) {
+  const rows = db
+    .prepare(
+      `SELECT member_id AS memberId, species_id AS speciesId, care_days AS careDays,
+              last_care_on AS lastCareOn
+       FROM garden_care`,
+    )
+    .all();
+  const meta = db.prepare(`SELECT version FROM garden_meta WHERE id = 1`).get() as
+    | { version: number }
+    | undefined;
+  return { scope: 'vuon' as const, version: meta?.version ?? 0, data: { rows } };
+}
+
 export function buildSnap(db: Db, scope: ScopeName) {
   if (scope === 'members') return snapMembers(db);
+  if (scope === 'vuon') return snapVuon(db);
   if (scope === 'perms') return snapPerms(db);
   if (scope === 'shops') return snapShops(db);
   if (scope === 'wheels') return snapWheels(db);

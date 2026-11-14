@@ -194,6 +194,11 @@ export const CommandSchemas = {
     to: z.number().int().optional(),
     action: z.string().max(40).optional(),
   }),
+
+  'vuon.care': z.object({
+    speciesId: z.string().trim().min(1).max(40),
+    ownerId: z.string().trim().min(1).max(80).optional(),
+  }),
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

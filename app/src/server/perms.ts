@@ -288,6 +288,8 @@ function resolveCommandPerm(
     }
     case 'game.leave':
       return 'self';
+    case 'vuon.care':
+      return 'self';
     default:
       throw new CmdError('unknown_command');
   }

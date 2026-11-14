@@ -7,6 +7,7 @@ import {
   type PermsState,
 } from './store.js';
 import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, Wheel } from '../shared/types.js';
+import { applyDailyCare, careOf, saigonDateString, speciesById, stageFromCareDays } from '../shared/vuon.js';
 import { toast } from './ui/toast.js';
 
 type HelloMsg = { t: 'hello'; subs: string[] };
@@ -122,6 +123,9 @@ function applySnap(scope: string, version: number, data: unknown): void {
         else state.tables.unshift(row);
       }
     }
+  } else if (scope === 'vuon') {
+    const payload = data as { rows?: { memberId: string; speciesId: string; careDays: number; lastCareOn: string | null }[] };
+    state.vuon = { rows: payload.rows || [] };
   } else if (scope.startsWith('table:')) {
     const t = data as TableRow;
     const i = state.tables.findIndex((x) => x.id === t.id);
@@ -185,7 +189,7 @@ function send(msg: ClientMsg): void {
 }
 
 function baseSubs(): string[] {
-  return ['table:current', 'shops', 'wheels', 'members', 'perms', 'games', ...state.chatSubs];
+  return ['table:current', 'shops', 'wheels', 'members', 'perms', 'games', 'vuon', ...state.chatSubs];
 }
 
 function hello(): void {
@@ -616,6 +620,40 @@ function mockCmd(name: string, args: unknown): AckMsg {
   }
   if (name === 'member.changePin') {
     return { t: 'ack', opId: uuid(), ok: true };
+  }
+  if (name === 'vuon.care') {
+    const species = speciesById(String(a.speciesId || ''));
+    if (!species) return { t: 'ack', opId: uuid(), ok: false, error: 'not_found' };
+    const ownerId = a.ownerId ? String(a.ownerId) : me.id;
+    if (ownerId !== me.id && species.kind !== 'plant') {
+      return { t: 'ack', opId: uuid(), ok: false, error: 'forbidden' };
+    }
+    const today = saigonDateString(new Date());
+    const prev = careOf(state.vuon.rows, ownerId, species.id);
+    const next = applyDailyCare(prev, today);
+    const row = {
+      memberId: ownerId,
+      speciesId: species.id,
+      careDays: next.careDays,
+      lastCareOn: next.lastCareOn,
+    };
+    const i = state.vuon.rows.findIndex((r) => r.memberId === ownerId && r.speciesId === species.id);
+    if (i >= 0) state.vuon.rows[i] = row;
+    else state.vuon.rows.push(row);
+    return {
+      t: 'ack',
+      opId: uuid(),
+      ok: true,
+      result: {
+        ownerId,
+        speciesId: species.id,
+        kind: species.kind,
+        careDays: next.careDays,
+        lastCareOn: next.lastCareOn,
+        counted: next.counted,
+        stage: stageFromCareDays(next.careDays),
+      },
+    };
   }
   return { t: 'ack', opId: uuid(), ok: true };
 }

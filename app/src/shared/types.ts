@@ -137,6 +137,7 @@ export type ScopeName =
   | 'members'
   | 'perms'
   | 'games'
+  | 'vuon'
   | `table:${number}`
   | `chat:${string}`;
 

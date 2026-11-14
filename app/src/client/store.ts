@@ -1,7 +1,8 @@
 import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, Wheel } from '../shared/types.js';
+import type { VuonRow } from '../shared/vuon.js';
 import type { PermKey, Tier } from '../shared/perms-catalog.js';
 
-export type RouteId = 'home' | 'ban' | 'quay' | 'tien' | 'so' | 'kho' | 'quyen' | 'sanh' | 'chat';
+export type RouteId = 'home' | 'ban' | 'quay' | 'tien' | 'so' | 'kho' | 'quyen' | 'sanh' | 'chat' | 'vuon';
 
 export type PermsState = {
   matrix: Record<Tier, PermKey[]>;
@@ -33,6 +34,7 @@ export type AppState = {
   wheels: Wheel[];
   spins: Spin[];
   games: GameRoom[];
+  vuon: { rows: VuonRow[] };
   chatByScope: Record<string, ChatMsg[]>;
   chatSubs: string[];
   perms: PermsState;
@@ -85,6 +87,7 @@ export const state: AppState = {
   wheels: [],
   spins: [],
   games: [],
+  vuon: { rows: [] },
   chatByScope: {},
   chatSubs: [],
   perms: { matrix: { chu_xi: [], pho_xi: [], dan_den: [], no_le: [] }, grants: [], requests: [] },
