@@ -1,0 +1,8 @@
+{
+  "name": "Hôm Nay Ăn Gì",
+  "install": "set -euo pipefail\nif [ ! -d app ] && [ -d /agent/repos/vanphongtuat ]; then cd /agent/repos/vanphongtuat; fi\ncd app\nnpm ci\nnpm run build\n",
+  "start": "set -euo pipefail\nif [ ! -d app ] && [ -d /agent/repos/vanphongtuat ]; then cd /agent/repos/vanphongtuat; fi\ncd app\nif curl -sf -o /dev/null --max-time 2 http://127.0.0.1:8443/; then\n  echo \"HNG đã chạy ở http://localhost:8443\"\n  exit 0\nfi\nexport HNG_DEV_HTTP=1\nexport HNG_ORIGIN=http://localhost:8443\nexec npm run dev\n",
+  "ports": [
+    { "name": "web", "port": 8443 }
+  ]
+}
