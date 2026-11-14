@@ -24,6 +24,7 @@
 - **`tables.host_id` chỉ là người gánh lẻ** (nhãn / residual) — **không** authorize lệnh.
 - Chat theo scope bàn (`tableId`) và vòng quay (`wheelId`); fanout event, không full-snap mỗi tin.
 - Sảnh game: Caro / Cá ngựa / Tỉ phú rút gọn — host cần `game.host`; chơi cần `game.play`.
+- **Vườn** (`#/vuon`): nuôi thú và trồng cây cho thư giãn. Màn này dùng tranh vẽ, không neo-brutalism. Spec [`docs/spec/vuon.md`](docs/spec/vuon.md), phong cách [`docs/spec/vuon-design.md`](docs/spec/vuon-design.md).
 
 ---
 

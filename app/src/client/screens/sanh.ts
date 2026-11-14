@@ -46,6 +46,10 @@ function renderLobby(): string {
   const rooms = state.games.filter((g) => g.status !== 'ended');
 
   return `<main class="hn-main hn-stack">
+    <a class="hn-vuon-tile" href="#/vuon">
+      <span class="hn-vuon-tile-art" aria-hidden="true"></span>
+      <span class="hn-vuon-tile-copy"><b>VƯỜN</b><small>Nuôi thú · trồng cây</small></span>
+    </a>
     <section class="hn-panel hn-row">
       <h2 class="hn-h2">MỞ PHÒNG</h2>
       <button type="button" class="hn-btn hn-btn-red" data-create="caro" ${canHost ? '' : 'disabled'}>CARO 15×15</button>

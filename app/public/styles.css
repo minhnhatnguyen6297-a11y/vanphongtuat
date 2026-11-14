@@ -2044,3 +2044,135 @@ input[type=range] { accent-color: var(--red); }
   .hn-art-coffee { display: none; }
   .hn-bill-shares .hn-qr-box { padding-right: 10px; }
 }
+
+/* Vườn — tranh full-bleed. Gió và ánh sáng ở CSS. Phong cách: docs/spec/vuon-design.md */
+[data-scene="vuon"] { background: #16324a; }
+[data-scene="vuon"] .hn-shell { max-width: none; padding: 0; min-height: 100dvh; }
+.vuon { position: relative; min-height: 100dvh; overflow: hidden; font-family: "Be Vietnam Pro", sans-serif; color: #3a2a1a; }
+.vuon [hidden] { display: none !important; }
+.vuon-sky { position: absolute; inset: 0; background: #9eb8a4 center/cover no-repeat; z-index: 0; }
+.vuon-rays { position: absolute; inset: -12% -20% auto; height: 72%; z-index: 1; pointer-events: none; mix-blend-mode: soft-light;
+  background: repeating-linear-gradient(105deg, transparent 0 46px, rgba(255,220,140,.18) 46px 78px, transparent 78px 130px);
+  animation: vuon-rays 16s ease-in-out infinite; }
+.vuon-veil { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+  background: linear-gradient(to top, rgba(16,26,58,.55), rgba(16,26,58,.12) 46%, rgba(8,14,36,.38)); }
+.vuon.is-night .vuon-veil { opacity: 1; }
+.vuon.is-night .vuon-sky { filter: saturate(.78) brightness(.76); }
+.vuon.is-night .vuon-rays { opacity: .28; }
+.vuon-shade { position: absolute; left: 0; right: 0; bottom: 0; height: 32%; z-index: 2; pointer-events: none;
+  background: linear-gradient(transparent, rgba(40,24,8,.38)); }
+.vuon-fall { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+.vuon-fall i { position: absolute; top: -12%; width: 10px; height: 14px; border-radius: 80% 0 80% 0; background: #f4b6c8; opacity: .85; animation: vuon-fall linear infinite; }
+[data-season="ha"] .vuon-fall i { width: 6px; height: 6px; border-radius: 50%; background: #ffe08a; }
+[data-season="thu"] .vuon-fall i { background: #e07a32; border-radius: 2px 80% 2px 80%; }
+[data-season="dong"] .vuon-fall i { width: 5px; height: 5px; border-radius: 50%; background: #fff; }
+.vuon-top { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 6; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none; }
+.vuon-top > * { pointer-events: auto; }
+.vuon-top-left { display: flex; align-items: center; gap: 8px; }
+.vuon-round { width: 46px; height: 46px; border-radius: 50%; border: 0; background: #fff6e4; color: #4a3018; font-size: 22px; box-shadow: 0 4px 12px rgba(0,0,0,.18); cursor: pointer; }
+.vuon-wood { background: linear-gradient(#e0b06a, #a86b32); color: #fff8e8; border-radius: 12px 16px; padding: 8px 14px; font-weight: 800; box-shadow: inset 0 2px 0 rgba(255,255,255,.35), 0 3px 0 #7a4a1e; }
+.vuon-plaque { position: absolute; top: 58px; left: 50%; transform: translateX(-50%); z-index: 6; min-width: 190px; max-width: min(420px, 86vw); padding: 8px 28px 10px; text-align: center; color: #6a4a12;
+  background: linear-gradient(#f8e7a2, #e7c15a); border-radius: 16px; box-shadow: 0 8px 18px rgba(80,50,10,.25), inset 0 0 0 2px rgba(255,248,220,.85); }
+.vuon-plaque::before, .vuon-plaque::after { content: ""; position: absolute; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 0 70% 0 70%; background: #d7a441; }
+.vuon-plaque::before { left: 8px; transform: rotate(-30deg); }
+.vuon-plaque::after { right: 8px; transform: rotate(150deg); }
+.vuon-plaque b { display: block; font-size: 18px; }
+.vuon-plaque span { display: block; font-size: 13px; font-weight: 700; }
+.vuon-preview { color: #8a5a18; }
+.vuon-seasons { display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: rgba(255,255,255,.78); box-shadow: 0 8px 20px rgba(40,60,90,.16); }
+.vuon-seasons button { border: 0; background: transparent; border-radius: 999px; display: flex; align-items: center; gap: 4px; padding: 6px 10px; color: #3d5470; font: 700 13px/1 "Be Vietnam Pro", sans-serif; cursor: pointer; }
+.vuon-seasons button[aria-pressed="true"] { background: #f0c14a; color: #6a4010; }
+.vuon-seasons svg { width: 18px; height: 18px; }
+.vuon-cal { position: absolute; top: 62px; right: 14px; z-index: 6; margin: 0; font-size: 12px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
+.vuon-stage { position: absolute; inset: 0 0 118px; z-index: 3; display: flex; align-items: flex-end; justify-content: center; gap: 2vw; pointer-events: none; }
+.vuon-sprite { position: relative; pointer-events: auto; background: none; border: 0; padding: 0; cursor: pointer; }
+.vuon-sprite img { position: relative; z-index: 1; height: 26vh; width: auto; max-width: 46vw; object-fit: contain; filter: drop-shadow(0 12px 8px rgba(40,30,10,.28)); transform-origin: 50% 100%; animation: vuon-sway 5.5s ease-in-out infinite; }
+.vuon-sprite.is-non img { height: 18vh; }
+.vuon-sprite.is-grown img, .vuon-sprite.is-focus:not(.is-giant) img { height: 32vh; }
+.vuon-sprite.is-giant img { height: min(68vh, 740px); max-width: 78vw; }
+.vuon.both-giant .vuon-sprite.is-giant img { height: min(50vh, 520px); }
+.vuon-sprite .vuon-aura { position: absolute; inset: -14% -16%; z-index: 0; pointer-events: none; opacity: 0; }
+.vuon-sprite.is-giant .vuon-aura { opacity: 1; }
+.vuon-sprite.is-giant[data-temper="dang_yeu"] .vuon-aura { background: radial-gradient(ellipse at 50% 62%, rgba(255,186,150,.62), transparent 68%); }
+.vuon-sprite.is-giant[data-temper="tuoi_sang"] .vuon-aura { background: radial-gradient(ellipse at 50% 28%, rgba(255,214,110,.72), transparent 60%); animation: vuon-glow 5.5s ease-in-out infinite; }
+.vuon-sprite.is-giant[data-temper="tram"] .vuon-aura { background: radial-gradient(ellipse at 50% 18%, rgba(214,224,238,.5), transparent 56%); }
+.vuon-sprite.is-giant[data-temper="du_doi"] .vuon-aura { background: linear-gradient(100deg, transparent 20%, rgba(70,110,150,.28) 50%, transparent 80%); animation: vuon-wind 2.2s linear infinite; }
+.vuon-sprite.is-giant[data-temper="the_gioi"] .vuon-aura { background: radial-gradient(ellipse at 50% 42%, rgba(255,206,90,.6), transparent 62%), linear-gradient(180deg, rgba(255,230,150,.2), transparent 42%); animation: vuon-glow 7s ease-in-out infinite; }
+.vuon-sprite[data-temper="tram"] img { animation-duration: 9s; }
+.vuon-sprite[data-temper="du_doi"] img { animation-duration: 2.5s; }
+.vuon-spark { display: none; }
+.vuon-sprite.is-giant[data-temper="tuoi_sang"] .vuon-spark { display: block; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff4c4; z-index: 2; animation: vuon-spark 2.8s ease-in-out infinite; }
+.vuon-sprite .vuon-spark:nth-of-type(1) { left: 8%; top: 16%; }
+.vuon-sprite .vuon-spark:nth-of-type(2) { right: 10%; top: 28%; animation-delay: .7s; }
+.vuon-sprite .vuon-spark:nth-of-type(3) { left: 22%; bottom: 22%; animation-delay: 1.2s; }
+.vuon-todo { min-width: 120px; min-height: 90px; display: grid; place-items: center; padding: 8px; border-radius: 16px; background: rgba(255,248,230,.82); color: #7a6248; font-weight: 800; font-size: 13px; }
+.vuon-rest { position: absolute; left: 50%; bottom: 0; transform: translateX(-46%); display: flex; align-items: flex-end; gap: 4px; z-index: 4; pointer-events: none; }
+.vuon-rest img { height: 11vh; width: auto; filter: drop-shadow(0 6px 4px rgba(0,0,0,.2)); }
+.vuon-rest .vuon-chibi { height: 15vh; }
+.vuon-mood { position: absolute; margin: 0; z-index: 5; left: 58%; bottom: 30vh; pointer-events: none; }
+.vuon-mood figcaption { background: rgba(255,252,245,.92); border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 800; color: #5c4030; box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+.vuon-status { position: absolute; left: 50%; bottom: 128px; transform: translateX(-50%); z-index: 6; margin: 0; max-width: 92vw; background: rgba(255,248,230,.9); border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 14px; text-align: center; }
+.vuon.is-kho .vuon-status { bottom: auto; top: 128px; }
+.vuon.has-giant .vuon-status { bottom: auto; top: 124px; }
+.vuon-actions, .vuon-links { position: absolute; left: 0; right: 0; z-index: 6; display: flex; justify-content: center; gap: 12px; padding: 0 12px; }
+.vuon-actions { bottom: 52px; }
+.vuon-links { bottom: 12px; }
+.vuon-feed, .vuon-water, .vuon-kho-act { border: 0; border-radius: 999px; min-height: 64px; min-width: 148px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 800 20px/1 "Be Vietnam Pro", sans-serif; cursor: pointer; box-shadow: 0 8px 18px rgba(80,40,10,.18); }
+.vuon-feed, .vuon-kho-act.is-feed { background: linear-gradient(#ffe7c4, #f0a35a); color: #6a3410; }
+.vuon-water, .vuon-kho-act { background: linear-gradient(#e9fff6, #8fd8bf); color: #145244; }
+.vuon-feed svg, .vuon-water svg { width: 42px; height: 28px; }
+.vuon-feed:disabled, .vuon-water:disabled, .vuon-kho-act:disabled { opacity: .55; cursor: default; }
+.vuon-links button, .vuon-visit-banner button, .vuon-people button { border: 0; border-radius: 999px; background: rgba(255,246,226,.9); color: #4a3420; font: 700 13px/1 "Be Vietnam Pro", sans-serif; padding: 8px 12px; cursor: pointer; }
+.vuon-visit-banner { position: absolute; top: 118px; left: 12px; z-index: 6; margin: 0; display: flex; gap: 8px; align-items: center; background: rgba(255,248,230,.92); border-radius: 999px; padding: 6px 8px 6px 14px; font-weight: 800; }
+.vuon-kho { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(780px, calc(100vw - 12px)); z-index: 7; display: flex; align-items: center; gap: 8px; }
+.vuon-parchment { flex: 1; background: linear-gradient(#fff8e6, #f3e2bc); border-radius: 28px; padding: 12px 12px 10px; box-shadow: 0 16px 40px rgba(40,20,0,.28); }
+.vuon-blurb { margin: 0 0 8px; text-align: center; font-size: 13px; font-weight: 700; color: #6a5038; }
+.vuon-line { display: flex; align-items: flex-end; justify-content: center; gap: 6px; }
+.vuon-line figure { margin: 0; width: 30%; text-align: center; background: rgba(255,255,255,.4); border-radius: 16px; padding: 6px; cursor: pointer; }
+.vuon-line img { height: 92px; width: auto; max-width: 100%; object-fit: contain; }
+.vuon-line figcaption { display: inline-block; margin-top: 4px; background: #f0d48a; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 800; }
+.vuon-line figure[data-stage-pick="than_thoai"] figcaption { background: #f3c1d8; }
+.vuon-line figure[aria-current="true"] { outline: 3px solid #e2b84a; }
+.vuon-arrow { align-self: center; font-weight: 800; color: #a07840; }
+.vuon-kho-act { width: calc(100% - 8px); margin: 10px 4px 0; }
+.vuon-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.vuon-dots button { width: 8px; height: 8px; border: 0; border-radius: 50%; padding: 0; background: #e0c48a; cursor: pointer; }
+.vuon-dots button[aria-current="true"] { background: #b87420; transform: scale(1.35); }
+.vuon-people { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(420px, calc(100vw - 24px)); z-index: 7; background: linear-gradient(#fff8e6, #f3e2bc); border-radius: 24px; padding: 16px; box-shadow: 0 16px 40px rgba(40,20,0,.28); }
+.vuon-people h2 { margin: 0 0 4px; font-size: 18px; }
+.vuon-people p { margin: 0 0 10px; font-size: 13px; }
+.vuon-people div { display: flex; flex-wrap: wrap; gap: 8px; }
+.hn-vuon-tile { display: flex; align-items: center; gap: 12px; min-height: 92px; padding: 8px; text-decoration: none; color: inherit; background: #fff4d6; border: 3px solid #1b1b1b; box-shadow: 4px 4px 0 #1b1b1b; }
+.hn-vuon-tile-art { width: 132px; height: 76px; flex: 0 0 auto; border: 2px solid #1b1b1b; background: #c9d7c2 url("/art/vuon/bg/xuan.webp") center/cover; }
+.hn-vuon-tile-copy { display: flex; flex-direction: column; gap: 2px; }
+.hn-vuon-tile-copy b { font-family: var(--font-display); font-size: 28px; letter-spacing: .04em; }
+.hn-vuon-tile-copy small { font-weight: 800; }
+@keyframes vuon-sway { 0%, 100% { transform: rotate(-1.1deg); } 50% { transform: rotate(1.3deg); } }
+@keyframes vuon-fall { to { transform: translateY(115vh) rotate(200deg); } }
+@keyframes vuon-glow { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+@keyframes vuon-wind { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
+@keyframes vuon-spark { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes vuon-rays { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(2%); } }
+@media (max-width: 520px) {
+  .vuon-top { flex-wrap: wrap; align-items: center; }
+  .vuon-plaque { position: static; transform: none; flex: 1 1 100%; margin-top: 8px; }
+  .vuon-seasons { margin-left: auto; }
+  .vuon-seasons button { padding: 6px 8px; font-size: 12px; }
+  .vuon-cal { position: static; margin: 4px 0 0 auto; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
+  .vuon-sprite.is-giant img { height: 42vh; }
+  .vuon.has-giant .vuon-status { top: auto; bottom: 168px; }
+  .vuon-feed, .vuon-water { flex: 1; min-width: 0; min-height: 56px; font-size: 16px; padding: 0 10px; }
+  .vuon-line img { height: 64px; }
+  .vuon-status { bottom: 118px; font-size: 13px; }
+  .hn-vuon-tile-copy b { font-size: 22px; }
+  .hn-vuon-tile-art { width: 96px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vuon-fall i, .vuon-sprite img, .vuon-rays, .vuon-aura, .vuon-spark, .vuon-sky { animation: none !important; }
+  .vuon-sprite.is-giant[data-temper="tuoi_sang"] .vuon-spark { opacity: .8; }
+}
+html.vuon-reduce .vuon-fall i,
+html.vuon-reduce .vuon-sprite img,
+html.vuon-reduce .vuon-rays,
+html.vuon-reduce .vuon-aura,
+html.vuon-reduce .vuon-spark { animation: none !important; }

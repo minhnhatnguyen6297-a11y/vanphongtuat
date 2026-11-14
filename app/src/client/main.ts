@@ -14,6 +14,7 @@ import { renderKho, bindKho, titleKho, handleKhoImage, getKhoPasteTarget } from 
 import { renderQuyen, bindQuyen, titleQuyen } from './screens/quyen.js';
 import { renderSanh, bindSanh, titleSanh } from './screens/sanh.js';
 import { renderChat, bindChat, titleChat } from './screens/chat.js';
+import { renderVuon, bindVuon, titleVuon, syncVuon } from './screens/vuon.js';
 import { bindPaste } from './image.js';
 
 const app = document.getElementById('app');
@@ -40,6 +41,8 @@ function titles(): { chip: string; fun: string } {
       return titleSanh();
     case 'chat':
       return titleChat();
+    case 'vuon':
+      return titleVuon();
     default:
       return titleBan();
   }
@@ -91,6 +94,11 @@ function renderShell(): void {
     return;
   }
 
+  if (state.route === 'vuon' && renderedRoute === 'vuon' && app!.querySelector('[data-vuon-root]')) {
+    syncVuon(app!);
+    return;
+  }
+
   const focusSnap = captureFocus();
 
   const t = titles();
@@ -120,6 +128,9 @@ function renderShell(): void {
     case 'chat':
       main = renderChat();
       break;
+    case 'vuon':
+      main = renderVuon();
+      break;
     default:
       main = renderBan();
   }
@@ -127,6 +138,7 @@ function renderShell(): void {
   const route = state.route;
   if (renderedRoute !== route) window.scrollTo(0, 0);
   renderedRoute = route;
+  const play = route === 'vuon';
   const illustrated = route === 'ban' || route === 'quay' || route === 'tien';
   app!.innerHTML = `<div class="hn-scene${illustrated ? ' hn-scene-illustrated' : ''}" data-scene="${route}">
     ${illustrated ? `<div class="hn-scene-art" aria-hidden="true">
@@ -134,11 +146,11 @@ function renderShell(): void {
       ${route === 'tien' ? '<span class="hn-art-polaroid"></span>' : '<span class="hn-art-shiba"></span>'}
       ${route === 'ban' ? '<span class="hn-art-books"></span>' : ''}
     </div>` : ''}
-    <div class="hn-shell${route === 'home' ? ' hn-shell-home' : ''}">
-      ${renderHeader()}
-      ${renderTitle(t.chip, t.fun)}
+    <div class="hn-shell${route === 'home' || play ? ' hn-shell-home' : ''}${play ? ' hn-shell-play' : ''}">
+      ${play ? '' : renderHeader()}
+      ${play ? '' : renderTitle(t.chip, t.fun)}
       ${main}
-      ${route === 'home' ? '' : renderRail()}
+      ${route === 'home' || play ? '' : renderRail()}
     </div>
   </div>`;
 
@@ -172,6 +184,10 @@ function renderShell(): void {
       break;
     case 'chat':
       bindChat(app!);
+      break;
+    case 'vuon':
+      setChatSubs([]);
+      bindVuon(app!);
       break;
     default:
       bindBan(app!);

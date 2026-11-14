@@ -11,6 +11,8 @@ App đặt đồ ăn văn phòng chạy trên **LAN** (máy chủ Node.js + SQLi
 | [`design-toi-gian/PLAN-toi-gian.md`](design-toi-gian/PLAN-toi-gian.md) | Plan đợt 1 (hiện hành) |
 | [`KIEN-TRUC-DE-XUAT.md`](KIEN-TRUC-DE-XUAT.md) | Kiến trúc đã review |
 | [`agents.md`](agents.md) | Quy chuẩn cho agent / lập trình viên |
+| [`docs/spec/vuon.md`](docs/spec/vuon.md) | Vườn: luật chăm và vì sao |
+| [`docs/spec/vuon-design.md`](docs/spec/vuon-design.md) | Vườn: phong cách tranh, tính cách thần thoại, cách thêm loài |
 | [`design-toi-gian/ViaHe-*.dc.html`](design-toi-gian/) | Thiết kế 5 màn |
 | [`design-toi-gian/mocks/`](design-toi-gian/mocks/) | Mock PNG + DESIGN Van Phòng Tuất |
 | [`archive/`](archive/) | `thietke_v1/v2/v3` — tham khảo cũ, không sửa |
