@@ -51,6 +51,7 @@ function renderLobby(): string {
       <button type="button" class="hn-btn hn-btn-red" data-create="caro" ${canHost ? '' : 'disabled'}>CARO 15×15</button>
       <button type="button" class="hn-btn hn-btn-ink" data-create="ca_ngua" ${canHost ? '' : 'disabled'}>CÁ NGỰA</button>
       <button type="button" class="hn-btn hn-btn-white" data-create="ti_phu" ${canHost ? '' : 'disabled'}>TỈ PHÚ VP</button>
+      <a class="hn-btn hn-btn-red" href="#/typhu">CỜ TỶ PHÚ</a>
     </section>
     <section class="hn-panel hn-stack-tight">
       <h2 class="hn-h2">PHÒNG ĐANG MỞ</h2>
