@@ -38,6 +38,7 @@ export const config = {
   aiKey: process.env.HNG_AI_KEY || '',
   aiModel: process.env.HNG_AI_MODEL || 'claude-sonnet-4-20250514',
   devHttp: process.env.HNG_DEV_HTTP === '1',
+  bePerf: process.env.HNG_BE_PERF === '1',
   backupDir: resolve(root, process.env.HNG_BACKUP_DIR || './data/backup'),
   sessionDays: 30,
   spinDurationMs: 4300,

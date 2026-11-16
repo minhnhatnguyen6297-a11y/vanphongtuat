@@ -14,6 +14,7 @@ import { renderKho, bindKho, titleKho, handleKhoImage, getKhoPasteTarget } from 
 import { renderQuyen, bindQuyen, titleQuyen } from './screens/quyen.js';
 import { renderSanh, bindSanh, titleSanh } from './screens/sanh.js';
 import { renderChat, bindChat, titleChat } from './screens/chat.js';
+import { beforeShellPaint } from './be/mount.js';
 import { bindPaste } from './image.js';
 
 const app = document.getElementById('app');
@@ -92,6 +93,7 @@ function renderShell(): void {
   }
 
   const focusSnap = captureFocus();
+  beforeShellPaint(state.me ? state.route : 'home');
 
   const t = titles();
   let main = '';

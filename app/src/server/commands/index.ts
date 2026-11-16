@@ -39,6 +39,19 @@ import {
 } from './perm.ts';
 import { chatSend, chatDelete } from './chat.ts';
 import { gameCreate, gameJoin, gameLeave, gameStart, gameMove } from './game.ts';
+import {
+  beSaveDrawing,
+  beRelease,
+  beFeed,
+  beClean,
+  beTweak,
+  beMove,
+  beRename,
+  beHide,
+  beReport,
+  beUnlock,
+  beGetDrawing,
+} from './be.ts';
 
 export const handlers: Record<CommandName, Handler> = {
   'table.create': tableCreate,
@@ -81,6 +94,17 @@ export const handlers: Record<CommandName, Handler> = {
   'game.leave': gameLeave,
   'game.start': gameStart,
   'game.move': gameMove,
+  'be.saveDrawing': beSaveDrawing,
+  'be.release': beRelease,
+  'be.feed': beFeed,
+  'be.clean': beClean,
+  'be.tweak': beTweak,
+  'be.move': beMove,
+  'be.rename': beRename,
+  'be.hide': beHide,
+  'be.report': beReport,
+  'be.unlock': beUnlock,
+  'be.getDrawing': beGetDrawing,
 };
 
 export type { CmdCtx, CmdOk, Handler } from './types.ts';
