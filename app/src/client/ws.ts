@@ -167,6 +167,10 @@ function onMessage(raw: string): void {
     }
     return;
   }
+  if (msg.t === 'be' || msg.t === 'be:kicked') {
+    for (const fn of beListeners) fn(msg as { t: string; name?: string; data?: unknown });
+    return;
+  }
   if (msg.t === 'ai') {
     const m = msg as AiMsg;
     const w = aiWaiters.get(m.jobId);
@@ -184,8 +188,51 @@ function send(msg: ClientMsg): void {
   }
 }
 
+let wantBe = false;
+let sealed = false;
+const beListeners = new Set<(msg: { t: string; name?: string; data?: unknown }) => void>();
+const readyHooks = new Set<() => void>();
+
 function baseSubs(): string[] {
-  return ['table:current', 'shops', 'wheels', 'members', 'perms', 'games', ...state.chatSubs];
+  return ['table:current', 'shops', 'wheels', 'members', 'perms', 'games', ...state.chatSubs, ...(wantBe ? ['be:room'] : [])];
+}
+
+function sendRaw(msg: unknown): void {
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(msg));
+}
+
+export function onBeMessage(fn: (msg: { t: string; name?: string; data?: unknown }) => void): () => void {
+  beListeners.add(fn);
+  return () => beListeners.delete(fn);
+}
+
+export function onWsReady(fn: () => void): () => void {
+  readyHooks.add(fn);
+  return () => readyHooks.delete(fn);
+}
+
+export function setBeJoined(on: boolean): void {
+  wantBe = on;
+  if (socket?.readyState === WebSocket.OPEN) {
+    hello();
+    sendRaw({ t: on ? 'be.join' : 'be.leave' });
+  }
+}
+
+export function bePulse(active: boolean, visible: boolean): void {
+  sendRaw({ t: 'be.pulse', active, visible });
+}
+
+/** Đá vì vắng: đóng WS và không nối lại cho đến khi tải trang. */
+export function sealWs(): void {
+  sealed = true;
+  intentionalClose = true;
+  try {
+    socket?.close();
+  } catch {
+    /* ignore */
+  }
+  socket = null;
 }
 
 function hello(): void {
@@ -209,14 +256,14 @@ function resendPending(): void {
 }
 
 function scheduleReconnect(): void {
-  if (intentionalClose || state.mock) return;
+  if (intentionalClose || sealed || state.mock) return;
   const wait = backoff;
   backoff = Math.min(10_000, Math.round(backoff * 1.6));
   setTimeout(connectWs, wait);
 }
 
 export function connectWs(): void {
-  if (state.mock) return;
+  if (sealed || state.mock) return;
   intentionalClose = false;
   try {
     socket?.close();
@@ -231,7 +278,9 @@ export function connectWs(): void {
       s.connected = true;
     });
     hello();
+    if (wantBe) sendRaw({ t: 'be.join' });
     resendPending();
+    for (const fn of readyHooks) fn();
   };
   ws.onmessage = (ev) => onMessage(String(ev.data));
   ws.onclose = () => {

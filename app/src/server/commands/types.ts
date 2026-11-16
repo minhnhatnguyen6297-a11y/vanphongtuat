@@ -13,6 +13,8 @@ export type ChatMsg = {
 };
 
 export type ChatEvent = { t: 'chat'; scope: string; msg: ChatMsg };
+export type BeEvent = { t: 'be'; name: string; data: unknown };
+export type RoomEvent = ChatEvent | BeEvent;
 
 export type CmdCtx = {
   db: Db;
@@ -22,7 +24,7 @@ export type CmdCtx = {
 export type CmdOk = {
   result: unknown;
   scopes: ScopeName[];
-  events?: ChatEvent[];
+  events?: RoomEvent[];
 };
 
 export type Handler = (ctx: CmdCtx, args: any, baseVersion?: number) => CmdOk;

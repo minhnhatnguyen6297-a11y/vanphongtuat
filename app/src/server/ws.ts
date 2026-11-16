@@ -9,7 +9,8 @@ import { dispatchCommand } from './dispatch.ts';
 import type { ScopeName } from '../shared/types.ts';
 import type { AuthMember } from './perms.ts';
 import { canAccessChatScope, chatSubKey, parseChatSub } from './commands/chat.ts';
-import type { ChatEvent } from './commands/types.ts';
+import type { BeEvent, ChatEvent } from './commands/types.ts';
+import { beJoin, beLeave, bePulse, beSweep } from './be-sessions.ts';
 
 type Client = {
   ws: WebSocket;
@@ -57,6 +58,10 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
         out.push(chatSubKey(inner));
         continue;
       }
+      if (s === 'be:room') {
+        out.push(s);
+        continue;
+      }
       out.push(s);
     }
     return out;
@@ -91,6 +96,29 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
     }
   }
 
+  function broadcastBe(event: BeEvent) {
+    for (const c of clients) {
+      if (!c.subs.has('be:room')) continue;
+      send(c.ws, event);
+    }
+  }
+
+  const sweep = setInterval(() => {
+    const kicked = beSweep(Date.now(), {
+      visibleMs: config.be.idleVisibleMs,
+      hiddenMs: config.be.idleHiddenMs,
+      warnMs: config.be.idleWarnMs,
+    });
+    for (const ws of kicked) {
+      send(ws, { t: 'be:kicked' });
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, Math.max(200, config.be.sweepMs));
+
   function sendToMember(memberId: string, msg: unknown) {
     for (const c of clients) {
       if (c.member.id === memberId) send(c.ws, msg);
@@ -124,6 +152,23 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
         return;
       }
 
+      if (msg?.t === 'be.join') {
+        beJoin(ws, member.id, Date.now());
+        client.subs.add('be:room');
+        return;
+      }
+
+      if (msg?.t === 'be.leave') {
+        beLeave(ws);
+        client.subs.delete('be:room');
+        return;
+      }
+
+      if (msg?.t === 'be.pulse') {
+        bePulse(ws, !!msg.active, msg.visible !== false, Date.now());
+        return;
+      }
+
       if (msg?.t === 'cmd') {
         const ack = dispatchCommand(db, client.member, {
           opId: msg.opId,
@@ -133,7 +178,10 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
         });
         send(ws, ack);
         if (ack.ok && 'events' in ack && ack.events) {
-          for (const ev of ack.events) broadcastChat(ev);
+          for (const ev of ack.events) {
+            if (ev.t === 'chat') broadcastChat(ev);
+            else if (ev.t === 'be') broadcastBe(ev);
+          }
         }
         if (ack.ok && 'scopes' in ack && ack.scopes) {
           broadcastScopes(ack.scopes);
@@ -148,6 +196,7 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
     });
 
     ws.on('close', () => {
+      beLeave(ws);
       clients.delete(client);
     });
   });
@@ -178,6 +227,7 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
     sendToMember,
     close: () => {
       clearInterval(heartbeat);
+      clearInterval(sweep);
       for (const c of clients) c.ws.close();
       wss.close();
     },

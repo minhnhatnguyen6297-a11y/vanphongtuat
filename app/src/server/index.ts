@@ -51,7 +51,7 @@ export function startServer(opts?: { dbPath?: string; port?: number; listen?: bo
   const db = openDb(dbPath);
 
   const pins = seedIfEmpty(db);
-  if (pins) printSeedPins(pins);
+  if (pins && process.env.HNG_E2E !== '1') printSeedPins(pins);
 
   const ai = createAiQueue();
   const httpHandler = createHttpHandler({ db, ai });

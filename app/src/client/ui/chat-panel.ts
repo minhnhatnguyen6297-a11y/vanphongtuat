@@ -22,22 +22,17 @@ export function chatMessagesFor(scope: string): ChatMsg[] {
   return state.chatByScope[scope] || [];
 }
 
-export function renderChatPanel(scope: string, opts?: { title?: string; collapsible?: boolean }): string {
-  const title = opts?.title || 'CHAT';
+export function renderChatLogHtml(scope: string): string {
   const msgs = chatMessagesFor(scope);
-  const canSend = canPerm('chat.send');
   const canMod = canPerm('chat.mod');
   const meId = state.me?.id;
-  const draft = getChatDraft(scope);
-
   const rows = msgs
     .map((m) => {
       const who = memberById(m.memberId)?.displayName || '?';
       const mine = m.memberId === meId;
       const canDel =
         !m.deletedAt &&
-        (canMod ||
-          (mine && Date.now() - new Date(m.createdAt).getTime() <= 2 * 60 * 1000));
+        (canMod || (mine && Date.now() - new Date(m.createdAt).getTime() <= 2 * 60 * 1000));
       const body = m.deletedAt
         ? '<span class="hn-chat-body is-deleted">đã xóa</span>'
         : `<span class="hn-chat-body">${esc(m.body)}</span>`;
@@ -51,10 +46,18 @@ export function renderChatPanel(scope: string, opts?: { title?: string; collapsi
       </div>`;
     })
     .join('');
+  return rows || '<span class="hn-chat-empty">Chưa có tin</span>';
+}
+
+export function renderChatPanel(scope: string, opts?: { title?: string; collapsible?: boolean }): string {
+  const title = opts?.title || 'CHAT';
+  const msgs = chatMessagesFor(scope);
+  const canSend = canPerm('chat.send');
+  const draft = getChatDraft(scope);
 
   const content = `
     <div class="hn-chat-log" data-chat-log>
-      ${rows || '<span class="hn-chat-empty">Chưa có tin</span>'}
+      ${renderChatLogHtml(scope)}
     </div>
     <div class="hn-chat-compose">
       <input class="hn-input" data-chat-input aria-label="Tin nhắn" maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>

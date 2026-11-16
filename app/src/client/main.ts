@@ -13,7 +13,7 @@ import { renderSo, bindSo, titleSo } from './screens/so.js';
 import { renderKho, bindKho, titleKho, handleKhoImage, getKhoPasteTarget } from './screens/kho.js';
 import { renderQuyen, bindQuyen, titleQuyen } from './screens/quyen.js';
 import { renderSanh, bindSanh, titleSanh } from './screens/sanh.js';
-import { renderChat, bindChat, titleChat } from './screens/chat.js';
+import { renderChat, bindChat, titleChat, syncChatRoom, destroyChatRoom } from './screens/chat.js';
 import { bindPaste } from './image.js';
 
 const app = document.getElementById('app');
@@ -86,10 +86,17 @@ function restoreFocus(snap: FocusSnap): void {
 
 function renderShell(): void {
   if (!state.me) {
+    if (renderedRoute === 'chat') destroyChatRoom();
     renderedRoute = null;
     void renderLogin(app!);
     return;
   }
+
+  if (state.route === 'chat' && renderedRoute === 'chat' && app!.querySelector('[data-be-root]')) {
+    syncChatRoom(app!);
+    return;
+  }
+  if (renderedRoute === 'chat' && state.route !== 'chat') destroyChatRoom();
 
   const focusSnap = captureFocus();
 
@@ -128,13 +135,14 @@ function renderShell(): void {
   if (renderedRoute !== route) window.scrollTo(0, 0);
   renderedRoute = route;
   const illustrated = route === 'ban' || route === 'quay' || route === 'tien';
+  const be = route === 'chat';
   app!.innerHTML = `<div class="hn-scene${illustrated ? ' hn-scene-illustrated' : ''}" data-scene="${route}">
     ${illustrated ? `<div class="hn-scene-art" aria-hidden="true">
       <span class="hn-art-leaves"></span>
       ${route === 'tien' ? '<span class="hn-art-polaroid"></span>' : '<span class="hn-art-shiba"></span>'}
       ${route === 'ban' ? '<span class="hn-art-books"></span>' : ''}
     </div>` : ''}
-    <div class="hn-shell${route === 'home' ? ' hn-shell-home' : ''}">
+    <div class="hn-shell${route === 'home' ? ' hn-shell-home' : ''}${be ? ' hn-shell-be' : ''}">
       ${renderHeader()}
       ${renderTitle(t.chip, t.fun)}
       ${main}

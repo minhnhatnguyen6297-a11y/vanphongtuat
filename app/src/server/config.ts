@@ -41,4 +41,11 @@ export const config = {
   backupDir: resolve(root, process.env.HNG_BACKUP_DIR || './data/backup'),
   sessionDays: 30,
   spinDurationMs: 4300,
+  be: {
+    idleVisibleMs: Number(process.env.HNG_BE_IDLE_VISIBLE_MS || 15 * 60 * 1000),
+    idleHiddenMs: Number(process.env.HNG_BE_IDLE_HIDDEN_MS || 5 * 60 * 1000),
+    idleWarnMs: Number(process.env.HNG_BE_IDLE_WARN_MS || 60 * 1000),
+    sweepMs: Number(process.env.HNG_BE_SWEEP_MS || 5000),
+    spriteDir: resolve(root, process.env.HNG_BE_SPRITE_DIR || './data/be-sprites'),
+  },
 };

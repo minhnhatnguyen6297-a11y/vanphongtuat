@@ -88,7 +88,10 @@ export function seedIfEmpty(db: Db): SeedPin[] | null {
 
   const run = db.transaction(() => {
     for (const m of SEED_MEMBERS) {
-      const pin = randomPin();
+      const pin =
+        process.env.HNG_E2E === '1' && process.env.HNG_SEED_PIN && /^\d{6}$/.test(process.env.HNG_SEED_PIN)
+          ? process.env.HNG_SEED_PIN
+          : randomPin();
       const { hash, salt } = hashPin(pin);
       const id = randomUUID();
       ids.set(m.username, id);
