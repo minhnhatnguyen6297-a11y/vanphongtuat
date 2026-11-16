@@ -8,6 +8,7 @@ import {
 } from './store.js';
 import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, Wheel } from '../shared/types.js';
 import { toast } from './ui/toast.js';
+import { applyBeState, markKicked, setNudge, type Nudge } from './be/model.js';
 
 type HelloMsg = { t: 'hello'; subs: string[] };
 type CmdMsg = { t: 'cmd'; opId: string; name: string; args: unknown; baseVersion?: number };
@@ -28,6 +29,8 @@ type Pending = {
 let socket: WebSocket | null = null;
 let backoff = 500;
 let intentionalClose = false;
+let reconnectBlocked = false;
+let openHook: (() => void) | null = null;
 const pending = new Map<string, Pending>();
 const aiWaiters = new Map<string, (msg: AiMsg) => void>();
 
@@ -167,6 +170,20 @@ function onMessage(raw: string): void {
     }
     return;
   }
+  if (msg.t === 'be:state') {
+    const body = msg as unknown as { state?: Parameters<typeof applyBeState>[0] };
+    if (body.state) applyBeState(body.state);
+    return;
+  }
+  if (msg.t === 'be:kicked') {
+    markKicked();
+    return;
+  }
+  if (msg.t === 'be:nudge') {
+    const body = msg as unknown as { nudge?: Nudge };
+    if (body.nudge) setNudge(body.nudge);
+    return;
+  }
   if (msg.t === 'ai') {
     const m = msg as AiMsg;
     const w = aiWaiters.get(m.jobId);
@@ -209,14 +226,14 @@ function resendPending(): void {
 }
 
 function scheduleReconnect(): void {
-  if (intentionalClose || state.mock) return;
+  if (intentionalClose || reconnectBlocked || state.mock) return;
   const wait = backoff;
   backoff = Math.min(10_000, Math.round(backoff * 1.6));
   setTimeout(connectWs, wait);
 }
 
 export function connectWs(): void {
-  if (state.mock) return;
+  if (state.mock || reconnectBlocked) return;
   intentionalClose = false;
   try {
     socket?.close();
@@ -232,6 +249,7 @@ export function connectWs(): void {
     });
     hello();
     resendPending();
+    openHook?.();
   };
   ws.onmessage = (ev) => onMessage(String(ev.data));
   ws.onclose = () => {
@@ -247,6 +265,26 @@ export function connectWs(): void {
       /* ignore */
     }
   };
+}
+
+export function sendRaw(msg: unknown): void {
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(msg));
+}
+
+export function setWsOpenHook(fn: () => void): void {
+  openHook = fn;
+}
+
+/** Đá khỏi bể: không tự nối lại cho đến khi tải lại trang. */
+export function blockSessionReconnect(): void {
+  reconnectBlocked = true;
+  intentionalClose = true;
+  try {
+    socket?.close();
+  } catch {
+    /* ignore */
+  }
+  socket = null;
 }
 
 export function disconnectWs(): void {

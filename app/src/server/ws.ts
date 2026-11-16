@@ -10,12 +10,15 @@ import type { ScopeName } from '../shared/types.ts';
 import type { AuthMember } from './perms.ts';
 import { canAccessChatScope, chatSubKey, parseChatSub } from './commands/chat.ts';
 import type { ChatEvent } from './commands/types.ts';
+import type { BeRuntime } from './be/runtime.ts';
 
 type Client = {
   ws: WebSocket;
   member: AuthMember;
   subs: Set<ScopeName>;
   alive: boolean;
+  beJoined: boolean;
+  lastNudge: number;
 };
 
 const HEARTBEAT_MS = 20_000;
@@ -28,7 +31,7 @@ export type WsHub = {
   close: () => void;
 };
 
-export function attachWs(_server: HttpServer, db: Db): WsHub {
+export function attachWs(_server: HttpServer, db: Db, be?: BeRuntime | null): WsHub {
   const wss = new WebSocketServer({ noServer: true });
   const clients = new Set<Client>();
 
@@ -97,8 +100,27 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
     }
   }
 
+  if (be) {
+    be.setAudience(() => [...clients].filter((c) => c.beJoined).map((c) => c.member));
+    be.setSend((memberId, msg) => sendToMember(memberId, msg));
+    be.setOnKick((ids) => {
+      for (const id of ids) {
+        sendToMember(id, { t: 'be:kicked' });
+        for (const c of [...clients]) {
+          if (c.member.id !== id) continue;
+          c.beJoined = false;
+          try {
+            c.ws.close();
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    });
+  }
+
   wss.on('connection', (ws: WebSocket, _req: IncomingMessage, member: AuthMember) => {
-    const client: Client = { ws, member, subs: new Set(), alive: true };
+    const client: Client = { ws, member, subs: new Set(), alive: true, beJoined: false, lastNudge: 0 };
     clients.add(client);
 
     ws.on('pong', () => {
@@ -124,6 +146,45 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
         return;
       }
 
+      if (msg?.t === 'be.join' && be) {
+        client.beJoined = true;
+        be.touch(member.id, { active: true, hidden: false, create: true });
+        be.rebuildAtlasSync();
+        be.pushOne(member);
+        return;
+      }
+      if (msg?.t === 'be.leave' && be) {
+        client.beJoined = false;
+        be.clearSession(member.id);
+        return;
+      }
+      if (msg?.t === 'be.pulse' && be) {
+        be.touch(member.id, {
+          active: msg.active !== false,
+          hidden: !!msg.hidden,
+          create: false,
+        });
+        return;
+      }
+      if (msg?.t === 'be.nudge' && be && client.beJoined) {
+        const now = Date.now();
+        if (now - client.lastNudge < 180) return;
+        client.lastNudge = now;
+        const x = Number(msg.x);
+        const y = Number(msg.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        const nudge = {
+          x: Math.min(1, Math.max(0, x)),
+          y: Math.min(1, Math.max(0, y)),
+          kind: msg.kind === 'scare' ? 'scare' : 'follow',
+          until: now + 1400,
+        };
+        for (const c of clients) {
+          if (c.beJoined) send(c.ws, { t: 'be:nudge', nudge });
+        }
+        return;
+      }
+
       if (msg?.t === 'cmd') {
         const ack = dispatchCommand(db, client.member, {
           opId: msg.opId,
@@ -138,6 +199,15 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
         if (ack.ok && 'scopes' in ack && ack.scopes) {
           broadcastScopes(ack.scopes);
         }
+        if (
+          ack.ok &&
+          be &&
+          typeof msg.name === 'string' &&
+          msg.name.startsWith('be.') &&
+          msg.name !== 'be.getDrawing'
+        ) {
+          be.push();
+        }
         return;
       }
 
@@ -148,7 +218,10 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
     });
 
     ws.on('close', () => {
+      const joined = client.beJoined;
+      client.beJoined = false;
       clients.delete(client);
+      if (joined && be) be.markHiddenIfPresent(member.id);
     });
   });
 

@@ -7,6 +7,7 @@ import { openDb } from './db.ts';
 import { seedIfEmpty, printSeedPins } from './seed.ts';
 import { createHttpHandler } from './http.ts';
 import { attachWs } from './ws.ts';
+import { BeRuntime, setBeRuntime } from './be/runtime.ts';
 import { createAiQueue } from './ai/queue.ts';
 import { backupDb } from './backup.ts';
 
@@ -54,9 +55,11 @@ export function startServer(opts?: { dbPath?: string; port?: number; listen?: bo
   if (pins) printSeedPins(pins);
 
   const ai = createAiQueue();
-  const httpHandler = createHttpHandler({ db, ai });
+  const be = new BeRuntime(db);
+  setBeRuntime(be);
+  const httpHandler = createHttpHandler({ db, ai, be });
   const server = createServer(httpHandler);
-  const hub = attachWs(server, db);
+  const hub = attachWs(server, db, be);
   ai.setNotify((memberId, msg) => hub.sendToMember(memberId, msg));
 
   server.on('upgrade', (req, socket, head) => {

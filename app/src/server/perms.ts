@@ -288,6 +288,19 @@ function resolveCommandPerm(
     }
     case 'game.leave':
       return 'self';
+    case 'be.saveDrawing':
+    case 'be.release':
+    case 'be.feed':
+    case 'be.clean':
+    case 'be.tweak':
+    case 'be.move':
+    case 'be.rename':
+    case 'be.report':
+    case 'be.unlock':
+    case 'be.getDrawing':
+      return 'chat.send';
+    case 'be.hide':
+      return 'self';
     default:
       throw new CmdError('unknown_command');
   }

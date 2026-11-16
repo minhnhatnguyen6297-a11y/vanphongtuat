@@ -13,7 +13,8 @@ import {
   revokeSession,
   setSessionCookie,
 } from './auth.ts';
-import { APP_ROOT } from './config.ts';
+import { APP_ROOT, config } from './config.ts';
+import type { BeRuntime } from './be/runtime.ts';
 import type { AiQueue } from './ai/queue.ts';
 import type { AiKind } from './ai/provider.ts';
 
@@ -111,6 +112,7 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): boolean {
 export type HttpDeps = {
   db: Db;
   ai: AiQueue;
+  be?: BeRuntime | null;
 };
 
 export function createHttpHandler(deps: HttpDeps) {
@@ -180,6 +182,30 @@ export function createHttpHandler(deps: HttpDeps) {
           )
           .all() as { username: string; displayName: string }[];
         return json(res, 200, rows);
+      }
+
+      const beAsset = path.match(/^\/be\/[gas]\/([a-f0-9]{16,64})\.png$/);
+      if (beAsset && (req.method === 'GET' || req.method === 'HEAD')) {
+        if (!deps.be) return json(res, 404, { error: 'not_found' });
+        const member = memberFromSession(db, getSessionId(req));
+        if (!member) return json(res, 401, { error: 'unauthorized' });
+        const buf = deps.be.png(beAsset[1]);
+        if (!buf) return json(res, 404, { error: 'not_found' });
+        res.writeHead(200, {
+          'content-type': 'image/png',
+          'content-length': buf.length,
+          'cache-control': 'public, max-age=31536000, immutable',
+          etag: `"${beAsset[1]}"`,
+        });
+        if (req.method === 'HEAD') res.end();
+        else res.end(buf);
+        return;
+      }
+
+      if (path === '/api/be/stats' && req.method === 'GET' && config.bePerf && deps.be) {
+        const member = memberFromSession(db, getSessionId(req));
+        if (!member) return json(res, 401, { error: 'unauthorized' });
+        return json(res, 200, deps.be.stats());
       }
 
       const aiMatch = path.match(/^\/api\/ai\/(bill|menu|shop)$/);

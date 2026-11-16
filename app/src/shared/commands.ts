@@ -194,6 +194,50 @@ export const CommandSchemas = {
     to: z.number().int().optional(),
     action: z.string().max(40).optional(),
   }),
+
+  'be.saveDrawing': z.object({
+    id: z.string().min(1).max(40).optional(),
+    kind: z.enum(['ca', 'cay', 'thuc_an', 'do']),
+    name: z.string().trim().min(1).max(40),
+    strokes: z.array(z.unknown()).min(1).max(80),
+    swim: z.enum(['thuong', 'cham', 'tau', 'day']).optional(),
+    wave: z.boolean().optional(),
+  }),
+  'be.release': z.object({
+    id: z.string().min(1).max(40),
+    x: z.number().min(0).max(1).optional(),
+    y: z.number().min(0).max(1).optional(),
+  }),
+  'be.feed': z.object({}).strict(),
+  'be.clean': z.object({}).strict(),
+  'be.tweak': z.object({
+    sand: z.enum(['vang', 'trang', 'hong', 'xam']).optional(),
+    lighting: z.enum(['auto', 'ngay', 'chieu', 'dem']).optional(),
+    waterLevel: z.number().min(0.45).max(0.92).optional(),
+    rockCount: z.number().int().min(0).max(5).optional(),
+    woodCount: z.number().int().min(0).max(3).optional(),
+  }),
+  'be.move': z.object({
+    id: z.string().min(1).max(40),
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+  }),
+  'be.rename': z.object({
+    id: z.string().min(1).max(40),
+    name: z.string().trim().min(1).max(40),
+  }),
+  'be.hide': z.object({
+    id: z.string().min(1).max(40),
+  }),
+  'be.report': z.object({
+    id: z.string().min(1).max(40),
+  }),
+  'be.unlock': z.object({
+    item: z.enum(['tem_vay', 'tem_van', 'khuon_ca2', 'khuon_cay2']),
+  }),
+  'be.getDrawing': z.object({
+    id: z.string().min(1).max(40),
+  }),
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

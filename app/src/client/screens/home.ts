@@ -19,7 +19,7 @@ const ROOMS: Room[] = [
   { id: 'so', name: 'SỔ BÀN GIẤY', sub: 'Lịch sử bàn', tone: 'cream', area: 'ledger' },
   { id: 'kho', name: 'KHO THỰC PHẨM', sub: 'Quán ruột', tone: 'orange', area: 'store' },
   { id: 'sanh', name: 'PHÒNG GIẢI TRÍ', sub: 'Caro · Cá ngựa · Tỉ phú', tone: 'green', area: 'game' },
-  { id: 'chat', name: 'PHÒNG CHAT', sub: 'Chat tổng cả VP', tone: 'blue', area: 'chat' },
+  { id: 'chat', name: 'PHÒNG CHAT', sub: 'Bể cá chung', tone: 'blue', area: 'chat' },
   { id: 'quyen', name: 'PHÒNG CHỦ XỊ', sub: 'Ma trận quyền', tone: 'cream', area: 'boss', gated: true },
 ];
 
@@ -30,7 +30,7 @@ export function titleHome(): { chip: string; fun: string } {
 
 export function renderHome(): string {
   const rooms = ROOMS.filter((r) => !r.gated || canOpenQuyen()).map((r) => {
-    const icon = r.id === 'quyen' ? ICONS.paw : (ICONS as Record<string, string>)[r.id] || ICONS.ban;
+    const icon = r.id === 'quyen' ? ICONS.paw : (ICONS as unknown as Record<string, string>)[r.id] || ICONS.ban;
     return `<a class="hn-floor-room" href="#/${r.id}" data-area="${r.area}" data-tone="${r.tone}">
       <span class="hn-floor-room-icon">${icon}</span>
       <span class="hn-floor-room-name">${esc(r.name)}</span>
