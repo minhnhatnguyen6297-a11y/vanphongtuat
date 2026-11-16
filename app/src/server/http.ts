@@ -13,9 +13,11 @@ import {
   revokeSession,
   setSessionCookie,
 } from './auth.ts';
-import { APP_ROOT } from './config.ts';
+import { APP_ROOT, config } from './config.ts';
 import type { AiQueue } from './ai/queue.ts';
 import type { AiKind } from './ai/provider.ts';
+import { readSprite, saveSprite } from './be-sprites.ts';
+import { cacheControlFor, spritePublicPath } from '../shared/be.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -102,7 +104,10 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): boolean {
   const ext = extname(filePath).toLowerCase();
   const mime = MIME[ext] || 'application/octet-stream';
   const buf = readFileSync(filePath);
-  res.writeHead(200, { 'content-type': mime, 'content-length': buf.length });
+  const headers: Record<string, string | number> = { 'content-type': mime, 'content-length': buf.length };
+  const cache = cacheControlFor(path);
+  if (cache) headers['cache-control'] = cache;
+  res.writeHead(200, headers);
   if (req.method === 'HEAD') res.end();
   else res.end(buf);
   return true;
@@ -180,6 +185,48 @@ export function createHttpHandler(deps: HttpDeps) {
           )
           .all() as { username: string; displayName: string }[];
         return json(res, 200, rows);
+      }
+
+      if (path === '/api/roster' && req.method === 'GET') {
+        const rows = db
+          .prepare(
+            `SELECT username, display_name AS displayName
+             FROM members WHERE disabled = 0
+             ORDER BY display_name COLLATE NOCASE`,
+          )
+          .all() as { username: string; displayName: string }[];
+        return json(res, 200, rows);
+      }
+
+      const spriteGet = path.match(/^\/art\/be\/s\/([a-f0-9]{64})\.png$/);
+      if (spriteGet && (req.method === 'GET' || req.method === 'HEAD')) {
+        const buf = readSprite(config.be.spriteDir, spriteGet[1]);
+        if (!buf) return json(res, 404, { error: 'not_found' });
+        const cache = cacheControlFor(spritePublicPath(spriteGet[1]) || '');
+        res.writeHead(200, {
+          'content-type': 'image/png',
+          'content-length': buf.length,
+          ...(cache ? { 'cache-control': cache } : {}),
+        });
+        if (req.method === 'HEAD') res.end();
+        else res.end(buf);
+        return;
+      }
+
+      if (path === '/api/be/sprite' && req.method === 'POST') {
+        if (!checkOriginAndCsrf(req)) return json(res, 403, { error: 'csrf' });
+        const member = memberFromSession(db, getSessionId(req));
+        if (!member) return json(res, 401, { error: 'unauthorized' });
+        let buf: Buffer;
+        try {
+          buf = await readBody(req, 64 * 1024);
+        } catch {
+          return json(res, 413, { error: 'too_large' });
+        }
+        const saved = saveSprite(config.be.spriteDir, buf);
+        if (!saved.ok) return json(res, 400, { error: saved.error });
+        const url = spritePublicPath(saved.hash);
+        return json(res, 200, { hash: saved.hash, url });
       }
 
       const aiMatch = path.match(/^\/api\/ai\/(bill|menu|shop)$/);

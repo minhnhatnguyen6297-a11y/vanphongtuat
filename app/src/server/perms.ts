@@ -288,6 +288,19 @@ function resolveCommandPerm(
     }
     case 'game.leave':
       return 'self';
+    case 'be.open':
+    case 'be.save':
+    case 'be.feed':
+    case 'be.eat':
+    case 'be.clean':
+    case 'be.tank':
+    case 'be.move':
+    case 'be.rename':
+    case 'be.hide':
+    case 'be.report':
+    case 'be.strokes':
+    case 'be.unlock':
+      return 'self';
     default:
       throw new CmdError('unknown_command');
   }

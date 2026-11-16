@@ -5,7 +5,7 @@ import { assertCommandAllowed, type AuthMember } from './perms.ts';
 import { handlers } from './commands/index.ts';
 import { CmdError } from './errors.ts';
 import type { ScopeName } from '../shared/types.ts';
-import type { ChatEvent } from './commands/types.ts';
+import type { RoomEvent } from './commands/types.ts';
 
 export type DispatchAck =
   | {
@@ -14,7 +14,7 @@ export type DispatchAck =
       ok: true;
       result: unknown;
       scopes: ScopeName[];
-      events?: ChatEvent[];
+      events?: RoomEvent[];
     }
   | { t: 'ack'; opId: string; ok: false; error: string; [k: string]: unknown };
 

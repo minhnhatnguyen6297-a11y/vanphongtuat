@@ -185,6 +185,47 @@ export const CommandSchemas = {
   'game.start': z.object({
     roomId: z.string().min(1),
   }),
+  'be.open': z.object({}),
+  'be.save': z.object({
+    id: z.string().min(1).optional(),
+    kind: z.enum(['ca', 'cay', 'thuc_an', 'do']),
+    name: z.string().trim().min(1).max(24),
+    strokes: z.unknown(),
+    swim: z.enum(['active', 'drift', 'cruise', 'bottom']).optional(),
+    wave: z.boolean().optional(),
+    spriteHash: z.string().regex(/^[a-f0-9]{64}$/),
+    place: z.boolean().optional(),
+    startGrowth: z.number().min(0.62).max(1.05).optional(),
+  }),
+  'be.feed': z.object({}),
+  'be.eat': z.object({
+    pelletId: z.string().min(1),
+    drawingId: z.string().min(1),
+  }),
+  'be.clean': z.object({}),
+  'be.tank': z.object({
+    sand: z.number().int().min(0).max(2),
+    lighting: z.enum(['auto', 'day', 'warm', 'night']),
+    waterLevel: z.number().min(0.55).max(0.92),
+    rocks: z.number().int().min(0).max(2),
+    wood: z.boolean(),
+  }),
+  'be.move': z.object({
+    placementId: z.string().min(1),
+    x: z.number().min(0.02).max(0.98),
+    y: z.number().min(0.05).max(0.96),
+  }),
+  'be.rename': z.object({
+    id: z.string().min(1),
+    name: z.string().trim().min(1).max(24),
+  }),
+  'be.hide': z.object({ id: z.string().min(1) }),
+  'be.report': z.object({ id: z.string().min(1) }),
+  'be.strokes': z.object({ id: z.string().min(1) }),
+  'be.unlock': z.object({
+    item: z.enum(['stamp_fin', 'khuon_ca2', 'khuon_cay']),
+  }),
+
   'game.move': z.object({
     roomId: z.string().min(1),
     row: z.number().int().optional(),

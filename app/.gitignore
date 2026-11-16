@@ -3,6 +3,8 @@ dist/
 data/*.db
 data/*.db-*
 data/backup/
+data/be-sprites/
+data/e2e-be-pin.txt
 .env
 *.log
 playwright-report/

@@ -1,0 +1,21 @@
+{
+  "method": "Giả lập, không phải máy Pentium thật. Chrome headless, cửa sổ 1920×1080, --disable-gpu và --disable-accelerated-2d-canvas, CDP Emulation.setCPUThrottlingRate = 6. 36 cá, 15 socket đang giữ phòng. CPU/RAM là tiến trình Node trên máy ảo, không phải MAY3.",
+  "fish": 36,
+  "clients": 15,
+  "throttle": 6,
+  "fpsAvg": 6.4,
+  "fpsMin": 5.9,
+  "frameMsAvg": 5.9,
+  "frameMsMax": 7.4,
+  "tier": "vua",
+  "fishOnScreen": 37,
+  "draws": 132,
+  "canvas": "1150×858",
+  "jsHeapBytes": 10000000,
+  "downloadColdArtBytes": 445873,
+  "downloadWarmArtBytes": 957,
+  "downloadWarmEncodedBytes": 430573,
+  "serverCpuPercentOneCore": 19.4,
+  "serverRssBytes": 148402176,
+  "sampleSeconds": 19.9
+}
