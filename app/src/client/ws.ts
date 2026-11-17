@@ -2,6 +2,7 @@ import {
   state,
   notify,
   patch,
+  canPerm,
   applyChatMsg,
   replaceChatSnap,
   type PermsState,
@@ -296,6 +297,25 @@ function mockCmd(name: string, args: unknown): AckMsg {
     table.version += 1;
     notify();
     return { t: 'ack', opId: uuid(), ok: true, result: {} };
+  }
+  if (name === 'vote.place') {
+    const table = state.table;
+    if (!table) return { t: 'ack', opId: uuid(), ok: false, error: 'no_table' };
+    const sid = String(a.shopId || '');
+    if (!state.shops.some((s) => s.id === sid)) {
+      return { t: 'ack', opId: uuid(), ok: false, error: 'not_found' };
+    }
+    if (!canPerm('vote')) return { t: 'ack', opId: uuid(), ok: false, error: 'forbidden' };
+    const added = !table.shopIds.includes(sid);
+    if (added && !canPerm('table.addShop')) {
+      return { t: 'ack', opId: uuid(), ok: false, error: 'forbidden' };
+    }
+    if (added) table.shopIds.push(sid);
+    table.votes = table.votes.filter((v) => v.memberId !== me.id);
+    table.votes.push({ tableId: table.id, memberId: me.id, shopId: sid });
+    table.version += 1;
+    notify();
+    return { t: 'ack', opId: uuid(), ok: true, result: { shopId: sid, added } };
   }
   if (name === 'table.create') {
     const shopIds = (a.shopIds as string[]) || [];

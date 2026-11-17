@@ -150,3 +150,29 @@ Hai phiên cùng máy chủ thấy cùng 8 nhãn và cùng `href`. Không đo tr
 | Rail phải | 6 mục đã chốt mục 4, trong đó «Tính tiền» và «Sảnh» | Giữ nguyên. Không thêm Chat. | Rail đã chốt. Nút Chat mọi màn là PR06. | `ui/rail.ts` không sửa |
 | Hình | Icon 22 px chung nhiều phòng | Một SVG nội tuyến mỗi phòng. Không ảnh mạng, không filter, không blur, không hoạt hình. Cá trên thẻ đầu sang phải. | Máy yếu: không thêm request ảnh, không hiệu ứng nặng. Hình cụ thể là **[DỰ KIẾN]** cho đến khi Minh duyệt ảnh. | `ROOM_ART` trong `screens/home.ts`. Muốn nhẹ hơn: hạ `max-height: 120px` của `.hn-floor-room-art svg`. |
 | Trang trí sàn | Hành lang, cửa, cây | Bỏ | Không phải phòng, chiếm một hàng và đẩy thẻ cuối khỏi khung. | Đã xóa `.hn-floor-hall`, `.hn-floor-door`, `.hn-floor-plant` |
+
+## 12. Bình chọn và gọi món (PR03)
+
+Bố cục ô tìm, thẻ chỉ còn tên quán và tên người chọn, ô **Gọi món** nhỏ là **[ĐÃ DUYỆT]** trong báo cáo 17/11/2026. Số đo khung là **[ĐÃ ĐO]** ngày 18/11/2026 trên app chạy thật (Playwright, viewport đúng kích thước, một máy chủ HTTP tạm, hai phiên minh và lan). Ảnh tĩnh không chứng minh hiệu năng. Không thêm ảnh mạng, không blur, không hoạt hình.
+
+Đã đo, không cuộn ngang (`scrollWidth` = `clientWidth`). Bấm thử giữa mỗi thẻ đều trúng chính thẻ đó, không trúng ảnh Shiba.
+
+| Khung | Cao trang | Đáy thẻ thứ ba | Kết quả |
+|---|---|---|---|
+| 1366×768 | 768 px, không cuộn | 641 px | Ô tìm `matcha` ra 1 quán, 3 thẻ, 5 dòng gọi món. Ảnh không che chữ. |
+| 1920×1080 | 1080 px, không cuộn | 684 px | Cùng nội dung, dòng món dài hơn vì cột rộng hơn. |
+
+Hai phiên cùng một máy, cùng một máy chủ: phiên Lan thấy quán `Phở` vừa được Minh thêm và dòng `Cold brew` vừa được Minh gọi, không cần tải lại. Không đo trên hai máy vật lý.
+
+Ảnh chạy thật: [1366×768](docs/review/2026-11-18-ban-1366.png) · [1920×1080](docs/review/2026-11-18-ban-1920.png).
+
+| Mục | Cũ | Mới | Lý do | Trạng thái | Chỗ chỉnh khi máy yếu |
+|---|---|---|---|---|---|
+| Ô tìm | Khu «THÊM QUÁN» tối đa 3 gợi ý và nút vào Kho | Ô **Tìm món hoặc quán** trên cùng. Khớp tên quán hoặc tên món trong menu snapshot. Bấm kết quả gửi một lệnh `vote.place`. | Báo cáo mục 2. Người nhớ món không phải đoán tên quán. | Nhãn và hành vi **[ĐÃ DUYỆT]**. Trần **8** kết quả, mỗi kết quả tối đa **3** tên món, danh sách cao tối đa **132 px** rồi cuộn: **[DỰ KIẾN]**, chưa đo thời gian gõ. | Hạ `limit` trong `findShops` (`app/src/shared/shop-find.ts`) và `max-height` của `.hn-find-results`. |
+| So khớp | Không có ô tìm | Bỏ dấu tiếng Việt (`stripDiacritics`) rồi viết thường. `pho` khớp `Phở`, `bun dau` khớp `Bún đậu`. | Frontier yêu cầu bỏ dấu. Tìm trên client vì snapshot `shops` đã có menu. | **[ĐÃ DUYỆT]** quy tắc. Chạy trong test, không đo trên máy yếu. | Tìm vẫn là vòng lặp trên snapshot, không thêm chỉ mục. |
+| Thẻ quán | % , thanh tiến độ, số phiếu, ghế, lịch sử đặt, tem DẪN ĐẦU / GHẾ | Tên quán và tên người đã chọn, cách nhau bằng dấu phẩy. Nền highlight khi phiếu là của mình. | Báo cáo: thẻ rối. | Nội dung thẻ **[ĐÃ DUYỆT]**. Dòng «Đã chốt» và nút **Chốt** (khi có quyền, chưa có quán thắng) **[GIỮ]** vì chốt quán vẫn là việc của màn này; báo cáo không bỏ thao tác chốt ở Bình chọn. | Bỏ nút Chốt trong `renderBan` nếu muốn thẻ chỉ còn hai dòng chữ. |
+| Gọi món | Thực đơn chip, ghi chú, giá, tổng tiền, nút copy | Ô nhập rộng phần còn lại, nút **Gọi** cao **44 px**, danh sách `Tên · món`. Giá gửi `null`. Sửa món của mình vẫn mở khi bấm dòng. | Báo cáo: ô nhỏ để tự gọi. `order.add {text, price}` đã đủ. | **[ĐÃ DUYỆT]** bố cục. Giá `null` là **[DỰ KIẾN]** cho đến khi Minh muốn giữ giá từ menu. | Hạ `max-height: 180px` của `.hn-order-compact`. |
+| Chưa kê bàn | Một nút «+ KÊ BÀN MỚI» | Phiếu «CHƯA KÊ BÀN» và một câu. Có quyền `table.create` thì hiện nút. Không có thì nói cần người có quyền. | Báo cáo: trạng thái rỗng rõ. | **[ĐÃ DUYỆT]** ý. Câu chữ **[DỰ KIẾN]**. | Không có hiệu ứng để giảm. |
+| Thêm quán + phiếu | Hai lệnh `table.addShop` rồi `vote.set` | `vote.place`: kiểm `vote` trước, chỉ thêm quán khi chưa có trên bàn và có `table.addShop`, rồi ghi phiếu. Thiếu quyền thì không ghi gì. Cổng lệnh vẫn là quyền `vote`. Nô lệ bấm quán chưa có trên bàn bị khóa nút và server từ chối. | Frontier: hai lệnh không atomic, nô lệ có vote nhưng không có `table.addShop`. | **[ĐÃ DUYỆT]** hướng lệnh gộp. Tên lệnh `vote.place` là **[DỰ KIẾN]**. | Không thêm vòng lặp. Muốn khóa chặt hơn: sửa `assertCommandAllowed` — hiện handler tự kiểm `table.addShop`. |
+| Chat bàn | `renderChatPanel` trong phiếu gọi món | Giữ nguyên lời gọi. | PR06 gỡ chat từng màn. | **[GIỮ]** | Không đụng `chat-panel.ts`. |
+| Khung | Hai cột bằng nhau, thực đơn trải hết hàng | Cột trái khoảng **1,45** phần, cột phải tối thiểu **240 px**. Dưới **900 px** xếp một cột. Phiếu ngồi trên ảnh trang trí (`z-index: 2`). | Ô gọi món là ô nhỏ bên cạnh. Ảnh không được che chữ hay nút. | Tỷ lệ cột **[DỰ KIẾN]** đến khi Minh duyệt ảnh. Lớp phiếu trên ảnh là **[ĐÃ ĐO]** ở hai khung trên. | `.hn-ban-layout` và `[data-scene="ban"] .hn-shell` trong `styles.css`. Hạ `z-index` nếu muốn ảnh đè lên phiếu trở lại. |

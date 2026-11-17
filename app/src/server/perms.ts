@@ -209,6 +209,7 @@ function resolveCommandPerm(
 ): PermKey | 'self' {
   switch (name) {
     case 'vote.set':
+    case 'vote.place':
       return 'vote';
     case 'order.add':
       return 'order';

@@ -16,6 +16,10 @@ export const CommandSchemas = {
   'vote.set': z.object({
     shopId: z.string().min(1).nullable(),
   }),
+  /** Thêm quán vào bàn nếu chưa có, rồi ghi phiếu của người gọi. Một transaction. */
+  'vote.place': z.object({
+    shopId: z.string().min(1),
+  }),
   'table.setWinner': z.object({
     shopId: z.string().min(1),
     spinId: z.string().min(1).optional(),
