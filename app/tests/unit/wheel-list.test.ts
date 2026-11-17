@@ -1,6 +1,7 @@
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { state } from '../../src/client/store.ts';
+import { SHOP_COLORS } from '../../src/client/icons.ts';
 import { renderQuay, resetWheelSpinForTests } from '../../src/client/screens/quay.ts';
 import type { Member, Wheel } from '../../src/shared/types.ts';
 import type { PermKey } from '../../src/shared/perms-catalog.ts';
@@ -44,6 +45,20 @@ function wheel(id: string, kind: Wheel['kind']): Wheel {
   };
 }
 
+function colorAt(gradient: string, deg: number): string {
+  const body = gradient.slice('conic-gradient('.length, -1);
+  const stops = [...body.matchAll(/(#[0-9A-Fa-f]{6}) (\d+(?:\.\d+)?)deg/g)].map((m) => ({
+    color: m[1]!.toUpperCase(),
+    at: Number(m[2]),
+  }));
+  for (let i = 0; i < stops.length; i += 2) {
+    const start = stops[i]!;
+    const end = stops[i + 1]!;
+    if (deg >= start.at && deg < end.at) return start.color;
+  }
+  throw new Error(`không có màu tại ${deg}° trong ${gradient}`);
+}
+
 describe('màn vòng quay', () => {
   beforeEach(() => {
     resetWheelSpinForTests();
@@ -85,6 +100,64 @@ describe('màn vòng quay', () => {
       ),
       false,
     );
+  });
+
+  it('màu ô trùng nhãn: 0° ở đỉnh, không lệch -90deg', () => {
+    const names = ['Cơm tấm', 'Bún bò', 'Phở', 'Bánh mì'];
+    const w = wheel('free', 'free');
+    w.items = names.map((name, i) => ({
+      id: `i${i}`,
+      wheelId: 'free',
+      name,
+      weight: 1,
+      refShopId: null,
+      refMemberId: null,
+      votes: null,
+      sort: i,
+    }));
+    state.wheels = [w];
+    state.ui.wheelId = 'free';
+    const winner = 3;
+    state.spins = [
+      {
+        id: 's1',
+        wheelId: 'free',
+        byMember: 'm',
+        itemsJson: JSON.stringify(names.map(() => ({ weight: 1 }))),
+        resultIndex: winner,
+        resultName: names[winner]!,
+        startedAt: Date.now() - 20_000,
+        durationMs: 1000,
+      },
+    ];
+
+    const html = renderQuay();
+    const bg = /id="wheel-face"[^>]*background:(conic-gradient\([^)]*\));/.exec(html)?.[1];
+    assert.ok(bg);
+    assert.equal(bg.includes('from '), false);
+    const slice = 360 / names.length;
+    const expected = names
+      .map((_, i) => {
+        const color = SHOP_COLORS[i];
+        const start = i * slice;
+        const end = (i + 1) * slice;
+        return `${color} ${start}deg, ${color} ${end}deg`;
+      })
+      .join(', ');
+    assert.equal(bg, `conic-gradient(${expected})`);
+
+    const rays = [...html.matchAll(/--ray-angle:(-?\d+(?:\.\d+)?)deg/g)].map((m) => Number(m[1]));
+    assert.equal(rays.length, names.length);
+    rays.forEach((ray, i) => {
+      const visual = ((ray + 90) % 360 + 360) % 360;
+      assert.equal(visual, i * slice + slice / 2);
+    });
+
+    const angle = Number(/--wheel-angle:(-?\d+(?:\.\d+)?)deg/.exec(html)?.[1]);
+    const atTop = ((360 - (angle % 360)) % 360 + 360) % 360;
+    assert.equal(colorAt(bg, atTop), SHOP_COLORS[winner]);
+    assert.equal(((rays[winner]! + 90) % 360 + 360) % 360, atTop);
+    assert.match(html, new RegExp(`class="hn-wheel-winner">${names[winner]}`));
   });
 
   it('chưa chọn vòng thì mở danh sách tự do', () => {

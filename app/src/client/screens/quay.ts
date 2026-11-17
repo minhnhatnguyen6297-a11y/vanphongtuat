@@ -76,7 +76,8 @@ function conic(items: { weight: number }[]): string {
   const stops = segs
     .flatMap((s) => [`${s.color} ${s.start}deg`, `${s.color} ${s.end}deg`])
     .join(', ');
-  return `conic-gradient(from -90deg, ${stops})`;
+  // conic-gradient mặc định 0° ở đỉnh. Không thêm `from`: nhãn đã trừ 90° vì rotate(0) chỉ sang phải.
+  return `conic-gradient(${stops})`;
 }
 
 function landingAngle(resultIndex: number, items: { weight: number }[]): number {
