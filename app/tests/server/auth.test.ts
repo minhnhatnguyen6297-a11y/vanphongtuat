@@ -52,6 +52,33 @@ describe('auth PIN lockout & CSRF', () => {
     assert.equal(m!.username, 'minh');
   });
 
+  it('cùng PIN trên hai khóa hoa/thường, hash không đổi', () => {
+    const before = pinHash(db);
+    const a = login(db, '  Minh ', '654321', '10.0.0.11');
+    const b = login(db, 'MINH', '654321', '10.0.0.12');
+    assert.equal(a.ok, true);
+    assert.equal(b.ok, true);
+    if (!a.ok || !b.ok) return;
+    assert.notEqual(a.sessionId, b.sessionId);
+    assert.equal(a.member.id, b.member.id);
+    assert.equal(pinHash(db), before);
+  });
+
+  it('khóa tài khoản dùng cùng khóa với lúc tìm', () => {
+    makeMember(db, { username: 'Lan', pin: '135790' });
+    const before = pinHash(db, 'Lan');
+    for (let i = 0; i < 4; i++) {
+      const r = login(db, i % 2 ? 'LAN' : 'lan', '000000', '10.0.0.21');
+      assert.equal(r.ok, false);
+      assert.equal((r as { error: string }).error, 'bad_credentials');
+    }
+    const locked = login(db, 'LaN', '000000', '10.0.0.21');
+    assert.equal((locked as { error: string }).error, 'locked');
+    const still = login(db, 'lan', '135790', '10.0.0.22');
+    assert.equal((still as { error: string }).error, 'locked');
+    assert.equal(pinHash(db, 'Lan'), before);
+  });
+
   it('Origin/CSRF: thiếu X-HNG hoặc Origin sai → false', () => {
     const good = {
       headers: { origin: config.origin, 'x-hng': '1' },
@@ -119,6 +146,36 @@ describe('auth PIN lockout & CSRF', () => {
     server.close();
   });
 
+  it('hai phiên HTTP cùng máy chủ nhận cùng tài khoản, PIN không bị ghi lại', async () => {
+    setDevHttpTrue();
+    const before = pinHash(db);
+    const ai = createAiQueue(null);
+    const handler = createHttpHandler({ db, ai });
+    const server = createServer(handler);
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    const { port } = server.address() as AddressInfo;
+    const origin = `http://127.0.0.1:${port}`;
+
+    const one = await postLogin(origin, 'Minh', '654321');
+    const two = await postLogin(origin, 'MINH', '654321');
+    assert.equal(one.status, 200);
+    assert.equal(two.status, 200);
+    assert.notEqual(one.cookie, two.cookie);
+
+    const meOne = await fetch(`${origin}/api/me`, { headers: { cookie: one.cookie } });
+    const meTwo = await fetch(`${origin}/api/me`, { headers: { cookie: two.cookie } });
+    assert.equal(meOne.status, 200);
+    assert.equal(meTwo.status, 200);
+    const bodyOne = (await meOne.json()) as { member: { id: string; username: string } };
+    const bodyTwo = (await meTwo.json()) as { member: { id: string; username: string } };
+    assert.equal(bodyOne.member.id, bodyTwo.member.id);
+    assert.equal(bodyOne.member.username, 'minh');
+    assert.equal(bodyTwo.member.username, 'minh');
+    assert.equal(pinHash(db), before);
+
+    server.close();
+  });
+
   it('/api/ai thiếu key → 503 ai_disabled', async () => {
     setDevHttpTrue();
     const ai = createAiQueue(null);
@@ -159,4 +216,25 @@ describe('auth PIN lockout & CSRF', () => {
 
 function setDevHttpTrue() {
   (config as { devHttp: boolean }).devHttp = true;
+}
+
+function pinHash(db: ReturnType<typeof setupTestDb>, username = 'minh'): string {
+  const row = db
+    .prepare('SELECT pin_hash FROM members WHERE username = ? COLLATE NOCASE')
+    .get(username) as { pin_hash: Buffer };
+  return Buffer.from(row.pin_hash).toString('hex');
+}
+
+async function postLogin(origin: string, username: string, pin: string) {
+  const res = await fetch(`${origin}/api/login`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      origin,
+      'x-hng': '1',
+    },
+    body: JSON.stringify({ username, pin }),
+  });
+  const cookie = (res.headers.get('set-cookie') || '').split(';')[0];
+  return { status: res.status, cookie };
 }

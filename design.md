@@ -76,7 +76,8 @@ Màn mới phải dùng lại các thành phần này. Không dựng phong cách
 
 | Màn | Hiện trạng trên `main` | Việc cần làm |
 |---|---|---|
-| Đăng nhập, Bàn hôm nay, Vòng quay, Tính tiền | Đã theo thiết kế, có scene minh họa (`route` là `ban`, `quay`, `tien`) | Giữ nguyên |
+| Đăng nhập | Ô **Tên đăng nhập** và **PIN 6 số**. Thẻ chỉ chọn nhanh, không tự chọn người đầu. Đăng ký vào sảnh và nói cách đăng nhập lần sau. Sai tên/PIN, mất mạng, từ chối và quá số lần là bốn câu khác nhau. | [ĐÃ CHỐT] 17/11/2026 |
+| Bàn hôm nay, Vòng quay, Tính tiền | Đã theo thiết kế, có scene minh họa (`route` là `ban`, `quay`, `tien`) | Giữ nguyên ở PR đăng nhập |
 | Sổ ghi, Kho quán, Sảnh, Quyền | Đã dùng token, không có scene minh họa | Soát lại theo bảng trong tài liệu gốc, ghi lại chỗ còn lệch |
 | **Phòng chat** | Ao phủ khung nhìn dưới thanh đầu và cạnh rail. Chat là ô góc phải dưới, thu gọn được. Tin dài cuộn trong ô, ô gửi nằm dưới log. | [ĐÃ CHỐT] Bố cục ao/chat trên nhánh sửa lỗi. Trả lời thụt vẫn chưa có. Không gửi file trong chat. |
 | **Bể cá** | Đã vào `main` qua PR #11. Lượt này: ao chung (mỗi người thả cá của mình) và popup vẽ bán trong suốt. PR #7 và #8 không trộn. | [ĐÃ CHỐT] Bố cục và ao chung. Đồ họa chi tiết để task sau. |
