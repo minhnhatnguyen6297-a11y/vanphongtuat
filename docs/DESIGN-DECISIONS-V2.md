@@ -1,5 +1,7 @@
 # Quyết định thiết kế ao cá V2
 
+V3 thay thế phần chuyển động/nước, xem [`AO-CA-V3-HANDOFF.md`](AO-CA-V3-HANDOFF.md) và [`AO-CA-V3-KY-THUAT.md`](AO-CA-V3-KY-THUAT.md).
+
 Nguồn ảnh: chuẩn hướng A · Trạng thái chung: **đang triển khai vòng 3/3** (chrome ĐẠT ở `fcd2450`) · Thông số bọt hard-code trong `app/src/client/be/tank.ts`.
 
 ## Bố cục ngắm ao (giữ vòng 2)
