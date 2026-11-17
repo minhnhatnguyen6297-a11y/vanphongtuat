@@ -176,3 +176,28 @@ Hai phiên cùng một máy, cùng một máy chủ: phiên Lan thấy quán `Ph
 | Thêm quán + phiếu | Hai lệnh `table.addShop` rồi `vote.set` | `vote.place`: kiểm `vote` trước, chỉ thêm quán khi chưa có trên bàn và có `table.addShop`, rồi ghi phiếu. Thiếu quyền thì không ghi gì. Cổng lệnh vẫn là quyền `vote`. Nô lệ bấm quán chưa có trên bàn bị khóa nút và server từ chối. | Frontier: hai lệnh không atomic, nô lệ có vote nhưng không có `table.addShop`. | **[ĐÃ DUYỆT]** hướng lệnh gộp. Tên lệnh `vote.place` là **[DỰ KIẾN]**. | Không thêm vòng lặp. Muốn khóa chặt hơn: sửa `assertCommandAllowed` — hiện handler tự kiểm `table.addShop`. |
 | Chat bàn | `renderChatPanel` trong phiếu gọi món | Giữ nguyên lời gọi. | PR06 gỡ chat từng màn. | **[GIỮ]** | Không đụng `chat-panel.ts`. |
 | Khung | Hai cột bằng nhau, thực đơn trải hết hàng | Cột trái khoảng **1,45** phần, cột phải tối thiểu **240 px**. Dưới **900 px** xếp một cột. Phiếu ngồi trên ảnh trang trí (`z-index: 2`). | Ô gọi món là ô nhỏ bên cạnh. Ảnh không được che chữ hay nút. | Tỷ lệ cột **[DỰ KIẾN]** đến khi Minh duyệt ảnh. Lớp phiếu trên ảnh là **[ĐÃ ĐO]** ở hai khung trên. | `.hn-ban-layout` và `[data-scene="ban"] .hn-shell` trong `styles.css`. Hạ `z-index` nếu muốn ảnh đè lên phiếu trở lại. |
+
+## 13. Chia tiền (PR05)
+
+Báo cáo 17/11/2026 mục 4 là **[ĐÃ DUYỆT]** về một cách nhập bill và một cách chia. Số đo khung là **[ĐÃ ĐO]** ngày 18/11/2026 (Playwright, Chrome, viewport đúng kích thước, một máy chủ HTTP tạm, DB tạm). Ảnh tĩnh không chứng minh hiệu năng. Không thêm ảnh mạng, không blur, không hoạt hình.
+
+Đã đo, không cuộn ngang (`scrollWidth` = `clientWidth`), trang không cao hơn khung:
+
+| Khung | Cao trang | Tổng tiền | Mỗi người | VietQR |
+|---|---|---|---|---|
+| 1366×768 | 768 px, không cuộn | 100.001đ | 33.500đ | Có, 108×108 px, nội dung `#7 MINH (BAN)` |
+| 1920×1080 | 1080 px, không cuộn | 100.001đ | 33.500đ | Cùng số và cùng mã. Cột kết quả rộng hơn. |
+
+Ba người có món trên bàn mới. Không đo trên máy yếu và không đo FPS.
+
+Ảnh chạy thật: [1366×768](docs/review/2026-11-18-tien-1366.png) · [1920×1080](docs/review/2026-11-18-tien-1920.png).
+
+Quy tắc cũ «Chủ xị gánh lẻ» và «THEO MÓN / CHIA ĐỀU» **không còn hiệu lực**. Không giữ song song với quy tắc mới. `design-toi-gian/split.reference.js` chỉ là bản cũ.
+
+| Mục | Cũ | Mới | Lý do | Trạng thái | Chỗ chỉnh khi máy yếu |
+|---|---|---|---|---|---|
+| Nhập bill | Nút đọc ảnh, ô dán chữ, nút đọc chữ, bảng dòng AI, nút Điền tổng | Hai cách: **thả hoặc dán ảnh** (AI điền ô Tổng tiền) hoặc **gõ tổng**. Ô chữ và nút đọc chữ đã bỏ. | Báo cáo mục 4. | Cách nhập **[ĐÃ DUYỆT]**. AI `total: null` không điền số: **[ĐÃ CHỐT]** trong test provider giả. | Không thêm preview ảnh lớn. Ảnh bill vẫn thu nhỏ trong RAM, trần cạnh **1600 px** ở `image.ts`. |
+| Cách chia | Theo món hoặc đều. Làm tròn xuống bội 500đ. Phần lẻ 0–499đ Chủ xị gánh. | Một cách: đều cho người có order (một người nhiều món vẫn một suất). Mỗi phần làm tròn **lên** bội **500đ**. 100.001đ / 3 người = **33.500đ**. Thực thu ví dụ **100.500đ**. | Minh chốt 17/11, làm 18/11. Giá món có thể null từ PR03. | Công thức **[ĐÃ DUYỆT]**. Chưa đo trên máy yếu. `hostCovers` luôn **0 đ**. | `STEP = 500` trong `app/src/shared/split.ts`. Không có vòng lặp theo giá. |
+| Kết quả | Danh sách từng người, món, chọn người gánh lẻ, nút đổi chế độ | Chỉ **Tổng tiền** và **Mỗi người**. | Báo cáo mục 4. | Bố cục **[ĐÃ DUYỆT]**. Vừa khung **[ĐÃ ĐO]** ở hai cỡ trên. Cỡ chữ 28 px, xuống 22 px khi cao khung ≤ 860 px: **[DỰ KIẾN]** cho đến khi Minh duyệt nét. | `.hn-split-result b` trong `styles.css`. |
+| VietQR | Số tiền của người đang chọn. Nội dung là tên người đó. | Số tiền = phần mỗi người. STK của Chủ xị bàn. Nội dung `#<bàn> <tên người đang đăng nhập>`, cắt 25 ký tự ASCII. | Báo cáo mục 4. QR vẫn cần tên. | **[ĐÃ DUYỆT]** hướng. Ô QR vẽ **108×108 px**. | `.hn-qr-box canvas` đã cố định 108 px. Không phóng to. |
+| Lệnh `table.setBill.mode` | UI bật `item` hoặc `equal` | Schema vẫn nhận cả hai. UI luôn gửi `equal`. `split()` bỏ qua mode. | Giữ lệnh cũ, một quy tắc tính. | **[ĐÃ CHỐT]** tương thích. | `commands.ts` không thêm nhánh. |

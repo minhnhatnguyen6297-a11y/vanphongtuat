@@ -21,7 +21,7 @@
 
 ### Đã mở rộng (roles / chat / sảnh)
 - Phân quyền **toàn cục theo tầng** (`chu_xi` / `pho_xi` / `dan_den` / `no_le`) + ma trận `role_permissions`; grant tạm 24h; anti-escalation (`perm.*` / `member.admin` không grant).
-- **`tables.host_id` chỉ là người gánh lẻ** (nhãn / residual) — **không** authorize lệnh.
+- **`tables.host_id` là người kê bàn** (nhãn, STK VietQR) — **không** authorize lệnh và **không** gánh phần lẻ.
 - Chat theo scope bàn (`tableId`) và vòng quay (`wheelId`); fanout event, không full-snap mỗi tin.
 - Sảnh game: Caro / Cá ngựa / Tỉ phú rút gọn — host cần `game.host`; chơi cần `game.play`.
 
@@ -49,7 +49,7 @@ Node.js trên MAY3  ── SQLite (WAL) ── backup 14 ngày
 
 ### Quyết định đã chốt
 - Chỉ PC LAN (~15 máy). Không làm mobile đợt này.
-- Chia tiền: bội 500đ; phần lẻ 0–499đ **Chủ xị gánh** (`hostCovers`). Port nguyên `design-toi-gian/split.reference.js`.
+- Chia tiền (18/11/2026): **một cách**. Chia đều cho người có order. Mỗi phần làm tròn **lên** bội **500đ**. Ví dụ 100.001đ / 3 người = 33.500đ (thực thu 100.500đ). Không còn Chủ xị gánh lẻ, không chia theo giá món. `hostCovers` luôn 0. `design-toi-gian/split.reference.js` chỉ là thuật toán cũ, không còn là quy tắc.
 - Ảnh không ghi đĩa/log/backup. API key AI chỉ biến môi trường.
 - Vòng quay: máy chủ chọn kết quả; "Chốt quán này" là thao tác riêng gắn `spinId`.
 
@@ -96,8 +96,8 @@ UI quyền: Avatar → **Quyền** (`#/quyen`). Chi tiết nghiệm thu: [`app/d
 - [ ] CHỐT QUÁN NÀY / GHI NGƯỜI ĐI LẤY gắn đúng `spinId`
 
 ### Tính tiền
-- [ ] THEO MÓN / CHIA ĐỀU khớp `split()`; nhãn **Chủ xị gánh lẻ** khi có
-- [ ] VietQR: STK Chủ xị, số tiền, nội dung `#<bàn> <TÊN>`
+- [ ] Một cách chia: đều, làm tròn lên bội 500đ; kết quả chỉ **Tổng tiền** và **Mỗi người**
+- [ ] VietQR Chủ xị: STK Chủ xị, số tiền = phần mỗi người, nội dung `#<bàn> <TÊN người đang đăng nhập>`
 
 ### Sổ / Kho
 - [ ] Sổ: mọi bàn, mở rộng một dòng, kê lại bàn

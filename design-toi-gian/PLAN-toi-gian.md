@@ -27,7 +27,7 @@
 | Dữ liệu | SQLite trên MAY3 là nguồn dữ liệu duy nhất. Trình duyệt chỉ giữ nháp giao diện. **Không có dữ liệu cũ để nhập**: các bản HTML cũ chưa từng lưu gì vào trình duyệt. Chỉ seed khi tạo cơ sở dữ liệu mới. |
 | Đăng nhập | Tên đăng nhập + PIN 6 số. Phiên đăng nhập lưu ở máy chủ, cookie HttpOnly. |
 | Vai trò | Ăn uống chỉ có Chủ xị (người kê bàn, lưu `host_id`) và Thành viên. Người vận hành máy chủ có thêm quyền quản lý tài khoản. |
-| Chia tiền | Theo tỷ lệ giá order hoặc chia đều, mỗi phần là bội 500đ. **Phần lẻ dưới 500đ do Chủ xị gánh** (xem 6.3). |
+| Chia tiền | **Đã thay 18/11/2026.** Một cách: chia đều người có order, mỗi phần làm tròn **lên** bội 500đ. 100.001đ / 3 = 33.500đ. Không còn Chủ xị gánh lẻ. Xem `design.md` mục 13. Mục 6.3 bên dưới chỉ còn để đối chiếu bản cũ. |
 | Ảnh | Chỉ giữ trong RAM để gửi AI. Không ghi ra đĩa, log hay bản sao lưu. |
 | API key AI | Chỉ nằm trên máy chủ (biến môi trường). Không có ô nhập key trên giao diện. |
 | Vòng quay | Máy chủ chọn kết quả. "Chốt quán này" là một thao tác riêng, gắn với đúng lượt quay. |
@@ -298,6 +298,16 @@ Bố cục, màu và kích thước lấy đúng từ design. Dưới đây ch�
 - **Âm thanh:** tick/ding bằng Web Audio, chỉ phát trên máy người vừa bấm quay và các máy đang mở màn QUAY có loa bật. AudioContext chỉ resume trong sự kiện click (máy chưa từng click thì im lặng). Người dùng bật reduced-motion thì xoay nhanh 0,6 giây.
 
 ### 6.3 TÍNH TIỀN (`ViaHe-TinhTien.dc.html`)
+
+**Quy tắc hiện hành (18/11/2026), thay toàn bộ cách chia và nhãn «Chủ xị gánh lẻ» ở các gạch đầu dòng phía dưới.** Không áp dụng song song với đoạn cũ.
+
+- Chỉ hai cách nhập bill: thả hoặc dán ảnh để AI điền **Tổng tiền**, hoặc gõ tổng. Không có ô dán chữ bill.
+- Chia đều cho người có order. Mỗi phần làm tròn lên bội 500đ. Kết quả chỉ **Tổng tiền** và **Mỗi người**.
+- VietQR của Chủ xị, số tiền bằng phần mỗi người. Nội dung chuyển khoản lấy tên người đang đăng nhập.
+- `table.setBill.mode` vẫn nhận `item` | `equal` cho lệnh cũ. UI luôn gửi `equal`. Hàm `split()` bỏ qua mode và giá món.
+
+Đoạn sau là mô tả bản 12/11/2026, **không còn là quy tắc**:
+
 - **Khung vàng BILL:**
   - Ảnh bill thu nhỏ, chỉ hiện trong phiên trên máy đó.
   - Nút `CHỤP MÀN HÌNH`, `Dán Ctrl+V`, `Chọn ảnh`.
@@ -322,7 +332,7 @@ Bố cục, màu và kích thước lấy đúng từ design. Dưới đây ch�
 
 ### 6.4 SỔ GHI (`ViaHe-SoGhi.dc.html`)
 - Danh sách mọi bàn, sắp `id` giảm dần, người dùng tự cuộn. Mỗi dòng: `#id` · `dd/mm` · TÊN QUÁN HIỆU LỰC · `N người` · tổng bill (null thì lấy tổng order) · mũi tên.
-- **Bấm dòng để mở rộng** (mỗi lúc một dòng): bảng `tên | món | số tiền` tính bằng `split()`, thêm dòng `Chủ xị gánh lẻ` nếu có. Nút `KÊ LẠI BÀN NÀY` gửi `table.create` với cùng danh sách quán rồi chuyển tới `#/ban`.
+- **Bấm dòng để mở rộng** (mỗi lúc một dòng): bảng `tên | món | số tiền` tính bằng `split()` mới (mỗi người một suất bằng nhau). Không còn dòng Chủ xị gánh lẻ. Nút `KÊ LẠI BÀN NÀY` gửi `table.create` với cùng danh sách quán rồi chuyển tới `#/ban`.
 - **Không có:** lọc, tìm kiếm, nợ, trạng thái.
 
 ### 6.5 KHO (`ViaHe-KhoQuan.dc.html`)
@@ -400,7 +410,7 @@ Bố cục, màu và kích thước lấy đúng từ design. Dưới đây ch�
   - Gọi món bằng thẻ menu và gõ tay; Chủ xị sửa order người khác; người thường không sửa được.
   - Hai người sửa cùng order thì người sau nhận xung đột.
   - Quay: 15 máy thấy cùng kết quả; máy vào giữa lúc quay thấy kết quả đúng; `CHỐT QUÁN NÀY` đổi tem trên mọi máy.
-  - Tính tiền: số khớp `split()`; dòng `Chủ xị gánh lẻ` hiện khi bill lẻ; QR đúng số tiền và STK.
+  - Tính tiền: số khớp `split()` mới (đều, làm tròn lên bội 500đ). Không còn dòng Chủ xị gánh lẻ. QR đúng số tiền mỗi người và STK Chủ xị.
   - Copy order, copy gửi nhóm (clipboard thật trên HTTPS) và đường dự phòng textarea.
   - Mất mạng 30 giây rồi nối lại: lệnh đang chờ được gửi lại, không trùng.
   - Khởi động lại máy chủ: mọi client tự nối lại, dữ liệu còn nguyên.

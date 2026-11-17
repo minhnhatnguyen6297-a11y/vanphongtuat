@@ -145,7 +145,7 @@ export function shopById(id: string | null | undefined): Shop | undefined {
   return state.shops.find((s) => s.id === id);
 }
 
-/** host_id = người gánh lẻ / nhãn bàn — không authorize. */
+/** host_id = người kê bàn (STK VietQR). Không authorize, không gánh phần lẻ. */
 export function isHost(): boolean {
   return !!(state.me && state.table && state.me.id === state.table.hostId);
 }

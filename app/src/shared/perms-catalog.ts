@@ -45,7 +45,7 @@ export const PERM_LABELS: Record<PermKey, string> = {
   'table.create': 'Kê bàn',
   'table.addShop': 'Thêm quán vào bàn',
   'table.setWinner': 'Chốt quán',
-  'table.setBill': 'Nhập bill / gánh lẻ',
+  'table.setBill': 'Nhập bill',
   'table.setPickup': 'Ghi người đi lấy',
   'shop.add': 'Thêm quán kho',
   'shop.edit': 'Sửa quán / menu',
