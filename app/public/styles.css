@@ -671,9 +671,36 @@ input[type=range] { accent-color: var(--red); }
 }
 
 .hn-login-roster { border: 0; margin: 0; padding: 0; min-width: 0; }
-.hn-login-roster legend, .hn-login-pin { font-size: 14px; font-weight: 800; text-align: center; }
+.hn-login-roster legend, .hn-login-pin, .hn-login-user { font-size: 14px; font-weight: 800; text-align: center; }
 .hn-login-roster legend { margin: 0 auto 6px; }
-.hn-login-pin { display: grid; gap: 5px; }
+.hn-login-pin, .hn-login-user { display: grid; gap: 5px; }
+.hn-login-user { margin-bottom: 8px; }
+.hn-login-user input { letter-spacing: 0; text-align: center; font-weight: 800; }
+.hn-login-error {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  color: var(--danger);
+  background: var(--paper);
+  border: 2px solid var(--danger);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+}
+.hn-login-error[hidden] { display: none; }
+.hn-login-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-weight: 700;
+}
+.hn-login-next .hn-btn { min-height: 36px; margin: 0; font-size: 14px; }
 .hn-login-pin input { font-family: var(--font-mono); font-size: 22px; letter-spacing: .45em; text-align: center; }
 .hn-login-card .hn-btn { width: 100%; margin-top: 12px; min-height: 48px; font: 400 21px var(--font-display); }
 
@@ -1998,7 +2025,8 @@ input[type=range] { accent-color: var(--red); }
 .hn-login-card { width: min(598px, 96%); padding: 20px clamp(17px, 3.3vw, 45px) 23px; }
 .hn-login-card.hn-paper-fold { --cut: 20px; --fold: 48px; filter: drop-shadow(8px 9px 0 var(--ink)); }
 .hn-login-card h1 { margin-bottom: 8px; padding: 11px 26px 14px; font: 800 clamp(30px, 4.35vw, 57px)/1.1 var(--font-body); -webkit-text-stroke: 6px var(--ink); letter-spacing: -.035em; }
-.hn-login-roster legend, .hn-login-pin { font-size: clamp(17px, 2.05vw, 27px); }
+.hn-login-roster legend, .hn-login-pin, .hn-login-user { font-size: clamp(17px, 2.05vw, 27px); }
+.hn-login-user input { min-height: 56px; border-width: 3px; border-radius: 15px; }
 .hn-member-grid button { min-height: 52px; border: 3px solid var(--ink); border-radius: 18px; font-size: clamp(13px, 1.45vw, 21px); }
 .hn-login-pin-box { display: block; position: relative; }
 .hn-login-pin input { min-height: 64px; border: 3px solid var(--ink); border-radius: 15px; font-size: 28px; }

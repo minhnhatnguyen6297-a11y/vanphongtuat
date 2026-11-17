@@ -2,6 +2,18 @@ import { esc } from '../../shared/esc.js';
 import { state, canOpenQuyen } from '../store.js';
 import type { RouteId } from '../store.js';
 import { ICONS } from '../icons.js';
+import { clearLoginHint, readLoginHint } from '../login-hint.js';
+
+const ROOM_ICONS: Record<string, string> = {
+  ban: ICONS.ban,
+  quay: ICONS.quay,
+  tien: ICONS.tien,
+  so: ICONS.so,
+  kho: ICONS.kho,
+  sanh: ICONS.sanh,
+  chat: ICONS.chat,
+  quyen: ICONS.paw,
+};
 
 type Room = {
   id: RouteId;
@@ -29,8 +41,12 @@ export function titleHome(): { chip: string; fun: string } {
 }
 
 export function renderHome(): string {
+  const hint = readLoginHint();
+  const hintHtml = hint
+    ? `<p class="hn-login-next" id="login-next" role="status">Đã vào sảnh. Lần sau đăng nhập bằng tên <strong>${esc(hint)}</strong> và PIN 6 số vừa tạo. <button type="button" class="hn-btn" id="login-next-dismiss">Đã hiểu</button></p>`
+    : '';
   const rooms = ROOMS.filter((r) => !r.gated || canOpenQuyen()).map((r) => {
-    const icon = r.id === 'quyen' ? ICONS.paw : (ICONS as Record<string, string>)[r.id] || ICONS.ban;
+    const icon = ROOM_ICONS[r.id] ?? ICONS.ban;
     return `<a class="hn-floor-room" href="#/${r.id}" data-area="${r.area}" data-tone="${r.tone}">
       <span class="hn-floor-room-icon">${icon}</span>
       <span class="hn-floor-room-name">${esc(r.name)}</span>
@@ -39,6 +55,7 @@ export function renderHome(): string {
   });
 
   return `<main class="hn-main">
+    ${hintHtml}
     <div class="hn-floor" role="navigation" aria-label="Sơ đồ văn phòng">
       <div class="hn-floor-hall" aria-hidden="true">HÀNH LANG</div>
       ${rooms.join('')}
@@ -48,6 +65,9 @@ export function renderHome(): string {
   </main>`;
 }
 
-export function bindHome(_root: HTMLElement): void {
-  /* links only */
+export function bindHome(root: HTMLElement): void {
+  root.querySelector('#login-next-dismiss')?.addEventListener('click', () => {
+    clearLoginHint();
+    root.querySelector('#login-next')?.remove();
+  });
 }
