@@ -18,18 +18,18 @@ export function turnSquash(progress: number): number {
   return Math.sin(clamp(progress, 0, 1) * Math.PI);
 }
 
-/** Horizontal scale. Mild tuck only — không phóng to / không ép mỏng hoạt hình. */
+/** Horizontal scale. Quay thân rõ hơn nhưng không phóng to / không ép mỏng hoạt hình. */
 export function turnWidthScale(squash: number): number {
-  return 1 - 0.18 * clamp(squash, 0, 1);
+  return 1 - 0.28 * clamp(squash, 0, 1);
 }
 
 export function headTilt(deltaRad: number): number {
   return clamp(deltaRad, -HEAD_TILT_MAX, HEAD_TILT_MAX);
 }
 
-/** Light tail wag, about ±6°. */
+/** Đuôi lắc ~±9°. */
 export function tailWag(timeSec: number, phase: number): number {
-  return Math.sin(timeSec * 6 + phase) * 0.1;
+  return Math.sin(timeSec * 7 + phase) * 0.16;
 }
 
 export type DepthLook = {
@@ -39,14 +39,14 @@ export type DepthLook = {
   alpha: number;
 };
 
-/** `depth` 0 is far. Far fish are smaller, blurrier, and more blue-green. */
+/** `depth` 0 is far. Far: nhỏ hơn, tint nhẹ — blur thấp để tránh vệt trắng mờ. */
 export function depthLook(depth: number): DepthLook {
   const d = clamp(depth, 0, 1);
   return {
-    scale: 0.42 + d * 0.68,
-    blurPx: (1 - d) * 2.4,
-    tint: (1 - d) * 0.42,
-    alpha: 0.75 + d * 0.25,
+    scale: 0.55 + d * 0.55,
+    blurPx: (1 - d) * 1.0,
+    tint: (1 - d) * 0.22,
+    alpha: 0.88 + d * 0.12,
   };
 }
 
@@ -76,8 +76,8 @@ export function pickTarget(rand: () => number, bounds: Bounds): { x: number; y: 
 export type StepView = { tilt: number; squash: number; facing: Facing };
 
 /**
- * Seek the current target. A facing change squeezes the body for 0.4–0.6s
- * and flips at the thinnest point. `speedPx` is pixels per second.
+ * Seek the current target. A facing change tucks the body for 0.25–0.6s
+ * and flips at mid-turn. `speedPx` is pixels per second.
  */
 function targetInside(s: Swimmer, bounds: Bounds): boolean {
   return s.tx >= bounds.minX && s.tx <= bounds.maxX && s.ty >= bounds.minY && s.ty <= bounds.maxY;
@@ -110,7 +110,7 @@ export function stepSwimmer(
   }
   const dist = Math.hypot(dx, dy) || 1;
   const want: Facing = dx >= 0 ? 1 : -1;
-  if (!s.turn && want !== s.facing && Math.abs(dx) > 18) {
+  if (!s.turn && want !== s.facing && Math.abs(dx) > 10) {
     s.turn = { elapsed: 0, dur: turnDurationMs(rand()) / 1000, to: want };
   }
 

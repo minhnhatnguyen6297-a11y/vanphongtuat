@@ -5,9 +5,11 @@ import {
   pickTarget,
   stepSwimmer,
   tailWag,
+  turnDurationMs,
   turnSquash,
   turnWidthScale,
   type Bounds,
+  type Facing,
   type Swimmer,
 } from './motion.js';
 
@@ -185,7 +187,7 @@ export class Tank {
     const rec: SavedFish = {
       id: `f${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`,
       png,
-      depth: 0.2 + Math.random() * 0.8,
+      depth: 0.45 + Math.random() * 0.55,
       phase: Math.random() * Math.PI * 2,
     };
     this.records.push(rec);
@@ -216,7 +218,7 @@ export class Tank {
       const rec: SavedFish = {
         id: f.id,
         png: f.png,
-        depth: 0.25 + unit(f.id) * 0.7,
+        depth: 0.45 + unit(f.id) * 0.55,
         phase: unit(`${f.id}p`) * Math.PI * 2,
       };
       this.records.push(rec);
@@ -228,18 +230,18 @@ export class Tank {
     return this.records.map((r) => ({ id: r.id, ownerId: this.owners.get(r.id) || '' }));
   }
 
-  /** Cho ăn tại toạ độ CSS của canvas. */
+  /** Cho ăn tại toạ độ CSS của canvas — cá đổi hướng + bọt 8–26. */
   feedAt(cssX: number, cssY: number): void {
     const n = FEED_BURST_MIN + Math.floor(Math.random() * (FEED_BURST_MAX - FEED_BURST_MIN + 1));
     this.spawnBurst(cssX, cssY, n, 0);
     for (const s of this.swimmers) {
-      if (Math.random() > 0.55) continue;
-      s.tx = cssX + (Math.random() - 0.5) * 40;
-      s.ty = cssY + (Math.random() - 0.5) * 40;
+      const tx = cssX + (Math.random() - 0.5) * 36;
+      const ty = cssY + (Math.random() - 0.5) * 36;
+      this.retarget(s, tx, ty);
     }
   }
 
-  /** Xua: cụm thưa, lệch hướng rời. */
+  /** Xua: cụm thưa 4–10, cá quay thân rời điểm chạm. */
   scareAt(cssX: number, cssY: number): void {
     const n = SCARE_BURST_MIN + Math.floor(Math.random() * (SCARE_BURST_MAX - SCARE_BURST_MIN + 1));
     this.spawnBurst(cssX, cssY, n, 1);
@@ -247,10 +249,20 @@ export class Tank {
       const dx = s.x - cssX;
       const dy = s.y - cssY;
       const d = Math.hypot(dx, dy) || 1;
-      if (d > 180) continue;
-      const push = 90 + Math.random() * 70;
-      s.tx = s.x + (dx / d) * push;
-      s.ty = s.y + (dy / d) * push;
+      if (d > 280) continue;
+      const push = 120 + Math.random() * 100;
+      this.retarget(s, s.x + (dx / d) * push, s.y + (dy / d) * push);
+    }
+  }
+
+  /** Đổi đích và kích hoạt quay thân nếu cần đổi mặt. */
+  private retarget(s: Swimmer, tx: number, ty: number): void {
+    const bounds = this.bounds();
+    s.tx = Math.min(bounds.maxX, Math.max(bounds.minX, tx));
+    s.ty = Math.min(bounds.maxY, Math.max(bounds.minY, ty));
+    const want: Facing = s.tx >= s.x ? 1 : -1;
+    if (want !== s.facing) {
+      s.turn = { elapsed: 0, dur: turnDurationMs(Math.random()) / 1000, to: want };
     }
   }
 
@@ -395,7 +407,7 @@ export class Tank {
     for (const s of this.swimmers) {
       s.tx = Math.min(bounds.maxX, Math.max(bounds.minX, s.tx));
       s.ty = Math.min(bounds.maxY, Math.max(bounds.minY, s.ty));
-      stepSwimmer(s, dt, Math.random, bounds, 78);
+      stepSwimmer(s, dt, Math.random, bounds, 92);
     }
     for (const b of this.eventBubbles) {
       b.life -= dt;
@@ -444,15 +456,33 @@ export class Tank {
     g.fillStyle = BG_TONE;
     g.fillRect(0, 0, w, h);
 
-    // caustic shimmer nhẹ (không blur toàn màn)
+    // Khúc xạ/caustic nhẹ trên nền Hang Đá — không blur toàn màn (máy yếu)
     g.save();
-    g.globalAlpha = 0.08 + Math.sin(time * 0.7) * 0.03;
-    g.fillStyle = 'rgba(180, 230, 255, 0.5)';
-    for (let i = 0; i < 4; i++) {
-      const y = h * (0.15 + i * 0.18) + Math.sin(time * 1.1 + i) * 10;
+    g.globalAlpha = 0.14 + Math.sin(time * 0.85) * 0.04;
+    g.fillStyle = 'rgba(190, 235, 255, 0.55)';
+    for (let i = 0; i < 6; i++) {
+      const y = h * (0.12 + i * 0.14) + Math.sin(time * 1.25 + i * 0.9) * 12;
       g.beginPath();
-      g.ellipse(w * (0.2 + (i % 3) * 0.25), y, w * 0.18, 18, Math.sin(time + i) * 0.2, 0, Math.PI * 2);
+      g.ellipse(
+        w * (0.15 + (i % 4) * 0.22) + Math.sin(time * 0.6 + i) * 18,
+        y,
+        w * 0.16,
+        14 + (i % 3) * 4,
+        Math.sin(time * 0.5 + i) * 0.35,
+        0,
+        Math.PI * 2,
+      );
       g.fill();
+    }
+    g.globalAlpha = 0.1 + Math.sin(time * 1.4) * 0.03;
+    g.strokeStyle = 'rgba(210, 245, 255, 0.65)';
+    g.lineWidth = 1.4;
+    for (let i = 0; i < 3; i++) {
+      const y0 = h * (0.28 + i * 0.22) + Math.sin(time * 1.6 + i) * 8;
+      g.beginPath();
+      g.moveTo(0, y0);
+      g.bezierCurveTo(w * 0.28, y0 - 14, w * 0.62, y0 + 16, w, y0 - 4);
+      g.stroke();
     }
     g.restore();
 
@@ -536,8 +566,9 @@ export class Tank {
     // không phóng to sprite lúc quay — chỉ co ngang nhẹ
     g.scale(s.facing * turnWidthScale(squash) * look.scale, look.scale);
     g.globalAlpha = look.alpha;
-    if (look.blurPx >= 0.7) g.filter = `blur(${look.blurPx.toFixed(2)}px)`;
+    if (look.blurPx >= 0.85) g.filter = `blur(${look.blurPx.toFixed(2)}px)`;
     g.drawImage(this.sprite, -SPRITE_W / 2, -SPRITE_H / 2);
+    g.filter = 'none';
     g.restore();
   }
 

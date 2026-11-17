@@ -42,11 +42,11 @@ describe('bể cá motion', () => {
     assert.equal(turnDurationMs(0.5), 425);
   });
 
-  it('co bề ngang nhẹ (~0.82) ở giữa lượt quay, không phóng to', () => {
+  it('co bề ngang (~0.72) ở giữa lượt quay, không phóng to', () => {
     assert.equal(turnSquash(0), 0);
     assert.equal(turnSquash(0.5), 1);
     assert.equal(turnWidthScale(0), 1);
-    assert.ok(Math.abs(turnWidthScale(1) - 0.82) < 1e-12);
+    assert.ok(Math.abs(turnWidthScale(1) - 0.72) < 1e-12);
   });
 
   it('nghiêng đầu kẹp trong ±30°', () => {
@@ -125,7 +125,7 @@ describe('bể cá motion', () => {
 
   it('đuôi lắc nhẹ và cá xa nhỏ hơn, mờ hơn, ngả xanh hơn', () => {
     for (let i = 0; i < 20; i++) {
-      assert.ok(Math.abs(tailWag(i * 0.13, 0.4)) <= 0.1 + 1e-9);
+      assert.ok(Math.abs(tailWag(i * 0.13, 0.4)) <= 0.16 + 1e-9);
     }
     const far = depthLook(0);
     const near = depthLook(1);
@@ -138,11 +138,11 @@ describe('bể cá motion', () => {
 });
 
 describe('mẫu và cọ mờ', () => {
-  it('có 6 mẫu outline', () => {
+  it('có 6 mẫu cá màu rõ', () => {
     assert.equal(FISH_PATTERNS.length, 6);
     for (const p of FISH_PATTERNS) {
       assert.match(p.svg, /<svg/);
-      assert.match(p.svg, /stroke="#13110F"/);
+      assert.match(p.svg, /fill="#/);
       assert.ok(p.label.length > 0);
     }
   });
