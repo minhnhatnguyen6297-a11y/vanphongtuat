@@ -244,6 +244,7 @@ function resolveCommandPerm(
       return 'wheel.create';
     case 'wheel.rename':
     case 'wheel.item.add':
+    case 'wheel.item.addMany':
     case 'wheel.item.update':
     case 'wheel.item.remove':
     case 'wheel.equalize':

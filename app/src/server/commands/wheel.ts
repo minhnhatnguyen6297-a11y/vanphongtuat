@@ -6,7 +6,43 @@ import { syncShopWheelItems } from './table.ts';
 import type { CmdOk, Handler } from './types.ts';
 import type { CommandArgs } from '../../shared/commands.ts';
 
-const MAX_ITEMS = 30;
+/** Trần một vòng. 30 → 60 ngày 18/11/2026: menu kho tối đa 60 và dán nhiều dòng. Chưa đo máy yếu. */
+const MAX_ITEMS = 60;
+
+type NewWheelItem = {
+  name: string;
+  weight?: number;
+  refShopId?: string | null;
+  refMemberId?: string | null;
+};
+
+function insertItems(
+  db: Parameters<Handler>[0]['db'],
+  wheelId: string,
+  items: NewWheelItem[],
+): string[] {
+  const start = itemCount(db, wheelId);
+  if (items.length === 0 || start + items.length > MAX_ITEMS) throw new CmdError('too_many_items');
+  const stmt = db.prepare(
+    `INSERT INTO wheel_items(id, wheel_id, name, weight, ref_shop_id, ref_member_id, votes, sort)
+     VALUES(?,?,?,?,?,?,NULL,?)`,
+  );
+  const ids: string[] = [];
+  items.forEach((it, i) => {
+    const id = randomUUID();
+    stmt.run(
+      id,
+      wheelId,
+      it.name,
+      it.weight ?? 20,
+      it.refShopId ?? null,
+      it.refMemberId ?? null,
+      start + i,
+    );
+    ids.push(id);
+  });
+  return ids;
+}
 
 function getWheel(db: Parameters<Handler>[0]['db'], id: string) {
   return db.prepare(`SELECT id, title, kind, table_id, version FROM wheels WHERE id = ?`).get(id) as
@@ -62,23 +98,23 @@ export const wheelItemAdd: Handler = (
   const wheel = getWheel(db, args.wheelId);
   if (!wheel) throw new CmdError('not_found');
   checkWheelVersion(wheel, baseVersion);
-  if (itemCount(db, args.wheelId) >= MAX_ITEMS) throw new CmdError('too_many_items');
-  const id = randomUUID();
-  const sort = itemCount(db, args.wheelId);
-  db.prepare(
-    `INSERT INTO wheel_items(id, wheel_id, name, weight, ref_shop_id, ref_member_id, votes, sort)
-     VALUES(?,?,?,?,?,?,NULL,?)`,
-  ).run(
-    id,
-    args.wheelId,
-    args.name,
-    args.weight ?? 20,
-    args.refShopId ?? null,
-    args.refMemberId ?? null,
-    sort,
-  );
+  const [id] = insertItems(db, args.wheelId, [args]);
   const version = bumpWheelVersion(db, args.wheelId);
   return { result: { id, version }, scopes: ['wheels'] };
+};
+
+export const wheelItemAddMany: Handler = (
+  ctx,
+  args: CommandArgs<'wheel.item.addMany'>,
+  baseVersion?: number,
+): CmdOk => {
+  const { db } = ctx;
+  const wheel = getWheel(db, args.wheelId);
+  if (!wheel) throw new CmdError('not_found');
+  checkWheelVersion(wheel, baseVersion);
+  const ids = insertItems(db, args.wheelId, args.items);
+  const version = bumpWheelVersion(db, args.wheelId);
+  return { result: { ids, version, count: ids.length }, scopes: ['wheels'] };
 };
 
 export const wheelItemUpdate: Handler = (
