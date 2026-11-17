@@ -10,7 +10,7 @@ Ngày: 2026-11-12 · Plan: `docs/superpowers/plans/2026-11-12-roles-chat-game.md
 
 ## Điểm chốt
 
-- Quyền theo **tầng toàn cục** + matrix; `host_id` bàn = gánh lẻ, không authorize.
+- Quyền theo **tầng toàn cục** + matrix; `host_id` bàn không authorize. Từ 18/11/2026 `host_id` không còn gánh phần lẻ (xem `design.md` mục 13).
 - Chat ACL theo `tableId` / `wheelId`; không leak giữa hai wheel.
 - Xóa quán/vòng bị chặn khi còn tham chiếu bàn.
 - Game: create/start cần host; play theo lượt; nô lệ spectate OK, không play (mặc định).

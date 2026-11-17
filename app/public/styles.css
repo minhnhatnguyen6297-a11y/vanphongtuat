@@ -1958,6 +1958,29 @@ input[type=range] { accent-color: var(--red); }
   transform: rotate(-2deg);
 }
 .hn-bill-receipt img { min-height: 0; }
+.hn-bill-receipt.is-over { background: var(--highlight); }
+.hn-split-result { display: grid; gap: 8px; }
+.hn-split-result p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 6px;
+  font-family: var(--font-body);
+  font-weight: 800;
+}
+.hn-split-result b {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+}
+.hn-split-empty { margin: 0; font-family: var(--font-body); font-weight: 800; }
+@media (max-height: 860px) {
+  .hn-split-result b { font-size: 22px; }
+  [data-scene="tien"] .hn-bill-receipt { min-height: 88px; max-height: 100px; }
+}
 .hn-art-coffee {
   position: absolute;
   right: -12px;

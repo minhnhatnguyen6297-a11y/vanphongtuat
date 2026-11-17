@@ -45,13 +45,13 @@ Vòng quay do máy chủ lấy kết quả theo trọng số đã xác nhận. L
 
 ## AI, ảnh và chia tiền
 
-AI menu trả danh sách món gồm tên và giá có thể để trống. AI bill chỉ trả tổng tiền cuối cùng khách phải trả, dạng total hoặc null. Người dùng kiểm tra và sửa trước khi áp dụng. Chia tiền theo tỷ lệ giá order hoặc chia đều. Giá order thiếu xử lý theo quy tắc trung bình của plan và có nhãn ước tính.
+AI menu trả danh sách món gồm tên và giá có thể để trống. AI bill chỉ trả tổng tiền cuối cùng khách phải trả, dạng total hoặc null. Total null thì không điền số. Chia tiền, từ 18/11/2026, chỉ còn một cách: đều cho người có order, mỗi phần làm tròn lên bội 500đ. Không chia theo giá món và không còn Chủ xị gánh lẻ.
 
 Ảnh bill/menu chỉ giữ tạm trong bộ nhớ để xem và gửi AI. Ứng dụng không ghi ảnh vào SQLite, thư mục, log hay bản sao lưu. Dọn ảnh khi xong, hủy, lỗi hoặc hết hạn. Hàng đợi giới hạn cả số ảnh lẫn tổng dung lượng. Khởi động lại máy chủ khiến tác vụ đang dùng ảnh cần gửi lại. Lưu dữ liệu có cấu trúc đã duyệt và trạng thái tác vụ. Chính sách giữ ảnh ở nhà cung cấp API cần kiểm tra khi chọn dịch vụ.
 
 Khởi đầu một tác vụ AI đồng thời trên máy đích, có timeout, giới hạn đầu vào và lỗi thân thiện để nhập tay. Ảnh được thu nhỏ phía trình duyệt, máy chủ vẫn kiểm tra kích thước và định dạng. Yêu cầu AI bất đồng bộ để máy chủ tiếp tục phục vụ vote. Thử lại không tự ghi đè bill đã sửa hoặc tạo món trùng. Nhà cung cấp chưa chốt, Claude là lựa chọn trong plan cũ. Khóa/model đặt tại máy chủ. Hạ tầng LAN miễn phí trên máy sẵn có, phí API và hạn mức tùy dịch vụ.
 
-Cần sửa thuật toán plan trước triển khai. Bill null dùng tổng order, bill 0 là số 0 hợp lệ. Trường hợp không có người ăn cần xử lý riêng. Mọi khoản thu không âm, theo bước làm tròn 500 đồng. Ghi rõ khoản chênh thay vì kẹp âm rồi làm sai tổng. Đề xuất cho Owner là dùng tổng mục tiêu round500(tổng bill), phân bổ chênh giữa các suất bằng bước 500 đồng với quy tắc ổn định và không âm, khoản dưới 500 đồng giữa tổng mục tiêu và bill ghi riêng cho Chủ xị/quỹ chung. Đây là đề xuất đang chờ Owner chọn người chịu phần chênh.
+Minh đã chốt ngày 18/11/2026, thay đề xuất chờ chọn người gánh chênh: bill null không lấy tổng order; bill 0 là số 0 hợp lệ; không có người thì không chia và không ai gánh; mỗi suất làm tròn lên bội 500đ nên số thực thu có thể lớn hơn bill. Không còn khoản Chủ xị gánh lẻ.
 
 ## HTTPS và vận hành LAN
 

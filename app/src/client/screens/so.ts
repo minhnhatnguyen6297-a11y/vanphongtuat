@@ -65,13 +65,13 @@ export function renderSo(): string {
             </div>`;
           })
           .join('');
-        const cover =
-          result.hostCovers > 0
-            ? `<div style="color:#B71C1C;font-weight:700">Chủ xị gánh lẻ +${esc(fmtVnd(result.hostCovers))}</div>`
-            : '';
+        const each =
+          result.empty || t.billTotal == null
+            ? ''
+            : `<div style="font-weight:700">Mỗi người ${esc(fmtVnd(result.each))}</div>`;
         detail = `<div style="border-top:2px dashed #1B1B1B;padding:8px 14px 12px;font-family:var(--font-mono);font-size:14px;display:flex;flex-direction:column;gap:4px">
           ${lines || '<div>Chưa có order</div>'}
-          ${cover}
+          ${each}
           <button type="button" class="hn-btn" data-recreate="${t.id}" style="align-self:flex-start;margin-top:6px;font-size:13px">KÊ LẠI BÀN NÀY</button>
         </div>`;
       }

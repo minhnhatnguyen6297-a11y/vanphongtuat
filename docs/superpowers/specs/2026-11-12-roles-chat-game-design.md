@@ -6,7 +6,9 @@
 > Trạng thái: **chờ owner duyệt toàn văn** (§12 đã đóng)
 
 **Supersedes:** ma trận quyền theo `host_id` trong `design-toi-gian/PLAN-toi-gian.md` §0.2/§3; tách đợt “chat chung / game” trong `KIEN-TRUC-DE-XUAT.md` — gộp vào một đợt triển khai sau khi doc này được duyệt.  
-**Giữ:** quy tắc chia tiền / `hostCovers` (người gánh lẻ = `tables.host_id`).
+**Đã thay 18/11/2026:** không còn Chủ xị gánh lẻ. Quy tắc chia hiện hành nằm ở `design.md` mục 13. Đoạn `hostCovers` bên dưới là bản 12/11, không áp dụng song song.
+
+**Giữ (bản 12/11, đã thay):** quy tắc chia tiền / `hostCovers` (người gánh lẻ = `tables.host_id`).
 
 ---
 
