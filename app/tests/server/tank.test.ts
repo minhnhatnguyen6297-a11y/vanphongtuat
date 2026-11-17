@@ -55,4 +55,29 @@ describe('shared tank', () => {
     assert.equal(bad.ok, false);
     assert.equal((bad as { error: string }).error, 'bad_png');
   });
+
+  it('keeps one fish when the same local id is retried, even with a new op', () => {
+    const first = dispatchCommand(db, dan.member, op('fish.release', { png: PNG, localId: 'localA' }));
+    const second = dispatchCommand(db, dan.member, op('fish.release', { png: PNG, localId: 'localA' }));
+    assert.equal(first.ok, true);
+    assert.equal(second.ok, true);
+    assert.equal((first as { result: { id: string } }).result.id, (second as { result: { id: string } }).result.id);
+    assert.equal(loadTankFish(db).length, 1);
+
+    const other = dispatchCommand(db, chu.member, op('fish.release', { png: PNG, localId: 'localA' }));
+    assert.equal(other.ok, true);
+    assert.notEqual((other as { result: { id: string } }).result.id, (first as { result: { id: string } }).result.id);
+    assert.equal(loadTankFish(db).length, 2);
+  });
+
+  it('still stores a second fish when the drawing is new and has no local id', () => {
+    _resetFishLimits();
+    const a = dispatchCommand(db, dan.member, op('fish.release', { png: PNG }));
+    _resetFishLimits();
+    const b = dispatchCommand(db, dan.member, op('fish.release', { png: PNG }));
+    assert.equal(a.ok, true);
+    assert.equal(b.ok, true);
+    assert.notEqual((a as { result: { id: string } }).result.id, (b as { result: { id: string } }).result.id);
+    assert.equal(loadTankFish(db).length, 2);
+  });
 });

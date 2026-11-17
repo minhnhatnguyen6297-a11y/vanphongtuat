@@ -2308,6 +2308,21 @@ input[type=range] { accent-color: var(--red); }
   background: var(--paper);
   color: var(--ink);
 }
+.hn-fish-pop-card .hn-fish-tool[aria-pressed="true"],
+.hn-fish-pop-card .hn-fish-pattern[aria-pressed="true"] {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.hn-fish-pop-card .hn-fish-pad {
+  width: min(100%, 320px);
+  height: auto;
+}
+.hn-fish-pop-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fdf5e7;
+}
 .hn-tank-bar .hn-btn-red,
 .hn-fish-import-row .hn-btn-red {
   background: var(--red);

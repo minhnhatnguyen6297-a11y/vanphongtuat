@@ -278,7 +278,7 @@ async function uploadMine(): Promise<void> {
           n += 1;
         }
       } else {
-        const ack = await cmd('fish.release', { png: fish.png });
+        const ack = await cmd('fish.release', { png: fish.png, localId: fish.id });
         if (!ack.ok) {
           toast(ack.error === 'slow_down' ? 'Chậm thôi, bấm lại để đưa nốt' : 'Dừng đưa cá');
           break;

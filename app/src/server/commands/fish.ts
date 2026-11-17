@@ -1,5 +1,6 @@
 import { CmdError } from '../errors.ts';
 import { nowIso, newId, type Db } from '../db.ts';
+import { assertPng } from '../png-check.ts';
 import type { CmdOk, Handler } from './types.ts';
 import type { CommandArgs } from '../../shared/commands.ts';
 
@@ -25,9 +26,19 @@ function decodePng(input: string): Buffer {
   if (!/^[a-z0-9+/=]+$/i.test(b64)) throw new CmdError('bad_png');
   const buf = Buffer.from(b64, 'base64');
   if (buf.length < 24 || buf.length > MAX_PNG) throw new CmdError('bad_png');
-  if (buf[0] !== 0x89 || buf.toString('ascii', 1, 4) !== 'PNG') throw new CmdError('bad_png');
-  if (buf.toString('ascii', 12, 16) !== 'IHDR') throw new CmdError('bad_png');
+  try {
+    assertPng(buf);
+  } catch {
+    throw new CmdError('bad_png');
+  }
   return buf;
+}
+
+function existingLocal(db: Db, ownerId: string, localId: string): string | undefined {
+  const row = db.prepare(`SELECT id FROM tank_fish WHERE owner_id = ? AND local_id = ?`).get(ownerId, localId) as
+    | { id: string }
+    | undefined;
+  return row?.id;
 }
 
 function allowRelease(memberId: string, now: number) {
@@ -43,6 +54,11 @@ function allowRelease(memberId: string, now: number) {
 export const fishRelease: Handler = (ctx, args: CommandArgs<'fish.release'>): CmdOk => {
   const { db, member } = ctx;
   const png = decodePng(args.png);
+  const localId = args.localId;
+  if (localId) {
+    const prior = existingLocal(db, member.id, localId);
+    if (prior) return { result: { id: prior }, scopes: ['tank'] };
+  }
   allowRelease(member.id, Date.now());
   const mine = db.prepare(`SELECT COUNT(*) AS c FROM tank_fish WHERE owner_id = ?`).get(member.id) as {
     c: number;
@@ -51,12 +67,22 @@ export const fishRelease: Handler = (ctx, args: CommandArgs<'fish.release'>): Cm
   const all = db.prepare(`SELECT COUNT(*) AS c FROM tank_fish`).get() as { c: number };
   if (all.c >= MAX_TANK) throw new CmdError('tank_full');
   const id = newId();
-  db.prepare(`INSERT INTO tank_fish(id, owner_id, png, created_at) VALUES(?,?,?,?)`).run(
-    id,
-    member.id,
-    png,
-    nowIso(),
-  );
+  try {
+    db.prepare(`INSERT INTO tank_fish(id, owner_id, png, local_id, created_at) VALUES(?,?,?,?,?)`).run(
+      id,
+      member.id,
+      png,
+      localId ?? null,
+      nowIso(),
+    );
+  } catch (err) {
+    const code = (err as { code?: string }).code || '';
+    if (localId && code.startsWith('SQLITE_CONSTRAINT')) {
+      const prior = existingLocal(db, member.id, localId);
+      if (prior) return { result: { id: prior }, scopes: ['tank'] };
+    }
+    throw err;
+  }
   return { result: { id }, scopes: ['tank'] };
 };
 
