@@ -6,6 +6,7 @@ import { importEdgeError, importFileError, loadImage } from './image.js';
 import { fishPad, type FishTool } from './pad.js';
 import { FISH_PATTERNS } from './patterns.js';
 import { fishTank, readLocalFish } from './tank.js';
+import { hashQuery, wantsAoCaGl } from './gl/query.js';
 
 const ONCE_KEY = 'hng_be_shared_once';
 
@@ -235,7 +236,18 @@ export function bindTank(root: HTMLElement): void {
 
   const tank = fishTank();
   const view = root.querySelector<HTMLCanvasElement>('[data-fish-tank]');
-  if (view) {
+  const glQuery = hashQuery();
+  const useGl = wantsAoCaGl(glQuery);
+  if (view && useGl) {
+    // P0+: three chunk loaded only when ?bench / ?perf — ao v2 giữ nguyên khi không có.
+    void import('./gl/renderer.js')
+      .then((m) => m.mountAoCaGl({ root, canvas: view, query: glQuery }))
+      .catch((err) => {
+        console.error('ao-ca gl mount failed', err);
+        tank.attach(view);
+        bindPointer(view);
+      });
+  } else if (view) {
     tank.attach(view);
     bindPointer(view);
   }

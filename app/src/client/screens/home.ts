@@ -30,7 +30,9 @@ export function titleHome(): { chip: string; fun: string } {
 
 export function renderHome(): string {
   const rooms = ROOMS.filter((r) => !r.gated || canOpenQuyen()).map((r) => {
-    const icon = r.id === 'quyen' ? ICONS.paw : (ICONS as Record<string, string>)[r.id] || ICONS.ban;
+    const icons = ICONS as Record<string, string | ((color: string) => string)>;
+    const raw = r.id === 'quyen' ? ICONS.paw : icons[r.id] || ICONS.ban;
+    const icon = typeof raw === 'function' ? raw('#13110F') : raw;
     return `<a class="hn-floor-room" href="#/${r.id}" data-area="${r.area}" data-tone="${r.tone}">
       <span class="hn-floor-room-icon">${icon}</span>
       <span class="hn-floor-room-name">${esc(r.name)}</span>
