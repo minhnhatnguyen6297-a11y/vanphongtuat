@@ -287,6 +287,8 @@ function resolveCommandPerm(
       return 'game.play';
     }
     case 'game.leave':
+    case 'fish.release':
+    case 'fish.remove':
       return 'self';
     default:
       throw new CmdError('unknown_command');

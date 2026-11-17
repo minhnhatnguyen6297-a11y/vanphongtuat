@@ -15,35 +15,83 @@ import {
 import { cmd } from '../ws.js';
 import { copyText } from '../copy.js';
 import { chooseImage, readClipboardImage, type ImageBlob } from '../image.js';
-import { apiAi } from '../api.js';
+import { apiAi, apiAiText } from '../api.js';
+import type { BillView } from '../../shared/bill-read.js';
 import { ICONS } from '../icons.js';
 import { renderFace } from '../ui/face.js';
 import { waitAi } from '../ws.js';
 import { toast } from '../ui/toast.js';
 import { openAvatarModal } from '../ui/avatar.js';
 
-async function handleBillImage(img: ImageBlob): Promise<void> {
+function asBill(raw: unknown): BillView | null {
+  if (!raw || typeof raw !== 'object' || !('lines' in raw)) return null;
+  return raw as BillView;
+}
+
+function storeBill(view: BillView | null): void {
+  patch((s) => {
+    s.ui.aiBill = view;
+    s.ui.aiBillTotal = view && typeof view.total === 'number' ? view.total : null;
+  });
+}
+
+async function finishBillJob(jobId: string | undefined, status?: number, error?: string): Promise<void> {
+  if (status === 503 || error === 'ai_disabled') {
+    toast('AI chưa bật, nhập tay nhé');
+    return;
+  }
+  if (status === 429) {
+    toast('AI đang bận, thử lại sau chút');
+    return;
+  }
+  if (!jobId) return;
+  const ai = await waitAi(jobId);
+  if (!ai.ok || !ai.result) {
+    toast('Không đọc được bill');
+    return;
+  }
+  storeBill(asBill(ai.result));
+  toast('Xem lại rồi bấm Điền tổng. Chưa lưu.');
+}
+
+export async function handleBillImage(img: ImageBlob): Promise<void> {
   if (state.ui.billPreviewUrl) URL.revokeObjectURL(state.ui.billPreviewUrl);
   patch((s) => {
     s.ui.billPreviewUrl = img.url;
     s.ui.aiBillTotal = null;
+    s.ui.aiBill = null;
   });
   const res = await apiAi('bill', img.blob);
-  if (res.status === 503 || res.error === 'ai_disabled') {
-    toast('AI chưa bật, nhập tay nhé');
-    return;
-  }
-  if (res.status === 429) {
-    toast('AI đang bận, thử lại sau chút');
-    return;
-  }
-  if (!res.jobId) return;
-  const ai = await waitAi(res.jobId);
-  if (ai.ok && ai.result && typeof (ai.result as { total?: number }).total === 'number') {
-    patch((s) => {
-      s.ui.aiBillTotal = (ai.result as { total: number }).total;
-    });
-  }
+  await finishBillJob(res.jobId, res.status, res.error);
+}
+
+async function handleBillText(text: string): Promise<void> {
+  const res = await apiAiText('bill', { text });
+  await finishBillJob(res.jobId, res.status, res.error);
+}
+
+function billReviewHtml(): string {
+  const view = state.ui.aiBill;
+  if (!view) return '<span style="font-size:12px;font-weight:700;color:#3D3D3D">Chưa có kết quả AI</span>';
+  const lines = view.lines
+    .map((line) => {
+      const price = line.lineTotal == null ? 'trống' : fmtVnd(line.lineTotal);
+      const flag = line.uncertain ? ' · mờ' : '';
+      return `<li>${esc(line.name || '(không tên)')} × ${line.qty ?? '—'} = ${esc(price)}${flag}</li>`;
+    })
+    .join('');
+  const flags = view.flags.length ? `<p>Cờ: ${esc(view.flags.join(', '))}</p>` : '';
+  const fill =
+    view.total != null
+      ? `<button type="button" class="hn-btn hn-btn-green" data-act="fill-total">Điền tổng ${esc(fmtVnd(view.total))}</button>`
+      : '<span>Tổng trống — không điền.</span>';
+  return `<div class="hn-bill-review">
+    <ul>${lines || '<li>Không thấy dòng nào</li>'}</ul>
+    <p>Phí ${view.fees == null ? 'trống' : esc(fmtVnd(view.fees))} · Giảm ${view.discount == null ? 'trống' : esc(fmtVnd(view.discount))}</p>
+    <p>Tổng đọc ${view.total == null ? 'trống' : esc(fmtVnd(view.total))} · Code ${view.computed == null ? 'trống' : esc(fmtVnd(view.computed))}${view.totalMatches === false ? ' · lệch' : ''}</p>
+    ${flags}
+    ${fill}
+  </div>`;
 }
 
 export function titleTien(): { chip: string; fun: string } {
@@ -117,12 +165,10 @@ export function renderTien(): string {
               <button type="button" class="hn-btn hn-btn-white" data-act="paste" style="flex:1">AI · Dán ảnh bill</button>
               <button type="button" class="hn-btn hn-btn-white" data-act="pick" style="flex:1">AI · Chọn ảnh</button>
             </div>
-            <span style="font-size:12px;color:#3D3D3D">Ctrl+V ảnh bill → AI đọc tổng (host vẫn xác nhận)</span>
-            ${
-              state.ui.aiBillTotal != null
-                ? `<span style="font-size:13px;font-weight:800;background:#fff;border:2px solid #1B1B1B;padding:4px 8px;align-self:flex-start">AI đọc: ${esc(fmtVnd(state.ui.aiBillTotal))}</span>`
-                : `<span style="font-size:12px;font-weight:700;color:#3D3D3D">Chưa có kết quả AI</span>`
-            }
+            <span style="font-size:12px;color:#3D3D3D">Ảnh hoặc chữ bill chỉ để xem lại. Bấm Điền tổng rồi Enter mới lưu. Không tự trả.</span>
+            <textarea class="hn-input" id="bill-text" rows="3" placeholder="Dán chữ bill…"></textarea>
+            <button type="button" class="hn-btn hn-btn-white" data-act="read-text">AI · Đọc chữ</button>
+            ${billReviewHtml()}
           </div>
         </div>
         <label style="display:flex;flex-direction:column;gap:4px">
@@ -217,18 +263,20 @@ export function bindTien(root: HTMLElement): void {
     if (e.key === 'Enter') void saveBill();
   });
 
-  // apply AI suggestion into field only (host still saves)
-  if (
-    state.ui.aiBillTotal != null &&
-    billInput &&
-    canPerm('table.setBill') &&
-    document.activeElement !== billInput
-  ) {
-    // show AI value as hint only — already chip; if field empty, fill draft visually once
-    if (billInput.value === '' && state.ui.aiBillTotal != null) {
-      billInput.value = String(state.ui.aiBillTotal);
+  root.querySelector('[data-act="read-text"]')?.addEventListener('click', () => {
+    const text = (root.querySelector('#bill-text') as HTMLTextAreaElement | null)?.value.trim() || '';
+    if (!text) {
+      toast('Dán chữ bill trước');
+      return;
     }
-  }
+    void handleBillText(text);
+  });
+  root.querySelector('[data-act="fill-total"]')?.addEventListener('click', () => {
+    const view = state.ui.aiBill;
+    if (!billInput || !view || view.total == null) return;
+    billInput.value = String(view.total);
+    toast('Đã điền. Enter hoặc rời ô để lưu.');
+  });
 
   root.querySelectorAll('[data-mode]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -308,5 +356,3 @@ export function bindTien(root: HTMLElement): void {
     mount.replaceWith(canvas);
   }
 }
-
-export { handleBillImage };

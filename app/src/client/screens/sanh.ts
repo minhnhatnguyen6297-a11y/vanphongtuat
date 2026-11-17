@@ -324,32 +324,19 @@ export function bindSanh(root: HTMLElement): void {
       return;
     }
     const id = (ack.result as { id: string }).id;
-    // Snap games có thể tới sau ack — chờ rồi stub nếu cần để UI vào phòng ngay.
+    patch((s) => {
+      s.ui.gameRoomId = id;
+    });
     const deadline = Date.now() + 2500;
     while (Date.now() < deadline && !state.games.some((g) => g.id === id)) {
       await new Promise((r) => setTimeout(r, 50));
     }
-    patch((s) => {
-      s.ui.gameRoomId = id;
-      if (!s.games.some((g) => g.id === id) && s.me) {
-        const now = new Date().toISOString();
-        s.games = [
-          {
-            id,
-            kind,
-            title: `${label} …`,
-            status: 'open',
-            hostId: s.me.id,
-            state: {},
-            version: 1,
-            createdAt: now,
-            updatedAt: now,
-            members: [{ memberId: s.me.id, seat: 'host', joinedAt: now }],
-          },
-          ...s.games,
-        ];
-      }
-    });
+    if (!state.games.some((g) => g.id === id)) {
+      toast('Chưa thấy phòng trên server');
+      patch((s) => {
+        if (s.ui.gameRoomId === id) s.ui.gameRoomId = null;
+      });
+    }
   };
   root.querySelector('[data-create="caro"]')?.addEventListener('click', () => void createKind('caro'));
   root.querySelector('[data-create="ca_ngua"]')?.addEventListener('click', () => void createKind('ca_ngua'));
@@ -367,6 +354,8 @@ export function bindSanh(root: HTMLElement): void {
             ? 'Không vào được'
             : ack.error === 'room_full'
               ? 'Phòng đầy'
+              : ack.error === 'expired'
+                ? 'Phòng đã hết hạn'
               : ack.error === 'already_started'
                 ? 'Ván đã bắt đầu — dùng VÀO LẠI nếu bạn đang chơi'
                 : 'Lỗi vào phòng',

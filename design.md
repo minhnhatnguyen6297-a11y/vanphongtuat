@@ -78,8 +78,8 @@ Màn mới phải dùng lại các thành phần này. Không dựng phong cách
 |---|---|---|
 | Đăng nhập, Bàn hôm nay, Vòng quay, Tính tiền | Đã theo thiết kế, có scene minh họa (`route` là `ban`, `quay`, `tien`) | Giữ nguyên |
 | Sổ ghi, Kho quán, Sảnh, Quyền | Đã dùng token, không có scene minh họa | Soát lại theo bảng trong tài liệu gốc, ghi lại chỗ còn lệch |
-| **Phòng chat** | Khung riêng (`screens/chat.ts`). Nhánh `vpt/fish-tank-features` đã chuyển phiếu giấy, viền mực, bóng cứng và ô soạn rộng. | [ĐANG LÀM] Còn trả lời thụt dưới tin gốc: `ChatMsg` chưa có field trả lời. Không thêm gửi file. |
-| **Bể cá** | Chưa có trên `main`. PR #7 và PR #8 không trộn. Nhánh `vpt/fish-tank-features` dựng bể riêng, xem mục 9. | [ĐANG LÀM] Xem mục 7 và mục 9 |
+| **Phòng chat** | Ao phủ khung nhìn dưới thanh đầu và cạnh rail. Chat là ô góc phải dưới, thu gọn được. Tin dài cuộn trong ô, ô gửi nằm dưới log. | [ĐÃ CHỐT] Bố cục ao/chat trên nhánh sửa lỗi. Trả lời thụt vẫn chưa có. Không gửi file trong chat. |
+| **Bể cá** | Đã vào `main` qua PR #11. Lượt này: ao chung (mỗi người thả cá của mình) và popup vẽ bán trong suốt. PR #7 và #8 không trộn. | [ĐÃ CHỐT] Bố cục và ao chung. Đồ họa chi tiết để task sau. |
 
 ## 7. Bể cá: ranh giới thiết kế
 
@@ -108,7 +108,15 @@ Màn mới phải dùng lại các thành phần này. Không dựng phong cách
 3. PR giao diện kèm ảnh chạy thật ở 1366 × 768 và 1920 × 1080. Ảnh mock phải ghi rõ là mock.
 4. Không đổi quy tắc nghiệp vụ, quyền hay bảo mật khi chỉ sửa giao diện.
 
-## 9. Nhánh code `vpt/fish-tank-features`
+## 9. Ao cá trên main
+
+PR #11 đã đưa bể vào `main`. Nhánh sửa lỗi sau đó giữ nền đã duyệt và tranh người chơi.
+
+- Ao phủ phần nội dung màn chat. Nút **Vẽ cá** mở popup bán trong suốt. Đóng hoặc Escape giữ nháp trên máy.
+- Cá thả lên server rồi mọi phiên đang mở đều thấy. Không phải một canvas nhiều người cùng sửa.
+- Chat là ô nhỏ góc phải dưới. Không còn hai thẻ song song và dải vẽ cố định.
+
+## 10. Nhánh code `vpt/fish-tank-features`
 
 Mục này ghi việc code đã bắt đầu. Không đổi các quyết định ở trên. Bản `design.md` đầy đủ lấy từ `vpt/design-assets`, chỉ thêm trạng thái.
 

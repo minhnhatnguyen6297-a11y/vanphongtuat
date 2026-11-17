@@ -39,6 +39,7 @@ import {
 } from './perm.ts';
 import { chatSend, chatDelete } from './chat.ts';
 import { gameCreate, gameJoin, gameLeave, gameStart, gameMove } from './game.ts';
+import { fishRelease, fishRemove } from './fish.ts';
 
 export const handlers: Record<CommandName, Handler> = {
   'table.create': tableCreate,
@@ -81,6 +82,8 @@ export const handlers: Record<CommandName, Handler> = {
   'game.leave': gameLeave,
   'game.start': gameStart,
   'game.move': gameMove,
+  'fish.release': fishRelease,
+  'fish.remove': fishRemove,
 };
 
 export type { CmdCtx, CmdOk, Handler } from './types.ts';

@@ -194,6 +194,13 @@ export const CommandSchemas = {
     to: z.number().int().optional(),
     action: z.string().max(40).optional(),
   }),
+
+  'fish.release': z.object({
+    png: z.string().min(24).max(240_000),
+  }),
+  'fish.remove': z.object({
+    id: z.string().min(1),
+  }),
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

@@ -22,7 +22,10 @@ export function chatMessagesFor(scope: string): ChatMsg[] {
   return state.chatByScope[scope] || [];
 }
 
-export function renderChatPanel(scope: string, opts?: { title?: string; collapsible?: boolean; room?: boolean }): string {
+export function renderChatPanel(
+  scope: string,
+  opts?: { title?: string; collapsible?: boolean; room?: boolean; dock?: boolean },
+): string {
   const title = opts?.title || 'CHAT';
   const msgs = chatMessagesFor(scope);
   const canSend = canPerm('chat.send');
@@ -65,7 +68,8 @@ export function renderChatPanel(scope: string, opts?: { title?: string; collapsi
     </div>`;
 
   if (opts?.collapsible) {
-    return `<details class="hn-chat-fold" data-chat-scope="${esc(scope)}" ${expandedChats.has(scope) ? 'open' : ''}>
+    const dock = opts.dock ? ' hn-chat-dock' : '';
+    return `<details class="hn-chat-fold${dock}" data-chat-scope="${esc(scope)}" ${expandedChats.has(scope) ? 'open' : ''}>
       <summary class="hn-chat-title">${ICONS.chat} ${esc(title)}${msgs.length ? ` <span>(${msgs.length})</span>` : ''}</summary>
       ${content}
     </details>`;

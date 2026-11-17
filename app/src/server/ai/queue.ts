@@ -11,8 +11,11 @@ type Job = {
   id: string;
   kind: AiKind;
   memberId: string;
-  image: Buffer;
+  image: Buffer | null;
   mime: string;
+  text: string | null;
+  context: string;
+  after?: (raw: unknown) => unknown;
   resolve: (v: { jobId: string }) => void;
   reject: (e: Error) => void;
 };
@@ -24,6 +27,15 @@ export type AiQueue = {
     memberId: string,
     image: Buffer,
     mime: string,
+    after?: (raw: unknown) => unknown,
+  ) => Promise<{ jobId: string }>;
+  enqueueText: (
+    db: Db,
+    kind: AiKind,
+    memberId: string,
+    text: string,
+    context: string,
+    after?: (raw: unknown) => unknown,
   ) => Promise<{ jobId: string }>;
   enabled: () => boolean;
   setNotify: (fn: (memberId: string, msg: unknown) => void) => void;
@@ -37,10 +49,12 @@ export function createAiQueue(provider?: AiProvider | null): AiQueue {
   let notify: (memberId: string, msg: unknown) => void = () => {};
 
   function finishJob(db: Db, job: Job, ok: boolean, result?: unknown, error?: string) {
-    bytesInRam -= job.image.length;
-    // clear image buffer
-    job.image.fill(0);
-    (job as { image: Buffer | null }).image = null as unknown as Buffer;
+    if (job.image) {
+      bytesInRam -= job.image.length;
+      job.image.fill(0);
+      job.image = null;
+    }
+    job.text = null;
 
     db.prepare(
       `UPDATE ai_jobs SET status = ?, finished_at = ?, result_json = ?, error = ? WHERE id = ?`,
@@ -69,14 +83,17 @@ export function createAiQueue(provider?: AiProvider | null): AiQueue {
     const timer = setTimeout(() => ac.abort(), TIMEOUT_MS);
     try {
       db.prepare(`UPDATE ai_jobs SET status = ? WHERE id = ?`).run('running', job.id);
-      const result = await prov.read(job.kind, job.image, job.mime, ac.signal);
+      const raw =
+        job.text != null
+          ? await prov.readText(job.kind, job.text, job.context, ac.signal)
+          : await prov.read(job.kind, job.image ?? Buffer.alloc(0), job.mime, ac.signal);
+      const result = job.after ? job.after(raw) : raw;
       finishJob(db, job, true, result);
       job.resolve({ jobId: job.id });
     } catch (e) {
       const err = e instanceof Error ? e.message : 'ai_error';
       const isTimeout = ac.signal.aborted;
       finishJob(db, job, false, undefined, isTimeout ? 'timeout' : err);
-      // job already resolved with jobId at enqueue; just notify via WS
     } finally {
       clearTimeout(timer);
       running = null;
@@ -84,33 +101,46 @@ export function createAiQueue(provider?: AiProvider | null): AiQueue {
     }
   }
 
+  function push(
+    db: Db,
+    kind: AiKind,
+    memberId: string,
+    image: Buffer | null,
+    mime: string,
+    text: string | null,
+    context: string,
+    after?: (raw: unknown) => unknown,
+  ): Promise<{ jobId: string }> {
+    if (!prov) return Promise.reject(Object.assign(new Error('ai_disabled'), { code: 'ai_disabled' }));
+    if (waiting.length >= MAX_WAITING) {
+      return Promise.reject(Object.assign(new Error('busy'), { code: 'busy' }));
+    }
+    const bytes = image?.length ?? 0;
+    if (bytesInRam + bytes > MAX_BYTES) {
+      return Promise.reject(Object.assign(new Error('busy'), { code: 'busy' }));
+    }
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO ai_jobs(id, kind, member_id, status, created_at) VALUES(?,?,?,?,?)`,
+    ).run(id, kind, memberId, 'queued', nowIso());
+    bytesInRam += bytes;
+    return new Promise<{ jobId: string }>((resolve, reject) => {
+      waiting.push({ id, kind, memberId, image, mime, text, context, after, resolve, reject });
+      resolve({ jobId: id });
+      void pump(db);
+    });
+  }
+
   return {
     enabled: () => !!prov,
     setNotify: (fn) => {
       notify = fn;
     },
-    enqueue(db, kind, memberId, image, mime) {
-      if (!prov) return Promise.reject(Object.assign(new Error('ai_disabled'), { code: 'ai_disabled' }));
-      if (waiting.length >= MAX_WAITING) {
-        return Promise.reject(Object.assign(new Error('busy'), { code: 'busy' }));
-      }
-      if (bytesInRam + image.length > MAX_BYTES) {
-        return Promise.reject(Object.assign(new Error('busy'), { code: 'busy' }));
-      }
-
-      const id = randomUUID();
-      db.prepare(
-        `INSERT INTO ai_jobs(id, kind, member_id, status, created_at) VALUES(?,?,?,?,?)`,
-      ).run(id, kind, memberId, 'queued', nowIso());
-
-      bytesInRam += image.length;
-
-      return new Promise<{ jobId: string }>((resolve, reject) => {
-        const job: Job = { id, kind, memberId, image, mime, resolve, reject };
-        waiting.push(job);
-        resolve({ jobId: id });
-        void pump(db);
-      });
+    enqueue(db, kind, memberId, image, mime, after) {
+      return push(db, kind, memberId, image, mime, null, '', after);
+    },
+    enqueueText(db, kind, memberId, text, context, after) {
+      return push(db, kind, memberId, null, 'text/plain', text, context, after);
     },
   };
 }

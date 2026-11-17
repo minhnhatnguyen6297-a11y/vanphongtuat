@@ -1,18 +1,21 @@
+import { randomUUID } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Server as HttpServer, IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { Db } from './db.ts';
-import { getSessionId, memberFromSession } from './auth.ts';
-import { config } from './config.ts';
+import { getSessionId, memberFromSession, originAllowed } from './auth.ts';
 import { buildSnap } from './snapshots.ts';
 import { dispatchCommand } from './dispatch.ts';
 import type { ScopeName } from '../shared/types.ts';
 import type { AuthMember } from './perms.ts';
 import { canAccessChatScope, chatSubKey, parseChatSub } from './commands/chat.ts';
 import type { ChatEvent } from './commands/types.ts';
+import { createPresence } from './presence.ts';
+import { setRoomPresence, sweepRoomsNow } from './rooms.ts';
 
 type Client = {
   ws: WebSocket;
+  connId: string;
   member: AuthMember;
   subs: Set<ScopeName>;
   alive: boolean;
@@ -31,18 +34,26 @@ export type WsHub = {
 export function attachWs(_server: HttpServer, db: Db): WsHub {
   const wss = new WebSocketServer({ noServer: true });
   const clients = new Set<Client>();
+  const presence = createPresence();
+  setRoomPresence(() => presence.members());
+
+  function sweepAndTell() {
+    const removed = sweepRoomsNow(db);
+    if (removed.length) broadcastScopes(['games']);
+  }
 
   const heartbeat = setInterval(() => {
     for (const c of clients) {
       if (!c.alive) {
         c.ws.terminate();
-        clients.delete(c);
         continue;
       }
       c.alive = false;
       if (c.ws.readyState === WebSocket.OPEN) c.ws.ping();
     }
   }, HEARTBEAT_MS);
+
+  const sweepTimer = setInterval(sweepAndTell, 15_000);
 
   function send(ws: WebSocket, msg: unknown) {
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
@@ -98,8 +109,9 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
   }
 
   wss.on('connection', (ws: WebSocket, _req: IncomingMessage, member: AuthMember) => {
-    const client: Client = { ws, member, subs: new Set(), alive: true };
+    const client: Client = { ws, connId: randomUUID(), member, subs: new Set(), alive: true };
     clients.add(client);
+    presence.connect(member.id, client.connId);
 
     ws.on('pong', () => {
       client.alive = true;
@@ -149,12 +161,13 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
 
     ws.on('close', () => {
       clients.delete(client);
+      presence.disconnect(member.id, client.connId);
+      sweepAndTell();
     });
   });
 
   function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
-    const origin = req.headers.origin;
-    if (origin && origin !== config.origin) {
+    if (!originAllowed(req, { allowMissing: true })) {
       socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
       socket.destroy();
       return;
@@ -178,6 +191,7 @@ export function attachWs(_server: HttpServer, db: Db): WsHub {
     sendToMember,
     close: () => {
       clearInterval(heartbeat);
+      clearInterval(sweepTimer);
       for (const c of clients) c.ws.close();
       wss.close();
     },

@@ -160,6 +160,57 @@ export async function apiLogin(username: string, pin: string): Promise<LoginResu
   }
 }
 
+export async function apiRegister(
+  username: string,
+  displayName: string,
+  pin: string,
+): Promise<LoginResult> {
+  if (!livePreferred()) return { ok: false, error: 'offline' };
+  try {
+    const r = await apiFetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, displayName, pin }),
+    });
+    const data = (await r.json().catch(() => ({}))) as {
+      member?: Member;
+      error?: string;
+      retryAfterMin?: number;
+    };
+    if (!r.ok) return { ok: false, error: data.error || 'bad', retryAfterMin: data.retryAfterMin };
+    const me = asMember(data.member);
+    if (!me) return { ok: false, error: 'bad' };
+    patch((s) => {
+      s.mock = false;
+      s.me = me;
+    });
+    return { ok: true, me };
+  } catch {
+    return { ok: false, error: 'network' };
+  }
+}
+
+export async function apiAiText(
+  kind: 'bill' | 'shop',
+  body: { text?: string; note?: string },
+): Promise<{ jobId?: string; error?: string; status?: number }> {
+  if (!livePreferred() || state.mock) return { error: 'ai_disabled', status: 503 };
+  try {
+    const r = await apiFetch(`/api/ai/${kind}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (r.status === 503) return { error: 'ai_disabled', status: 503 };
+    if (r.status === 429) return { error: 'busy', status: 429 };
+    if (!r.ok) return { error: 'fail', status: r.status };
+    const data = (await r.json()) as { jobId: string };
+    return { jobId: data.jobId };
+  } catch {
+    return { error: 'fail' };
+  }
+}
+
 export async function apiLogout(): Promise<void> {
   if (state.mock) return;
   try {

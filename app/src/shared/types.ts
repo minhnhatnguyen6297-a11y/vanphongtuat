@@ -130,6 +130,13 @@ export type GameRoom = {
   members: GameMember[];
 };
 
+export type TankFish = {
+  id: string;
+  ownerId: string;
+  png: string;
+  createdAt: string;
+};
+
 export type ScopeName =
   | 'table:current'
   | 'shops'
@@ -137,6 +144,7 @@ export type ScopeName =
   | 'members'
   | 'perms'
   | 'games'
+  | 'tank'
   | `table:${number}`
   | `chat:${string}`;
 
