@@ -9,11 +9,10 @@ import {
   patch,
 } from '../store.js';
 import { ICONS } from '../icons.js';
-import { cmd, setChatSubs } from '../ws.js';
+import { cmd } from '../ws.js';
 import { openModal, closeModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { setRoute } from '../router.js';
-import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
 
 let findQuery = '';
 let findFocused = false;
@@ -188,8 +187,6 @@ export function renderBan(): string {
     })
     .join('');
 
-  const chatScope = `table:${table.id}`;
-
   return `<main class="hn-main">
     <div class="hn-ban-layout">
       <section class="hn-panel hn-paper-fold hn-ban-cell">
@@ -217,7 +214,6 @@ export function renderBan(): string {
         <div class="hn-order-compact">
           ${ordersHtml || '<p class="hn-order-empty">Chưa ai gọi món</p>'}
         </div>
-        ${renderChatPanel(chatScope, { title: 'CHAT BÀN', collapsible: true })}
       </section>
     </div>
   </main>`;
@@ -271,13 +267,8 @@ function bindFind(root: HTMLElement): void {
 }
 
 export function bindBan(root: HTMLElement): void {
-  const table = state.table;
-  if (table) setChatSubs([`table:${table.id}`]);
-  else setChatSubs([]);
-
   root.querySelector('[data-act="new-table"]')?.addEventListener('click', () => openCreateTable());
   root.querySelector('[data-act="history"]')?.addEventListener('click', () => setRoute('so'));
-  bindChatPanel(root);
   bindFind(root);
 
   root.querySelectorAll('[data-vote]').forEach((btn) => {

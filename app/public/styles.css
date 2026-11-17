@@ -1492,10 +1492,7 @@ input[type=range] { accent-color: var(--red); }
 }
 
 .hn-sanh-room {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
-  gap: var(--space-4);
-  align-items: start;
+  display: block;
 }
 
 .hn-tabs {
@@ -2415,6 +2412,77 @@ input[type=range] { accent-color: var(--red); }
   background: var(--paper);
 }
 .hn-chat-dock [data-chat-input] { flex: 1; min-width: 0; background: var(--paper); color: var(--ink); }
+
+/* Popup chat chung, ngoài #app. Không animation, không blur. */
+#hn-office-chat {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 8px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+#hn-office-chat[hidden] { display: none !important; }
+#hn-office-chat > * { pointer-events: auto; }
+.hn-office-chat-btn {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.hn-office-chat-pop {
+  width: 100%;
+  max-height: min(360px, calc(100vh - 96px));
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--ink);
+  overflow: hidden;
+}
+.hn-office-chat-pop[hidden] { display: none !important; }
+.hn-office-chat-pop .hn-chat-log {
+  overflow: auto;
+  min-height: 72px;
+  max-height: 220px;
+  margin: 0;
+  padding: 8px;
+}
+.hn-office-chat-pop .hn-chat-compose {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  margin: 0;
+  flex-shrink: 0;
+  background: var(--paper);
+  border-top: 2px solid var(--ink);
+}
+.hn-office-chat-pop [data-chat-input] {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.hn-office-chat-pop [data-chat-send] { min-height: 44px; flex-shrink: 0; }
+@media (max-height: 860px) {
+  .hn-office-chat-pop { max-height: min(280px, calc(100vh - 96px)); }
+  .hn-office-chat-pop .hn-chat-log { max-height: 140px; min-height: 48px; }
+}
 .hn-fish-pop[hidden] { display: none !important; }
 .hn-fish-pop {
   position: absolute;

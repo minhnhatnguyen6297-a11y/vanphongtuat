@@ -79,7 +79,7 @@ Màn mới phải dùng lại các thành phần này. Không dựng phong cách
 | Đăng nhập | Ô **Tên đăng nhập** và **PIN 6 số**. Thẻ chỉ chọn nhanh, không tự chọn người đầu. Đăng ký vào sảnh và nói cách đăng nhập lần sau. Sai tên/PIN, mất mạng, từ chối và quá số lần là bốn câu khác nhau. | [ĐÃ CHỐT] 17/11/2026 |
 | Bàn hôm nay, Vòng quay, Tính tiền | Đã theo thiết kế, có scene minh họa (`route` là `ban`, `quay`, `tien`) | Giữ nguyên ở PR đăng nhập |
 | Sổ ghi, Kho quán, Sảnh, Quyền | Đã dùng token, không có scene minh họa | Soát lại theo bảng trong tài liệu gốc, ghi lại chỗ còn lệch |
-| **Phòng chat** | Ao phủ khung nhìn dưới thanh đầu và cạnh rail. Chat là ô góc phải dưới, thu gọn được. Tin dài cuộn trong ô, ô gửi nằm dưới log. | [ĐÃ CHỐT] Bố cục ao/chat trên nhánh sửa lỗi. Trả lời thụt vẫn chưa có. Không gửi file trong chat. |
+| **Phòng chat** | Ao phủ khung nhìn dưới thanh đầu và cạnh rail. Ô chat góc phải dưới trên màn bể **không còn** từ PR06. | [ĐÃ THAY] mục 14. Không gửi file trong chat. Trả lời thụt vẫn chưa có. |
 | **Bể cá** | Đã vào `main` qua PR #11. Lượt này: ao chung (mỗi người thả cá của mình) và popup vẽ bán trong suốt. PR #7 và #8 không trộn. | [ĐÃ CHỐT] Bố cục và ao chung. Đồ họa chi tiết để task sau. |
 
 ## 7. Bể cá: ranh giới thiết kế
@@ -115,7 +115,7 @@ PR #11 đã đưa bể vào `main`. Nhánh sửa lỗi sau đó giữ nền đã
 
 - Ao phủ phần nội dung màn chat. Nút **Vẽ cá** mở popup bán trong suốt. Đóng hoặc Escape giữ nháp trên máy.
 - Cá thả lên server rồi mọi phiên đang mở đều thấy. Không phải một canvas nhiều người cùng sửa.
-- Chat là ô nhỏ góc phải dưới. Không còn hai thẻ song song và dải vẽ cố định.
+- Trước PR06: chat là ô nhỏ góc phải dưới trên màn bể. Câu đó **không còn hiệu lực**. Xem mục 14. Không còn hai thẻ song song và dải vẽ cố định.
 
 ## 10. Nhánh code `vpt/fish-tank-features`
 
@@ -174,7 +174,7 @@ Hai phiên cùng một máy, cùng một máy chủ: phiên Lan thấy quán `Ph
 | Gọi món | Thực đơn chip, ghi chú, giá, tổng tiền, nút copy | Ô nhập rộng phần còn lại, nút **Gọi** cao **44 px**, danh sách `Tên · món`. Giá gửi `null`. Sửa món của mình vẫn mở khi bấm dòng. | Báo cáo: ô nhỏ để tự gọi. `order.add {text, price}` đã đủ. | **[ĐÃ DUYỆT]** bố cục. Giá `null` là **[DỰ KIẾN]** cho đến khi Minh muốn giữ giá từ menu. | Hạ `max-height: 180px` của `.hn-order-compact`. |
 | Chưa kê bàn | Một nút «+ KÊ BÀN MỚI» | Phiếu «CHƯA KÊ BÀN» và một câu. Có quyền `table.create` thì hiện nút. Không có thì nói cần người có quyền. | Báo cáo: trạng thái rỗng rõ. | **[ĐÃ DUYỆT]** ý. Câu chữ **[DỰ KIẾN]**. | Không có hiệu ứng để giảm. |
 | Thêm quán + phiếu | Hai lệnh `table.addShop` rồi `vote.set` | `vote.place`: kiểm `vote` trước, chỉ thêm quán khi chưa có trên bàn và có `table.addShop`, rồi ghi phiếu. Thiếu quyền thì không ghi gì. Cổng lệnh vẫn là quyền `vote`. Nô lệ bấm quán chưa có trên bàn bị khóa nút và server từ chối. | Frontier: hai lệnh không atomic, nô lệ có vote nhưng không có `table.addShop`. | **[ĐÃ DUYỆT]** hướng lệnh gộp. Tên lệnh `vote.place` là **[DỰ KIẾN]**. | Không thêm vòng lặp. Muốn khóa chặt hơn: sửa `assertCommandAllowed` — hiện handler tự kiểm `table.addShop`. |
-| Chat bàn | `renderChatPanel` trong phiếu gọi món | Giữ nguyên lời gọi. | PR06 gỡ chat từng màn. | **[GIỮ]** | Không đụng `chat-panel.ts`. |
+| Chat bàn | `renderChatPanel` trong phiếu gọi món | Đã gỡ ở PR06. Chat chung là nút mọi màn. | Báo cáo mục 5. | **[ĐÃ THAY]** mục 14 | `screens/ban.ts` |
 | Khung | Hai cột bằng nhau, thực đơn trải hết hàng | Cột trái khoảng **1,45** phần, cột phải tối thiểu **240 px**. Dưới **900 px** xếp một cột. Phiếu ngồi trên ảnh trang trí (`z-index: 2`). | Ô gọi món là ô nhỏ bên cạnh. Ảnh không được che chữ hay nút. | Tỷ lệ cột **[DỰ KIẾN]** đến khi Minh duyệt ảnh. Lớp phiếu trên ảnh là **[ĐÃ ĐO]** ở hai khung trên. | `.hn-ban-layout` và `[data-scene="ban"] .hn-shell` trong `styles.css`. Hạ `z-index` nếu muốn ảnh đè lên phiếu trở lại. |
 
 ## 13. Chia tiền (PR05)
@@ -201,3 +201,28 @@ Quy tắc cũ «Chủ xị gánh lẻ» và «THEO MÓN / CHIA ĐỀU» **không
 | Kết quả | Danh sách từng người, món, chọn người gánh lẻ, nút đổi chế độ | Chỉ **Tổng tiền** và **Mỗi người**. | Báo cáo mục 4. | Bố cục **[ĐÃ DUYỆT]**. Vừa khung **[ĐÃ ĐO]** ở hai cỡ trên. Cỡ chữ 28 px, xuống 22 px khi cao khung ≤ 860 px: **[DỰ KIẾN]** cho đến khi Minh duyệt nét. | `.hn-split-result b` trong `styles.css`. |
 | VietQR | Số tiền của người đang chọn. Nội dung là tên người đó. | Số tiền = phần mỗi người. STK của Chủ xị bàn. Nội dung `#<bàn> <tên người đang đăng nhập>`, cắt 25 ký tự ASCII. | Báo cáo mục 4. QR vẫn cần tên. | **[ĐÃ DUYỆT]** hướng. Ô QR vẽ **108×108 px**. | `.hn-qr-box canvas` đã cố định 108 px. Không phóng to. |
 | Lệnh `table.setBill.mode` | UI bật `item` hoặc `equal` | Schema vẫn nhận cả hai. UI luôn gửi `equal`. `split()` bỏ qua mode. | Giữ lệnh cũ, một quy tắc tính. | **[ĐÃ CHỐT]** tương thích. | `commands.ts` không thêm nhánh. |
+
+## 14. Chat popup chung (PR06)
+
+Báo cáo 17/11/2026 mục 5 là **[ĐÃ DUYỆT]** về một kênh và một nút. Số đo khung là **[ĐÃ ĐO]** ngày 18/11/2026 (Playwright, Chrome, viewport đúng kích thước, một máy chủ HTTP tạm, DB tạm). Ảnh tĩnh không chứng minh hiệu năng. Không thêm ảnh mạng, không blur, không hoạt hình. Chưa đo trên máy yếu và không đo FPS.
+
+Đã đo, không cuộn ngang (`scrollWidth` = `clientWidth`), trang không cao hơn khung. Popup mở, nháp `nháp giữ màn` còn sau khi bấm từ Sảnh (`#/home`) sang Bình chọn (`#/ban`). Node chat nằm ngoài `#app`.
+
+| Khung | Cao trang | Nút Chat | Popup đang mở | Nháp |
+|---|---|---|---|---|
+| 1366×768 | 768 px, không cuộn | 71×44 px, mép trái 16 px, mép dưới 16 px | 360×116 px. Đè đáy thẻ quán thứ ba và góc hình sách. | Còn nguyên sau khi đổi màn |
+| 1920×1080 | 1080 px, không cuộn | Cùng cỡ, mép dưới 16 px | 360×140 px, nằm khoảng trống dưới phiếu, không đè chữ phiếu | Còn nguyên |
+
+Hai phiên cùng một máy, cùng một máy chủ tạm: phiên B thấy tin `alo kênh chung` của phiên A, phiên A thấy tin trả lời `thấy rồi`. Không đo trên hai máy vật lý.
+
+Ảnh chạy thật: [1366×768 Bình chọn](docs/review/2026-11-18-chat-1366.png) · [1920×1080 Bình chọn](docs/review/2026-11-18-chat-1920.png) · [1366×768 phiên B trên Sảnh](docs/review/2026-11-18-chat-phien-b-1366.png).
+
+| Mục | Cũ | Mới | Lý do | Trạng thái | Chỗ chỉnh khi máy yếu |
+|---|---|---|---|---|---|
+| Kênh | Mỗi bàn `table:`, mỗi vòng `wheel:`, mỗi phòng game `game:`, và `lobby` | UI chỉ kênh `lobby`. Lịch sử `table:` và `wheel:` giữ trong DB. `chat.send` vào hai scope đó trả `scope_closed`. `game:` vẫn gửi được bằng lệnh, không còn ô trên màn phòng. | Báo cáo mục 5. Không xóa tin cũ. COS chốt gỡ chat phòng game khỏi UI. | Hướng **[ĐÃ DUYỆT]**. Giữ API `game:` là **[DỰ KIẾN]**. | `isRetiredChatScope` trong `app/src/shared/chat.ts`. Muốn khóa luôn phòng game: thêm `game:` vào hàm đó. |
+| Vị trí | Khung chat nằm trong `#app`, mỗi `notify` ghi lại `innerHTML` nên đóng popup và mất nháp | Node `#hn-office-chat` là em của `#app`, không nằm trong `#app`. Nút **Chat** cố định, cao **44 px**, rộng đo **71 px**, cách mép trái **16 px** và mép dưới **16 px**, `z-index` **60**. Popup rộng **360 px**, cao theo nội dung (đo **116 px** ở 1366, **140 px** ở 1920 khi log còn một dòng). Trần cao **360 px** hoặc `100vh - 96 px`. | Đổi màn không được đóng popup. | Vị trí nút **[ĐÃ ĐO]**. Trần cao popup khi log dài vẫn **[DỰ KIẾN]** vì ảnh chỉ có một dòng. | Hạ `max-height` của `.hn-office-chat-pop` trong `styles.css`. Muốn đỡ đè thẻ ở 1366: hạ `width` xuống 280 px. |
+| Màn thấp | Không có mốc riêng | Khi cao khung ≤ **860 px**: popup cao tối đa **280 px**, log cao tối đa **140 px**, log tối thiểu **48 px**. | 1366×768 còn chỗ cho nút. | Mốc **[ĐÃ ĐO]** là popup ngắn 116 px, không chạm trần 280 px. Chưa đo máy yếu. | Cùng khối `@media (max-height: 860px)`. |
+| Nháp | `Map` trong RAM, mất khi dựng lại DOM | `sessionStorage` khóa `vpt.office-chat.draft`. Ô input không dựng lại khi đổi màn. Mở/đóng giữ trong biến module, đóng khi đăng xuất. | Báo cáo: giữ popup và chữ đang gõ. | **[ĐÃ DUYỆT]** hướng. Khóa storage là **[DỰ KIẾN]**. | `DRAFT_KEY` trong `ui/chat-panel.ts`. |
+| Nút trên rail | Rail 6 mục, không có Chat | Không thêm mục rail. Nút nổi riêng. | Rail đã chốt ở mục 11. | **[ĐÃ DUYỆT]** | Không đụng `ui/rail.ts`. |
+| Màn bể | Ô chat dock góc phải dưới, đè ao | Chỉ còn ao. Route vẫn `chat`, chip **BỂ CÁ**. Không sửa đồ họa ao. | PR06 chỉ đổi chỗ chat. | **[ĐÃ DUYỆT]** | Không thêm lớp trên canvas. |
+| Phòng game | Lưới 2 cột, cột phải là chat | Một cột. Bàn chơi full chiều ngang phiếu. | Gỡ ô chat. | Bố cục **[DỰ KIẾN]** đến khi Minh duyệt ảnh phòng game. | `.hn-sanh-room` trong `styles.css`. |

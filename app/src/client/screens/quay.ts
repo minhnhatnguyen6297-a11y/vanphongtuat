@@ -3,10 +3,9 @@ import { adoptSpinClock, easeOutCubic, shouldRevealResult, spinProgress } from '
 import { state, canPerm, setSound, memberById, notify } from '../store.js';
 import type { Shop, Spin } from '../../shared/types.js';
 import { ICONS, SHOP_COLORS } from '../icons.js';
-import { cmd, setChatSubs, uuid } from '../ws.js';
+import { cmd, uuid } from '../ws.js';
 import { toast } from '../ui/toast.js';
 import { closeModal, openModal } from '../ui/modal.js';
-import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
 
 let audioCtx: AudioContext | null = null;
 let lastTick = 0;
@@ -542,7 +541,6 @@ export function renderQuay(): string {
       : '';
 
   return `<main class="hn-main">
-    ${wheel ? `<div class="hn-wheel-chat">${renderChatPanel(`wheel:${wheel.id}`, { title: 'Chat vòng', collapsible: true })}</div>` : ''}
     <div class="hn-quay-wrap">
       <section aria-label="Bàn xoay" class="hn-panel hn-paper-fold hn-wheel-stage">
         <button type="button" class="hn-btn hn-btn-white hn-wheel-sound" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}">${soundIcon} Âm thanh <span aria-hidden="true"></span></button>
@@ -605,9 +603,6 @@ export function renderQuay(): string {
 export function bindQuay(root: HTMLElement): void {
   const wheel = pickedWheel();
   if (wheel && state.ui.wheelId !== wheel.id) state.ui.wheelId = wheel.id;
-  if (wheel) setChatSubs([`wheel:${wheel.id}`]);
-  else setChatSubs([]);
-  bindChatPanel(root);
 
   const spinning = wheel ? activeSpin(wheel.id) : undefined;
   if (spinning) runSpinLoop(spinning);

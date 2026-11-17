@@ -1,6 +1,8 @@
 import { state, subscribe, patch } from './store.js';
 import { startRouter } from './router.js';
+import { LOBBY_CHAT_SCOPE } from '../shared/chat.js';
 import { connectWs, setChatSubs } from './ws.js';
+import { syncOfficeChat, unmountOfficeChat } from './ui/chat-panel.js';
 import { apiMe } from './api.js';
 import { renderHeader, bindHeader, renderTitle } from './ui/header.js';
 import { renderLogin } from './ui/login.js';
@@ -45,34 +47,19 @@ function titles(): { chip: string; fun: string } {
   }
 }
 
-type FocusSnap =
-  | { kind: 'chat'; scope: string; start: number | null; end: number | null }
-  | { kind: 'id'; id: string; start: number | null; end: number | null }
-  | null;
+type FocusSnap = { id: string; start: number | null; end: number | null } | null;
 
 function captureFocus(): FocusSnap {
   const ae = document.activeElement as HTMLInputElement | HTMLTextAreaElement | null;
-  if (!ae || !app?.contains(ae)) return null;
+  if (!ae || !app?.contains(ae) || !ae.id) return null;
   const start = 'selectionStart' in ae ? ae.selectionStart : null;
   const end = 'selectionEnd' in ae ? ae.selectionEnd : null;
-  if (ae.matches('[data-chat-input]')) {
-    const scope = ae.closest('[data-chat-scope]')?.getAttribute('data-chat-scope');
-    if (scope) return { kind: 'chat', scope, start, end };
-  }
-  if (ae.id) return { kind: 'id', id: ae.id, start, end };
-  return null;
+  return { id: ae.id, start, end };
 }
 
 function restoreFocus(snap: FocusSnap): void {
   if (!snap || !app) return;
-  let el: HTMLInputElement | HTMLTextAreaElement | null = null;
-  if (snap.kind === 'chat') {
-    el = app.querySelector(
-      `[data-chat-scope="${CSS.escape(snap.scope)}"] [data-chat-input]`,
-    ) as HTMLInputElement | null;
-  } else {
-    el = app.querySelector(`#${CSS.escape(snap.id)}`) as HTMLInputElement | null;
-  }
+  const el = app.querySelector(`#${CSS.escape(snap.id)}`) as HTMLInputElement | null;
   if (!el) return;
   el.focus({ preventScroll: true });
   if (snap.start != null && snap.end != null && 'setSelectionRange' in el) {
@@ -87,9 +74,12 @@ function restoreFocus(snap: FocusSnap): void {
 function renderShell(): void {
   if (!state.me) {
     renderedRoute = null;
+    setChatSubs([]);
+    unmountOfficeChat();
     void renderLogin(app!);
     return;
   }
+  setChatSubs([LOBBY_CHAT_SCOPE]);
 
   const focusSnap = captureFocus();
 
@@ -145,26 +135,21 @@ function renderShell(): void {
   bindHeader(app!);
   switch (state.route) {
     case 'home':
-      setChatSubs([]);
       bindHome(app!);
       break;
     case 'quay':
       bindQuay(app!);
       break;
     case 'tien':
-      setChatSubs([]);
       bindTien(app!);
       break;
     case 'so':
-      setChatSubs([]);
       bindSo(app!);
       break;
     case 'kho':
-      setChatSubs([]);
       bindKho(app!);
       break;
     case 'quyen':
-      setChatSubs([]);
       bindQuyen(app!);
       break;
     case 'sanh':
@@ -177,6 +162,7 @@ function renderShell(): void {
       bindBan(app!);
   }
 
+  syncOfficeChat();
   restoreFocus(focusSnap);
 }
 
