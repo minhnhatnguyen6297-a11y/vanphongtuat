@@ -22,7 +22,7 @@ export function chatMessagesFor(scope: string): ChatMsg[] {
   return state.chatByScope[scope] || [];
 }
 
-export function renderChatPanel(scope: string, opts?: { title?: string; collapsible?: boolean }): string {
+export function renderChatPanel(scope: string, opts?: { title?: string; collapsible?: boolean; room?: boolean }): string {
   const title = opts?.title || 'CHAT';
   const msgs = chatMessagesFor(scope);
   const canSend = canPerm('chat.send');
@@ -52,12 +52,15 @@ export function renderChatPanel(scope: string, opts?: { title?: string; collapsi
     })
     .join('');
 
+  const field = opts?.room
+    ? `<textarea class="hn-input hn-chat-box" data-chat-input aria-label="Tin nhắn" maxlength="500" rows="3" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>${esc(draft)}</textarea>`
+    : `<input class="hn-input" data-chat-input aria-label="Tin nhắn" maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>`;
   const content = `
     <div class="hn-chat-log" data-chat-log>
       ${rows || '<span class="hn-chat-empty">Chưa có tin</span>'}
     </div>
     <div class="hn-chat-compose">
-      <input class="hn-input" data-chat-input aria-label="Tin nhắn" maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>
+      ${field}
       <button type="button" class="hn-btn hn-btn-blue" data-chat-send ${canSend ? '' : 'disabled'}>GỬI</button>
     </div>`;
 
@@ -68,7 +71,8 @@ export function renderChatPanel(scope: string, opts?: { title?: string; collapsi
     </details>`;
   }
 
-  return `<section class="hn-panel hn-chat" data-chat-scope="${esc(scope)}" aria-label="${esc(title)}">
+  const roomClass = opts?.room ? ' hn-chat-room-panel' : '';
+  return `<section class="hn-panel hn-chat${roomClass}" data-chat-scope="${esc(scope)}" aria-label="${esc(title)}">
     <h3 class="hn-chat-title">${esc(title)}</h3>
     ${content}
   </section>`;
@@ -107,7 +111,7 @@ export function bindChatPanel(root: HTMLElement): void {
     };
     panel.querySelector('[data-chat-send]')?.addEventListener('click', () => void send());
     input?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         void send();
       }

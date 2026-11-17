@@ -2,7 +2,7 @@
 ## DỰ ÁN: "HÔM NAY ĂN GÌ?" — APP ĂN UỐNG VĂN PHÒNG TRÊN LAN
 
 > Plan hiện hành: [`design-toi-gian/PLAN-toi-gian.md`](design-toi-gian/PLAN-toi-gian.md)  
-> Code chạy: [`app/`](app/) · Thiết kế màn: [`design-toi-gian/ViaHe-*.dc.html`](design-toi-gian/)  
+> Code chạy: [`app/`](app/) · Thiết kế hiện hành: [`design.md`](design.md)  
 > Kiến trúc: [`KIEN-TRUC-DE-XUAT.md`](KIEN-TRUC-DE-XUAT.md)
 
 ---
@@ -11,7 +11,7 @@
 
 Đây là **app vui**, không phải app quản lý / kế toán.
 
-1. **Bảo tồn UI Neo-Brutalism** theo design trong `design-toi-gian/ViaHe-*.dc.html` (cream `#FFF4D6`, đỏ `#C62828`, vàng `#FFCF33`, xanh `#1F5FD1`, lá `#1B7A43`, mực `#1B1B1B`, cam `#F28C28`; font Bungee / Be Vietnam Pro / JetBrains Mono; viền 3px; bóng cứng 4–6px).
+1. **Bảo tồn UI Neo-Brutalism** theo [`design.md`](design.md) (nền kem `#FEECD6`, giấy `#FDF7EB`, mực `#13110F`, vàng `#FFDA2E`, đỏ `#EF3C35`, lá `#145C34`, xanh `#1D63E1`; font local Bungee / Be Vietnam Pro / JetBrains Mono; viền 3px; bóng cứng). `design-toi-gian/ViaHe-*.dc.html` chỉ là đối chiếu bố cục cũ, không phải bảng màu hiện hành.
 2. **Không** tự đổi sang soft/pastel, Bootstrap, Material Design.
 3. **`archive/thietke_v1.html` / `archive/thietke_v2.html`** chỉ tham khảo. Không sửa. Không mang nợ, dòng bill, ship/voucher, Gmail vào đợt 1.
 4. Mọi tính năng đợt 1 bám plan; máy chủ SQLite + WSS là nguồn dữ liệu duy nhất.
