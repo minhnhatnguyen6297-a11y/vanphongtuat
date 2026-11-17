@@ -2179,6 +2179,31 @@ input[type=range] { accent-color: var(--red); }
 }
 .hn-chat-room-panel .hn-chat-compose .hn-btn { align-self: flex-end; min-width: 96px; }
 
+/* Desktop cao (1920×1080): bảng vẽ giữ tỷ lệ 2/1, rộng tối đa 440px.
+   Công cụ ngồi cạnh bảng để nút Thả còn trong khung nhìn. Bể vẫn 16/7. */
+@media (min-width: 981px) and (min-height: 821px) {
+  .hn-tank-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr);
+    column-gap: 8px;
+    align-items: start;
+  }
+  .hn-tank-title,
+  .hn-tank-view,
+  .hn-fish-count,
+  .hn-fish-patterns,
+  .hn-fish-import-row,
+  .hn-fish-preview { grid-column: 1 / -1; }
+  .hn-fish-pad {
+    grid-column: 1;
+    width: min(100%, 440px);
+    height: auto;
+    justify-self: start;
+    align-self: start;
+  }
+  .hn-fish-tools { grid-column: 2; margin-top: 0; align-content: start; }
+}
+
 /* Màn thấp (1366×768): bảng vẽ ngồi cạnh nút, bể giữ 16/7 và vừa một màn. */
 @media (max-height: 820px) and (min-width: 981px) {
   .hn-tank-frame {

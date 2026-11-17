@@ -1,12 +1,9 @@
 import { esc } from '../../shared/esc.js';
 import { toast } from '../ui/toast.js';
-import { loadImage } from './image.js';
+import { importEdgeError, importFileError, loadImage } from './image.js';
 import { fishPad, type FishTool } from './pad.js';
 import { FISH_PATTERNS } from './patterns.js';
 import { fishTank } from './tank.js';
-
-const ACCEPT = ['image/png', 'image/jpeg', 'image/webp'];
-const MAX_BYTES = 4 * 1024 * 1024;
 
 function toolButton(tool: FishTool, label: string, current: FishTool): string {
   const on = tool === current;
@@ -109,6 +106,7 @@ export function bindTank(root: HTMLElement): void {
       const id = btn.dataset.fishPattern || '';
       const pattern = FISH_PATTERNS.find((p) => p.id === id);
       if (!pattern) return;
+      if (!pad.isBlank() && !window.confirm('Mẫu sẽ thay tranh đang có. Tiếp tục?')) return;
       void pad.stampSvg(pattern.id, pattern.svg).then(() => syncTools());
     });
   });
@@ -149,23 +147,20 @@ export function bindTank(root: HTMLElement): void {
 }
 
 async function stageImport(file: File): Promise<void> {
-  const name = file.name.toLowerCase();
-  const extOk = name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp');
-  if ((!file.type || !ACCEPT.includes(file.type)) && !extOk) {
-    toast('Chỉ PNG, JPG, WebP');
-    return;
-  }
-  if (file.type && !ACCEPT.includes(file.type)) {
-    toast('Chỉ PNG, JPG, WebP');
-    return;
-  }
-  if (file.size > MAX_BYTES) {
-    toast('Ảnh lớn hơn 4MB');
+  const fileError = importFileError(file);
+  if (fileError) {
+    toast(fileError);
     return;
   }
   const url = URL.createObjectURL(file);
   try {
-    await loadImage(url);
+    const img = await loadImage(url);
+    const edgeError = importEdgeError(img.naturalWidth, img.naturalHeight);
+    if (edgeError) {
+      URL.revokeObjectURL(url);
+      toast(edgeError);
+      return;
+    }
   } catch {
     URL.revokeObjectURL(url);
     toast('Không đọc được ảnh');
