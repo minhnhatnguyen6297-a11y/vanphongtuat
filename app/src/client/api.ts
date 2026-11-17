@@ -1,5 +1,6 @@
 import type { Member } from '../shared/types.js';
 import { canonicalUsername } from '../shared/username.js';
+import { clearLoginHint } from './login-hint.js';
 import { state, patch } from './store.js';
 import { seedMock } from './mock.js';
 
@@ -224,6 +225,7 @@ export async function apiAiText(
 }
 
 export async function apiLogout(): Promise<void> {
+  clearLoginHint();
   if (state.mock) return;
   try {
     await apiFetch('/api/logout', { method: 'POST' });

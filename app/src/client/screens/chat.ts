@@ -6,7 +6,7 @@ import { renderTankFrame, bindTank } from '../be/mount.js';
 
 export function titleChat(): { chip: string; fun: string } {
   const n = state.members.filter((m) => !m.disabled).length;
-  return { chip: 'CHAT VP', fun: `AO CÁ · ${n} NGƯỜI` };
+  return { chip: 'BỂ CÁ', fun: `AO CÁ · ${n} NGƯỜI` };
 }
 
 export function renderChat(): string {

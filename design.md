@@ -125,3 +125,28 @@ Mục này ghi việc code đã bắt đầu. Không đổi các quyết định
 - Bể: nhập PNG/JPG/WebP (xem trước rồi đưa vào tranh), 6 mẫu outline tạm (đầu sang phải), bút, tẩy, màu, cỡ nét, hoàn tác, cọ mờ theo vùng, thả tranh người chơi. Nền là `app/public/art/be/` chép từ PR #7 commit `474626b`, không merge nhánh đó.
 - Quay đầu trên nhánh này co bề ngang còn khoảng 0,05 rồi mở, trong 0,4–0,6 s. Nghiêng đầu nhân với hướng bơi, nên quay trái thì góc đổi dấu. Mục 7 đề xuất co về 0; phần đó vẫn là đề xuất.
 - Chưa làm: trả lời thụt, soát Sổ/Kho/Sảnh/Quyền, bộ class chung ở mục 5.
+
+## 11. Sảnh VP · lưới thẻ (PR02)
+
+Bố cục lưới đều và tên theo chức năng là **[ĐÃ DUYỆT]** trong báo cáo 17/11/2026. Số đo lưới là **[ĐÃ ĐO]** trên app chạy thật ngày 18/11/2026 (Playwright, viewport đúng kích thước, một máy chủ HTTP tạm, hai phiên minh và lan). Ảnh tĩnh không chứng minh hiệu năng. Hình SVG vẫn là **[DỰ KIẾN]** cho đến khi Minh duyệt nét vẽ.
+
+Đã đo, không cuộn ngang (`scrollWidth` = `clientWidth`):
+
+| Khung | Cao trang | Đáy thẻ hàng dưới | Đáy dòng phụ | Kết quả |
+|---|---|---|---|---|
+| 1366×768 | 768 px, không cuộn | 740 px | trong thẻ, đáy thẻ dưới khung 28 px | Không cắt chữ, không cắt đáy thẻ |
+| 1920×1080 | 1080 px, không cuộn | 1052 px | trong thẻ, đáy thẻ dưới khung 28 px | Không cắt chữ, không cắt đáy thẻ |
+
+Hai phiên cùng máy chủ thấy cùng 8 nhãn và cùng `href`. Không đo trên hai máy vật lý.
+
+Ảnh chạy thật: [1366×768](docs/review/2026-11-18-sanh-1366.png) · [1920×1080](docs/review/2026-11-18-sanh-1920.png).
+
+| Mục | Cũ | Mới | Lý do | Chỗ chỉnh |
+|---|---|---|---|---|
+| Lưới | 4 hàng lẫn hành lang, cửa, cây. `min-height: min(68vh, 640px)`. Thẻ chat có `data-area="chat"` nhưng không có `grid-area`, nên rơi ra ngoài và bị cắt đáy ở 1366×768. | 4 cột khi khung ≥ 1100 px, 2 cột khi hẹp hơn. Khoảng cách 12 px. | Báo cáo: phòng xếp lộn xộn. Mỗi phòng một ô bằng nhau. | `.hn-floor` trong `app/src/client/styles.css` |
+| Vừa màn 1366×768 | Trang cao hơn khung nhìn, thẻ dưới bị cắt. | Khi rộng ≥ 1100 px và cao ≥ 700 px: sảnh cao `100dvh`, `overflow: hidden`. Hàng chữ là `auto`. Hình nằm ô `minmax(36px, 1fr)`, cao SVG 72% ô, trần 120 px. | Giữ tên, co hình. Không cuộn ngang. | cùng khối CSS, `@media (min-width: 1100px) and (min-height: 700px)` |
+| Tên đã duyệt | QUẦY VÒNG QUAY, KÉT TIỀN, PHÒNG CHAT (route `chat`) | **Vòng quay**, **Chia tiền**, **Bể cá**. Route id vẫn `chat`. | Demo ghi «Bể cá & chat». Chat chung là nút mọi màn, thuộc PR06, không gắn ở PR này. | `ROOMS` trong `screens/home.ts`. Chip màn `#/chat`: `titleChat` đổi `CHAT VP` → `BỂ CÁ`. Header chỉ vẽ chip đó. |
+| Tên phòng còn lại | PHÒNG ĂN TRƯA, SỔ BÀN GIẤY, KHO THỰC PHẨM, PHÒNG GIẢI TRÍ, PHÒNG CHỦ XỊ | Bình chọn, Sổ ghi, Kho quán, Giải trí, Quyền | Báo cáo yêu cầu tên theo chức năng, không liệt kê từng phòng này. **[DỰ KIẾN]** | `ROOMS` |
+| Rail phải | 6 mục đã chốt mục 4, trong đó «Tính tiền» và «Sảnh» | Giữ nguyên. Không thêm Chat. | Rail đã chốt. Nút Chat mọi màn là PR06. | `ui/rail.ts` không sửa |
+| Hình | Icon 22 px chung nhiều phòng | Một SVG nội tuyến mỗi phòng. Không ảnh mạng, không filter, không blur, không hoạt hình. Cá trên thẻ đầu sang phải. | Máy yếu: không thêm request ảnh, không hiệu ứng nặng. Hình cụ thể là **[DỰ KIẾN]** cho đến khi Minh duyệt ảnh. | `ROOM_ART` trong `screens/home.ts`. Muốn nhẹ hơn: hạ `max-height: 120px` của `.hn-floor-room-art svg`. |
+| Trang trí sàn | Hành lang, cửa, cây | Bỏ | Không phải phòng, chiếm một hàng và đẩy thẻ cuối khỏi khung. | Đã xóa `.hn-floor-hall`, `.hn-floor-door`, `.hn-floor-plant` |
