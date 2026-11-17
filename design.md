@@ -114,5 +114,5 @@ Mục này ghi việc code đã bắt đầu. Không đổi các quyết định
 
 - Phòng chat dùng phiếu giấy, viền mực, bóng cứng, font local. Ô soạn là textarea rộng. Ảnh cá không vào chat.
 - Bể: nhập PNG/JPG/WebP (xem trước rồi đưa vào tranh), 6 mẫu outline tạm (đầu sang phải), bút, tẩy, màu, cỡ nét, hoàn tác, cọ mờ theo vùng, thả tranh người chơi. Nền là `app/public/art/be/` chép từ PR #7 commit `474626b`, không merge nhánh đó.
-- Quay đầu trên nhánh này co bề ngang còn 0,4 rồi mở, trong 0,4–0,6 s. Mục 7 đề xuất co về 0; phần đó vẫn là đề xuất.
+- Quay đầu trên nhánh này co bề ngang còn khoảng 0,05 rồi mở, trong 0,4–0,6 s. Nghiêng đầu nhân với hướng bơi, nên quay trái thì góc đổi dấu. Mục 7 đề xuất co về 0; phần đó vẫn là đề xuất.
 - Chưa làm: trả lời thụt, soát Sổ/Kho/Sảnh/Quyền, bộ class chung ở mục 5.

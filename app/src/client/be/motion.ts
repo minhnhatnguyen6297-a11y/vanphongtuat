@@ -18,9 +18,9 @@ export function turnSquash(progress: number): number {
   return Math.sin(clamp(progress, 0, 1) * Math.PI);
 }
 
-/** Horizontal scale. Full width at the ends, 0.4 at the tightest point. */
+/** Horizontal scale. Full width at the ends, about 0.05 at the tightest point. */
 export function turnWidthScale(squash: number): number {
-  return 1 - 0.6 * clamp(squash, 0, 1);
+  return 1 - 0.95 * clamp(squash, 0, 1);
 }
 
 export function headTilt(deltaRad: number): number {

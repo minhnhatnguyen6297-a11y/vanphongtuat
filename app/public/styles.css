@@ -2059,17 +2059,19 @@ input[type=range] { accent-color: var(--red); }
   letter-spacing: 0.02em;
 }
 .hn-tank-view {
+  /* Màu lót trong bể, hiện khi ảnh nền chưa kịp vẽ. */
+  --hn-tank-underlay: #1a6a8a;
   display: block;
   width: 100%;
-  height: 240px;
+  aspect-ratio: 16 / 7;
   border: 2px solid var(--ink);
   border-radius: 6px;
-  background: #1a6a8a;
+  background: var(--hn-tank-underlay);
 }
 .hn-fish-count {
   margin: 8px 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 .hn-fish-pad {
@@ -2095,15 +2097,25 @@ input[type=range] { accent-color: var(--red); }
 }
 .hn-fish-tool,
 .hn-fish-import-row .hn-btn,
-.hn-fish-tools .hn-btn,
+.hn-fish-tools .hn-btn {
+  min-height: 44px;
+  height: 44px;
+  padding: 6px 12px;
+  font-size: 14px;
+  background: var(--paper);
+}
 .hn-fish-preview .hn-btn {
   min-height: 36px;
   padding: 6px 10px;
   font-size: 13px;
 }
+.hn-fish-import-row .hn-btn.hn-btn-red {
+  background: var(--red);
+}
 .hn-fish-tool[aria-pressed="true"],
 .hn-fish-pattern[aria-pressed="true"] {
   background: var(--yellow);
+  color: var(--ink);
 }
 .hn-fish-label {
   display: inline-flex;
@@ -2166,6 +2178,30 @@ input[type=range] { accent-color: var(--red); }
   line-height: 1.45;
 }
 .hn-chat-room-panel .hn-chat-compose .hn-btn { align-self: flex-end; min-width: 96px; }
+
+/* Màn thấp (1366×768): bảng vẽ ngồi cạnh nút, bể giữ 16/7 và vừa một màn. */
+@media (max-height: 820px) and (min-width: 981px) {
+  .hn-tank-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    column-gap: 8px;
+    align-items: start;
+  }
+  .hn-tank-title,
+  .hn-tank-view,
+  .hn-fish-count,
+  .hn-fish-patterns,
+  .hn-fish-import-row,
+  .hn-fish-preview { grid-column: 1 / -1; }
+  .hn-fish-pad { grid-column: 1; width: 100%; }
+  .hn-fish-tools { grid-column: 2; margin-top: 0; }
+  .hn-tank-view { width: min(100%, 430px); height: auto; justify-self: start; }
+  .hn-tank-title { margin-bottom: 4px; }
+  .hn-fish-count { margin: 4px 0; }
+  .hn-fish-patterns,
+  .hn-fish-import-row { margin-top: 6px; }
+  .hn-chat-room-hint { margin-bottom: 8px; }
+}
 
 @media (max-width: 980px) {
   .hn-chat-room-grid { grid-template-columns: minmax(0, 1fr); }

@@ -399,7 +399,7 @@ export class Tank {
 
     g.save();
     g.translate(s.x, s.y);
-    g.rotate(headPitch(s));
+    g.rotate(headPitch(s) * s.facing);
     g.scale(s.facing * turnWidthScale(liveSquash(s)) * look.scale, (1 + 0.12 * liveSquash(s)) * look.scale);
     g.globalAlpha = look.alpha;
     if (look.blurPx >= 0.7) g.filter = `blur(${look.blurPx.toFixed(2)}px)`;

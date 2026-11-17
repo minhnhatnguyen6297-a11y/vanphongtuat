@@ -47,7 +47,7 @@ export function renderTankFrame(): string {
     <div class="hn-fish-import-row">
       <input class="sr-only" data-fish-file type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
       <button type="button" class="hn-btn" data-fish-import>Nhập ảnh</button>
-      <button type="button" class="hn-btn hn-btn-blue" data-fish-release>Thả vào bể</button>
+      <button type="button" class="hn-btn hn-btn-red" data-fish-release>Thả vào bể</button>
       <button type="button" class="hn-btn" data-fish-remove>Gỡ cá cuối</button>
     </div>
     ${preview}

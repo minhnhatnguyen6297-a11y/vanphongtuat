@@ -37,11 +37,11 @@ describe('bể cá motion', () => {
     assert.equal(turnDurationMs(0.5), 500);
   });
 
-  it('co bề ngang còn 0.4 ở giữa lượt quay', () => {
+  it('co bề ngang còn khoảng 0.05 ở giữa lượt quay', () => {
     assert.equal(turnSquash(0), 0);
     assert.equal(turnSquash(0.5), 1);
     assert.equal(turnWidthScale(0), 1);
-    assert.equal(turnWidthScale(1), 0.4);
+    assert.ok(Math.abs(turnWidthScale(1) - 0.05) < 1e-12);
   });
 
   it('nghiêng đầu kẹp trong ±30°', () => {
