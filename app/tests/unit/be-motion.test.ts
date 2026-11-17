@@ -36,17 +36,17 @@ function swimmer(facing: 1 | -1, tx: number): Swimmer {
 }
 
 describe('bể cá motion', () => {
-  it('quay đầu kéo 400–600ms', () => {
-    assert.equal(turnDurationMs(0), 400);
+  it('quay đầu kéo 250–600ms', () => {
+    assert.equal(turnDurationMs(0), 250);
     assert.equal(turnDurationMs(1), 600);
-    assert.equal(turnDurationMs(0.5), 500);
+    assert.equal(turnDurationMs(0.5), 425);
   });
 
-  it('co bề ngang còn khoảng 0.05 ở giữa lượt quay', () => {
+  it('co bề ngang nhẹ (~0.82) ở giữa lượt quay, không phóng to', () => {
     assert.equal(turnSquash(0), 0);
     assert.equal(turnSquash(0.5), 1);
     assert.equal(turnWidthScale(0), 1);
-    assert.ok(Math.abs(turnWidthScale(1) - 0.05) < 1e-12);
+    assert.ok(Math.abs(turnWidthScale(1) - 0.82) < 1e-12);
   });
 
   it('nghiêng đầu kẹp trong ±30°', () => {
@@ -55,7 +55,7 @@ describe('bể cá motion', () => {
     assert.equal(headTilt(0.2), 0.2);
   });
 
-  it('lật mặt ở điểm co nhất, xong lượt trong 0.4s khi rand = 0', () => {
+  it('lật mặt ở điểm co nhất, xong lượt trong 0.25s khi rand = 0', () => {
     const s = swimmer(1, 10);
     let flipAt = -1;
     let doneAt = -1;
@@ -67,8 +67,8 @@ describe('bể cá motion', () => {
       if (flipAt < 0 && s.facing === -1) flipAt = t;
       if (s.turn === null && s.facing === -1) doneAt = t;
     }
-    assert.ok(flipAt >= 0.2 && flipAt <= 0.25, `flip ${flipAt}`);
-    assert.ok(doneAt >= 0.4 && doneAt <= 0.45, `done ${doneAt}`);
+    assert.ok(flipAt >= 0.1 && flipAt <= 0.2, `flip ${flipAt}`);
+    assert.ok(doneAt >= 0.25 && doneAt <= 0.3, `done ${doneAt}`);
   });
 
   it('rand = 1 thì lượt quay dài 0.6s', () => {

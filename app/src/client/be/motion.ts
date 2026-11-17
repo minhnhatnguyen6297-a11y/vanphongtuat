@@ -1,6 +1,6 @@
-/** Motion numbers from the tank brief: smooth seek, ±30° pitch, 0.4–0.6s turn. */
+/** Motion V2: smooth seek, ±30° pitch, xoay thân 0.25–0.6s, không phóng sprite. */
 
-export const TURN_MS_MIN = 400;
+export const TURN_MS_MIN = 250;
 export const TURN_MS_MAX = 600;
 export const HEAD_TILT_MAX = Math.PI / 6;
 
@@ -8,7 +8,7 @@ export function clamp(n: number, a: number, b: number): number {
   return Math.min(b, Math.max(a, n));
 }
 
-/** `unit` is 0..1. Result stays inside 400–600ms. */
+/** `unit` is 0..1. Result stays inside 250–600ms. */
 export function turnDurationMs(unit: number): number {
   return TURN_MS_MIN + clamp(unit, 0, 1) * (TURN_MS_MAX - TURN_MS_MIN);
 }
@@ -18,9 +18,9 @@ export function turnSquash(progress: number): number {
   return Math.sin(clamp(progress, 0, 1) * Math.PI);
 }
 
-/** Horizontal scale. Full width at the ends, about 0.05 at the tightest point. */
+/** Horizontal scale. Mild tuck only — không phóng to / không ép mỏng hoạt hình. */
 export function turnWidthScale(squash: number): number {
-  return 1 - 0.95 * clamp(squash, 0, 1);
+  return 1 - 0.18 * clamp(squash, 0, 1);
 }
 
 export function headTilt(deltaRad: number): number {
