@@ -478,21 +478,47 @@ function mockCmd(name: string, args: unknown): AckMsg {
   }
   if (name === 'wheel.item.add') {
     const w = state.wheels.find((x) => x.id === a.wheelId);
-    if (w && w.items.length < 30) {
+    if (!w) return { t: 'ack', opId: uuid(), ok: false, error: 'not_found' };
+    if (w.items.length >= 60) return { t: 'ack', opId: uuid(), ok: false, error: 'too_many_items' };
+    w.items.push({
+      id: uuid(),
+      wheelId: w.id,
+      name: String(a.name || 'Ô').slice(0, 120),
+      weight: Math.min(100, Math.max(1, Number(a.weight) || 20)),
+      refShopId: a.refShopId ? String(a.refShopId) : null,
+      refMemberId: a.refMemberId ? String(a.refMemberId) : null,
+      votes: null,
+      sort: w.items.length,
+    });
+    w.version += 1;
+    notify();
+    return { t: 'ack', opId: uuid(), ok: true };
+  }
+  if (name === 'wheel.item.addMany') {
+    const w = state.wheels.find((x) => x.id === a.wheelId);
+    const items = Array.isArray(a.items) ? (a.items as Array<Record<string, unknown>>) : [];
+    if (!w) return { t: 'ack', opId: uuid(), ok: false, error: 'not_found' };
+    if (items.length === 0 || w.items.length + items.length > 60) {
+      return { t: 'ack', opId: uuid(), ok: false, error: 'too_many_items' };
+    }
+    const ids: string[] = [];
+    for (const raw of items) {
+      const id = uuid();
       w.items.push({
-        id: uuid(),
+        id,
         wheelId: w.id,
-        name: String(a.name || 'Ô').slice(0, 120),
-        weight: Math.min(100, Math.max(1, Number(a.weight) || 10)),
-        refShopId: a.refShopId ? String(a.refShopId) : null,
-        refMemberId: a.refMemberId ? String(a.refMemberId) : null,
+        name: String(raw.name || 'Ô').slice(0, 120),
+        weight: Math.min(100, Math.max(1, Number(raw.weight) || 20)),
+        refShopId: raw.refShopId ? String(raw.refShopId) : null,
+        refMemberId: raw.refMemberId ? String(raw.refMemberId) : null,
         votes: null,
         sort: w.items.length,
       });
-      w.version += 1;
-      notify();
+      ids.push(id);
     }
-    return { t: 'ack', opId: uuid(), ok: true };
+    w.version += 1;
+    notify();
+    return { t: 'ack', opId: uuid(), ok: true, result: { ids, version: w.version, count: ids.length } };
   }
   if (name === 'wheel.item.update') {
     const w = state.wheels.find((x) => x.items.some((i) => i.id === a.id));
