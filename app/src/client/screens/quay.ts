@@ -9,10 +9,8 @@ import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
 
 let audioCtx: AudioContext | null = null;
 let lastTick = 0;
-let animAngle = 0;
 let spinRaf = 0;
-let spinLoop = false;
-let spinAnim: { id: string; from: number; to: number } | null = null;
+let loopSpinId: string | null = null;
 const localPlan = new Map<string, { start: number; dur: number; from: number; to: number }>();
 const ownSpins = new Set<string>();
 
@@ -93,21 +91,42 @@ function stopSpinRaf(): void {
 }
 
 function stopSpinLoop(): void {
-  spinLoop = false;
+  loopSpinId = null;
   stopSpinRaf();
 }
 
-function ensureSpinAnim(spinning: Spin): { from: number; to: number } {
+/** Góc nghỉ của đúng vòng này, không lấy góc đang chạy của vòng khác. */
+function restAngle(wheelId: string, exceptId: string): number {
+  const prev = state.spins.find((s) => s.wheelId === wheelId && s.id !== exceptId);
+  if (!prev) return 0;
+  try {
+    const items = JSON.parse(prev.itemsJson) as { weight: number }[];
+    return spinAngle(prev.resultIndex, items);
+  } catch {
+    return 0;
+  }
+}
+
+function spinArc(spinning: Spin): { from: number; to: number } {
+  const existing = localPlan.get(spinning.id);
+  if (existing) return { from: existing.from, to: existing.to };
   const itemsSnap = JSON.parse(spinning.itemsJson) as { weight: number }[];
   const landing = landingAngle(spinning.resultIndex, itemsSnap);
-  if (spinAnim && spinAnim.id === spinning.id) return spinAnim;
-  const from = animAngle;
+  const from = restAngle(spinning.wheelId, spinning.id);
   let to = from + 360 * 5;
   const mod = ((to % 360) + 360) % 360;
   to += (landing - mod + 360) % 360;
   if (to - from < 360 * 4) to += 360;
-  spinAnim = { id: spinning.id, from, to };
-  return spinAnim;
+  return { from, to };
+}
+
+function angleNow(spinning: Spin): number {
+  const arc = spinArc(spinning);
+  const plan = planFor(spinning, arc.from, arc.to);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const p = spinProgress(performance.now() - plan.start, plan.dur);
+  const eased = reduced ? p : easeOutCubic(p);
+  return plan.from + (plan.to - plan.from) * eased;
 }
 
 function planFor(spinning: Spin, from: number, to: number): { start: number; dur: number; from: number; to: number } {
@@ -135,39 +154,48 @@ export function spinSettled(spin: Spin): boolean {
 }
 
 function runSpinLoop(spinning: Spin): void {
-  if (spinLoop) return;
-  spinLoop = true;
+  if (loopSpinId === spinning.id && spinRaf) return;
+  stopSpinRaf();
+  loopSpinId = spinning.id;
   const id = spinning.id;
+  const wheelId = spinning.wheelId;
   const tick = () => {
-    const face = document.getElementById('wheel-face');
-    const spin = state.spins.find((s) => s.id === id);
-    if (!face || !spin) {
-      spinLoop = false;
-      spinRaf = 0;
+    if (loopSpinId !== id) return;
+    if (state.route !== 'quay' || state.ui.wheelId !== wheelId) {
+      stopSpinLoop();
       return;
     }
-    const anim = ensureSpinAnim(spin);
-    const plan = planFor(spin, anim.from, anim.to);
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const face = document.getElementById('wheel-face');
+    const spin = state.spins.find((s) => s.id === id);
+    if (!face || !spin || spin.wheelId !== wheelId) {
+      stopSpinLoop();
+      return;
+    }
+    const arc = spinArc(spin);
+    const plan = planFor(spin, arc.from, arc.to);
     const p = spinProgress(performance.now() - plan.start, plan.dur);
-    const eased = reduced ? p : easeOutCubic(p);
-    const angle = plan.from + (plan.to - plan.from) * eased;
+    const angle = angleNow(spin);
     face.style.transition = 'none';
     face.style.transform = `rotate(${angle}deg)`;
     face.style.setProperty('--wheel-angle', `${angle}deg`);
-    animAngle = angle;
     if (!shouldRevealResult(p)) {
       spinRaf = requestAnimationFrame(tick);
       return;
     }
-    animAngle = plan.to;
     face.style.transform = `rotate(${plan.to}deg)`;
     face.style.setProperty('--wheel-angle', `${plan.to}deg`);
-    spinLoop = false;
+    loopSpinId = null;
     spinRaf = 0;
     notify();
   };
   spinRaf = requestAnimationFrame(tick);
+}
+
+/** Xóa đồng hồ quay trong bộ nhớ. Chỉ dùng cho kiểm thử. */
+export function resetWheelSpinForTests(): void {
+  stopSpinLoop();
+  localPlan.clear();
+  ownSpins.clear();
 }
 
 /** Slider % → weight, giữ tổng các ô khác. */
@@ -217,11 +245,11 @@ export function renderQuay(): string {
   const last = latestSpin(wheel.id);
   const layout = segmentLayout(items);
 
-  let angle = animAngle;
-  if (!spinning && last) {
+  let angle = 0;
+  if (spinning) angle = angleNow(spinning);
+  else if (last) {
     const itemsSnap = JSON.parse(last.itemsJson) as { weight: number }[];
     angle = spinAngle(last.resultIndex, itemsSnap);
-    animAngle = angle;
   }
 
   const totalW = items.reduce((s, i) => s + i.weight, 0) || 1;
@@ -395,7 +423,7 @@ export function bindQuay(root: HTMLElement): void {
 
   const spinning = wheel ? activeSpin(wheel.id) : undefined;
   if (spinning) runSpinLoop(spinning);
-  else if (!spinLoop) stopSpinLoop();
+  else stopSpinLoop();
 
   root.querySelector('[data-act="sound"]')?.addEventListener('click', () => {
     resumeAudio();
