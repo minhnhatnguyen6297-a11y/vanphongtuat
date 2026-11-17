@@ -93,7 +93,7 @@ describe('màn vòng quay', () => {
     assert.match(html, />Quay</);
     assert.match(html, /Minh/);
     assert.match(html, /Cơm tấm/);
-    assert.match(html, /data-chat-scope="wheel:free"/);
+    assert.equal(/data-chat-scope|Chat vòng/.test(html), false);
     assert.equal(
       /CHỐT QUÁN|GHI NGƯỜI ĐI LẤY|Xáo trộn|Xóa hết|Theo vote|Chia đều|data-act="equal"|data-act="by-vote"|data-act="set-winner"|data-act="set-pickup"|Giao diện|Cài đặt/.test(
         html,

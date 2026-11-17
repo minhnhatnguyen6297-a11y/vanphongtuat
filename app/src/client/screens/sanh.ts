@@ -8,9 +8,8 @@ import {
 import { TI_PHU_BOARD, type TiPhuState } from '../../shared/game-ti-phu.js';
 import type { GameRoom } from '../../shared/types.js';
 import { state, canPerm, memberById, patch } from '../store.js';
-import { cmd, setChatSubs } from '../ws.js';
+import { cmd } from '../ws.js';
 import { toast } from '../ui/toast.js';
-import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
 import { renderFace } from '../ui/face.js';
 
 const PIECE_COLORS = ['#C62828', '#1F5FD1', '#1B7A43', '#F28C28'];
@@ -298,7 +297,6 @@ function renderRoom(room: GameRoom): string {
       <div class="hn-row" style="gap:6px">${members}</div>
       ${board}
     </section>
-    ${renderChatPanel(`game:${room.id}`, { title: 'CHAT PHÒNG' })}
   </main>`;
 }
 
@@ -308,10 +306,6 @@ export function renderSanh(): string {
 }
 
 export function bindSanh(root: HTMLElement): void {
-  const room = activeRoom();
-  if (room) setChatSubs([`game:${room.id}`]);
-  else setChatSubs([]);
-
   const createKind = async (kind: 'caro' | 'ca_ngua' | 'ti_phu') => {
     if (!canPerm('game.host')) return;
     const label = kind === 'caro' ? 'Caro' : kind === 'ca_ngua' ? 'Ngựa' : 'Tỉ phú';
@@ -440,6 +434,4 @@ export function bindSanh(root: HTMLElement): void {
     const ack = await cmd('game.move', { roomId: r.id, action: 'skip' });
     if (!ack.ok) toast('Lỗi');
   });
-
-  bindChatPanel(root);
 }
