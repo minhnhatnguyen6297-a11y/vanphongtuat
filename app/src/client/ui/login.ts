@@ -1,7 +1,7 @@
 import { esc } from '../../shared/esc.js';
 import { state, patch } from '../store.js';
 import { toast } from './toast.js';
-import { apiLogin, fetchLoginRoster } from '../api.js';
+import { apiLogin, apiRegister, fetchLoginRoster } from '../api.js';
 import { connectWs } from '../ws.js';
 import { setRoute } from '../router.js';
 
@@ -39,6 +39,20 @@ export async function renderLogin(mount: HTMLElement): Promise<void> {
         </label>
         <button type="submit" class="hn-btn hn-btn-red" id="login-go" ${roster.length ? '' : 'disabled'}>VÀO SẢNH</button>
       </form>
+      <form class="hn-login-card hn-paper-fold" id="register-form" aria-labelledby="register-title">
+        <h2 id="register-title">ĐĂNG KÝ</h2>
+        <p class="hn-hint">Vào ngay, không cần duyệt. Tài khoản mới ở bậc thấp nhất.</p>
+        <label>Tên đăng nhập
+          <input class="hn-input" id="reg-user" autocomplete="username" maxlength="40" placeholder="ví dụ lan_moi">
+        </label>
+        <label>Tên hiển thị
+          <input class="hn-input" id="reg-name" maxlength="80" placeholder="Tên mọi người thấy">
+        </label>
+        <label>PIN 6 số
+          <input class="hn-input" id="reg-pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6">
+        </label>
+        <button type="submit" class="hn-btn hn-btn-green">TẠO TÀI KHOẢN</button>
+      </form>
     </div>`;
 
     const pin = mount.querySelector<HTMLInputElement>('#login-pin');
@@ -56,6 +70,41 @@ export async function renderLogin(mount: HTMLElement): Promise<void> {
       event.preventDefault();
       void doLogin();
     });
+    mount.querySelector('#register-form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void doRegister();
+    });
+  };
+
+  async function doRegister() {
+    const username = (mount.querySelector<HTMLInputElement>('#reg-user')?.value || '').trim();
+    const displayName = (mount.querySelector<HTMLInputElement>('#reg-name')?.value || '').trim();
+    const pin = (mount.querySelector<HTMLInputElement>('#reg-pin')?.value || '').trim();
+    if (!/^[a-z0-9_]{2,40}$/i.test(username)) {
+      toast('Tên đăng nhập: chữ, số, gạch dưới');
+      return;
+    }
+    if (!displayName) {
+      toast('Điền tên hiển thị');
+      return;
+    }
+    if (!/^\d{6}$/.test(pin)) {
+      toast('PIN 6 số nhé');
+      return;
+    }
+    const res = await apiRegister(username, displayName, pin);
+    if (!res.ok) {
+      const msg =
+        res.error === 'username_taken'
+          ? 'Tên này đã có'
+          : res.error === 'rate_limited'
+            ? 'Thử lại sau ít phút'
+            : 'Không tạo được';
+      toast(msg);
+      return;
+    }
+    if (!state.mock) connectWs();
+    setRoute('home');
   };
 
   async function doLogin() {

@@ -1,4 +1,5 @@
 import { esc } from '../../shared/esc.js';
+import { adoptSpinClock, easeOutCubic, shouldRevealResult, spinProgress } from '../../shared/wheel-motion.js';
 import { state, canPerm, setSound, memberById, shopById, notify } from '../store.js';
 import type { Spin } from '../../shared/types.js';
 import { ICONS, SHOP_COLORS } from '../icons.js';
@@ -8,10 +9,10 @@ import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
 
 let audioCtx: AudioContext | null = null;
 let lastTick = 0;
-let animAngle = 0;
 let spinRaf = 0;
-let spinAnim: { id: string; from: number; to: number } | null = null;
-let spinDoneTimer = 0;
+let loopSpinId: string | null = null;
+const localPlan = new Map<string, { start: number; dur: number; from: number; to: number }>();
+const ownSpins = new Set<string>();
 
 function resumeAudio(): void {
   if (!audioCtx) audioCtx = new AudioContext();
@@ -82,10 +83,6 @@ function spinAngle(resultIndex: number, items: { weight: number }[]): number {
   return 360 * 5 + landingAngle(resultIndex, items);
 }
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
-
 function stopSpinRaf(): void {
   if (spinRaf) {
     cancelAnimationFrame(spinRaf);
@@ -93,48 +90,112 @@ function stopSpinRaf(): void {
   }
 }
 
-function ensureSpinAnim(spinning: Spin): { from: number; to: number } {
+function stopSpinLoop(): void {
+  loopSpinId = null;
+  stopSpinRaf();
+}
+
+/** Góc nghỉ của đúng vòng này, không lấy góc đang chạy của vòng khác. */
+function restAngle(wheelId: string, exceptId: string): number {
+  const prev = state.spins.find((s) => s.wheelId === wheelId && s.id !== exceptId);
+  if (!prev) return 0;
+  try {
+    const items = JSON.parse(prev.itemsJson) as { weight: number }[];
+    return spinAngle(prev.resultIndex, items);
+  } catch {
+    return 0;
+  }
+}
+
+function spinArc(spinning: Spin): { from: number; to: number } {
+  const existing = localPlan.get(spinning.id);
+  if (existing) return { from: existing.from, to: existing.to };
   const itemsSnap = JSON.parse(spinning.itemsJson) as { weight: number }[];
   const landing = landingAngle(spinning.resultIndex, itemsSnap);
-  if (spinAnim && spinAnim.id === spinning.id) return spinAnim;
-  const from = animAngle;
+  const from = restAngle(spinning.wheelId, spinning.id);
   let to = from + 360 * 5;
   const mod = ((to % 360) + 360) % 360;
   to += (landing - mod + 360) % 360;
   if (to - from < 360 * 4) to += 360;
-  spinAnim = { id: spinning.id, from, to };
-  return spinAnim;
+  return { from, to };
 }
 
-function runSpinRaf(face: HTMLElement, spinning: Spin, reduced: boolean): void {
+function angleNow(spinning: Spin): number {
+  const arc = spinArc(spinning);
+  const plan = planFor(spinning, arc.from, arc.to);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const p = spinProgress(performance.now() - plan.start, plan.dur);
+  const eased = reduced ? p : easeOutCubic(p);
+  return plan.from + (plan.to - plan.from) * eased;
+}
+
+function planFor(spinning: Spin, from: number, to: number): { start: number; dur: number; from: number; to: number } {
+  const existing = localPlan.get(spinning.id);
+  if (existing) return existing;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const adopted = adoptSpinClock(Date.now(), spinning.startedAt, spinning.durationMs, performance.now());
+  let start = adopted.localStart;
+  let dur = adopted.dur;
+  if (ownSpins.has(spinning.id) && adopted.done) {
+    start = performance.now();
+    dur = Math.max(1, spinning.durationMs);
+  }
+  if (reduced) dur = Math.min(dur, 600);
+  const plan = { start, dur, from, to };
+  localPlan.set(spinning.id, plan);
+  return plan;
+}
+
+export function spinSettled(spin: Spin): boolean {
+  const plan = localPlan.get(spin.id);
+  if (plan) return shouldRevealResult(spinProgress(performance.now() - plan.start, plan.dur));
+  if (ownSpins.has(spin.id)) return false;
+  return adoptSpinClock(Date.now(), spin.startedAt, spin.durationMs, performance.now()).done;
+}
+
+function runSpinLoop(spinning: Spin): void {
+  if (loopSpinId === spinning.id && spinRaf) return;
   stopSpinRaf();
-  const anim = ensureSpinAnim(spinning);
-  const start = spinning.startedAt;
-  const dur = Math.max(1, reduced ? Math.min(spinning.durationMs, 600) : spinning.durationMs);
-  face.style.transition = 'none';
+  loopSpinId = spinning.id;
+  const id = spinning.id;
+  const wheelId = spinning.wheelId;
   const tick = () => {
-    const p = Math.min(1, (Date.now() - start) / dur);
-    const eased = reduced ? p : easeOutCubic(p);
-    const angle = anim.from + (anim.to - anim.from) * eased;
+    if (loopSpinId !== id) return;
+    if (state.route !== 'quay' || state.ui.wheelId !== wheelId) {
+      stopSpinLoop();
+      return;
+    }
+    const face = document.getElementById('wheel-face');
+    const spin = state.spins.find((s) => s.id === id);
+    if (!face || !spin || spin.wheelId !== wheelId) {
+      stopSpinLoop();
+      return;
+    }
+    const arc = spinArc(spin);
+    const plan = planFor(spin, arc.from, arc.to);
+    const p = spinProgress(performance.now() - plan.start, plan.dur);
+    const angle = angleNow(spin);
+    face.style.transition = 'none';
     face.style.transform = `rotate(${angle}deg)`;
     face.style.setProperty('--wheel-angle', `${angle}deg`);
-    animAngle = angle;
-    if (p < 1) {
+    if (!shouldRevealResult(p)) {
       spinRaf = requestAnimationFrame(tick);
       return;
     }
+    face.style.transform = `rotate(${plan.to}deg)`;
+    face.style.setProperty('--wheel-angle', `${plan.to}deg`);
+    loopSpinId = null;
     spinRaf = 0;
-    animAngle = anim.to;
-    face.style.transform = `rotate(${anim.to}deg)`;
-    face.style.setProperty('--wheel-angle', `${anim.to}deg`);
-    if (!spinDoneTimer) {
-      spinDoneTimer = window.setTimeout(() => {
-        spinDoneTimer = 0;
-        notify();
-      }, 40);
-    }
+    notify();
   };
   spinRaf = requestAnimationFrame(tick);
+}
+
+/** Xóa đồng hồ quay trong bộ nhớ. Chỉ dùng cho kiểm thử. */
+export function resetWheelSpinForTests(): void {
+  stopSpinLoop();
+  localPlan.clear();
+  ownSpins.clear();
 }
 
 /** Slider % → weight, giữ tổng các ô khác. */
@@ -146,7 +207,7 @@ function weightFromPct(pct: number, itemWeight: number, totalW: number): number 
 }
 
 function activeSpin(wheelId: string) {
-  return state.spins.find((s) => s.wheelId === wheelId && Date.now() < s.startedAt + s.durationMs);
+  return state.spins.find((s) => s.wheelId === wheelId && !spinSettled(s));
 }
 
 function latestSpin(wheelId: string) {
@@ -184,11 +245,11 @@ export function renderQuay(): string {
   const last = latestSpin(wheel.id);
   const layout = segmentLayout(items);
 
-  let angle = animAngle;
-  if (!spinning && last) {
+  let angle = 0;
+  if (spinning) angle = angleNow(spinning);
+  else if (last) {
     const itemsSnap = JSON.parse(last.itemsJson) as { weight: number }[];
     angle = spinAngle(last.resultIndex, itemsSnap);
-    animAngle = angle;
   }
 
   const totalW = items.reduce((s, i) => s + i.weight, 0) || 1;
@@ -262,7 +323,8 @@ export function renderQuay(): string {
     .map((s) => {
       const d = new Date(s.startedAt);
       const when = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      return `<div class="hn-wheel-log-row"><time>${when}</time><b>${esc(s.resultName)}</b></div>`;
+      const name = spinSettled(s) ? s.resultName : 'đang quay';
+      return `<div class="hn-wheel-log-row"><time>${when}</time><b>${esc(name)}</b></div>`;
     })
     .join('');
 
@@ -278,6 +340,7 @@ export function renderQuay(): string {
         <div class="hn-wheel-disk">
           <div class="hn-pointer-outer" aria-hidden="true"></div>
           <div class="hn-pointer-inner" aria-hidden="true"></div>
+          <div class="hn-wheel-clip">
           <div class="hn-wheel-face" id="wheel-face" style="background:${conic(items)};--wheel-angle:${angle}deg;transform:rotate(${angle}deg);transition:none">
             ${segs
               .map(
@@ -288,6 +351,7 @@ export function renderQuay(): string {
               </div>`,
               )
               .join('')}
+          </div>
           </div>
           <div class="hn-hub">${ICONS.paw}</div>
         </div>
@@ -357,11 +421,9 @@ export function bindQuay(root: HTMLElement): void {
     if (tab.right > viewport.right) tabs.scrollLeft += tab.right - viewport.right + 3;
   }
 
-  const face = root.querySelector('#wheel-face') as HTMLElement | null;
   const spinning = wheel ? activeSpin(wheel.id) : undefined;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (face && spinning) runSpinRaf(face, spinning, reduced);
-  else stopSpinRaf();
+  if (spinning) runSpinLoop(spinning);
+  else stopSpinLoop();
 
   root.querySelector('[data-act="sound"]')?.addEventListener('click', () => {
     resumeAudio();
@@ -459,6 +521,10 @@ export function bindQuay(root: HTMLElement): void {
 
   root.querySelector('[data-act="spin"]')?.addEventListener('click', async () => {
     if (!wheel || !canPerm('wheel.spin')) return;
+    if (!state.connected && !state.mock) {
+      toast('Mất mạng, chưa quay');
+      return;
+    }
     resumeAudio();
     lastTick = Date.now();
     const ack = await cmd('wheel.spin', { wheelId: wheel.id });
@@ -489,15 +555,18 @@ export function bindQuay(root: HTMLElement): void {
         startedAt: res.startedAt,
         durationMs: res.durationMs,
       };
-      if (!state.spins.some((s) => s.id === spin.id)) {
-        state.spins.unshift(spin);
-        notify();
-      }
+      ownSpins.add(spin.id);
+      if (!state.spins.some((s) => s.id === spin.id)) state.spins.unshift(spin);
+      notify();
+    } else if (res && state.mock) {
+      const id = res.spinId || res.id;
+      if (id) ownSpins.add(id);
     }
     if (res && state.ui.soundOn) {
-      const end = res.startedAt + res.durationMs;
+      const dur = Math.max(1, res.durationMs || 4300);
+      const t0 = performance.now();
       const tick = () => {
-        if (Date.now() >= end) {
+        if (shouldRevealResult(spinProgress(performance.now() - t0, dur))) {
           beep(880, 0.15, 'sine');
           return;
         }

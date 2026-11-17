@@ -1,18 +1,45 @@
 import { esc } from '../../shared/esc.js';
+import { state, memberById } from '../store.js';
+import { cmd } from '../ws.js';
 import { toast } from '../ui/toast.js';
 import { importEdgeError, importFileError, loadImage } from './image.js';
 import { fishPad, type FishTool } from './pad.js';
 import { FISH_PATTERNS } from './patterns.js';
-import { fishTank } from './tank.js';
+import { fishTank, readLocalFish } from './tank.js';
+
+const ONCE_KEY = 'hng_be_shared_once';
+
+let drawOpen = false;
+let keyBound = false;
+let uploading = false;
 
 function toolButton(tool: FishTool, label: string, current: FishTool): string {
   const on = tool === current;
   return `<button type="button" class="hn-btn hn-fish-tool" data-fish-tool="${tool}" aria-pressed="${on}">${label}</button>`;
 }
 
+function readOnce(): Set<string> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ONCE_KEY) || '[]') as unknown;
+    return new Set(Array.isArray(raw) ? raw.filter((id) => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeOnce(ids: Set<string>): void {
+  try {
+    localStorage.setItem(ONCE_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* the button can be pressed again */
+  }
+}
+
 export function renderTankFrame(): string {
   const pad = fishPad();
   const tank = fishTank();
+  const me = state.me;
+  const admin = !!me && (me.tier === 'chu_xi' || me.isOperator);
   const preview = pad.previewUrl
     ? `<div class="hn-fish-preview">
         <img data-fish-preview src="${esc(pad.previewUrl)}" alt="Xem trước ảnh cá">
@@ -24,36 +51,71 @@ export function renderTankFrame(): string {
     (p) =>
       `<button type="button" class="hn-fish-pattern" data-fish-pattern="${esc(p.id)}" aria-label="Mẫu ${esc(p.label)}" aria-pressed="${pad.patternId === p.id}">${p.svg}</button>`,
   ).join('');
+  const rows = tank
+    .rows()
+    .map((r) => {
+      const mine = !!me && r.ownerId === me.id;
+      const who = memberById(r.ownerId)?.displayName || 'ai đó';
+      const canDel = mine || admin;
+      return `<li class="hn-fish-row"><span>${mine ? 'Cá của bạn' : esc(who)}</span>${
+        canDel ? `<button type="button" class="hn-btn" data-fish-del="${esc(r.id)}">Gỡ</button>` : ''
+      }</li>`;
+    })
+    .join('');
 
-  return `<section class="hn-tank-frame" aria-label="Bể cá">
-    <h3 class="hn-tank-title">BỂ CÁ</h3>
-    <canvas class="hn-tank-view" data-fish-tank width="640" height="280" aria-label="Bể cá đang bơi"></canvas>
-    <p class="hn-fish-count" data-fish-count>${tank.count} cá · tranh của bạn</p>
-    <canvas class="hn-fish-pad" data-fish-pad width="480" height="240" aria-label="Tranh cá"></canvas>
-    <div class="hn-fish-tools">
-      ${toolButton('pen', 'Bút', pad.tool)}
-      ${toolButton('eraser', 'Tẩy', pad.tool)}
-      ${toolButton('blur', 'Làm mờ', pad.tool)}
-      <label class="hn-fish-label">Màu <input id="hn-fish-color" data-fish-color type="color" value="${esc(pad.color)}"></label>
-      <label class="hn-fish-label">Nét <input id="hn-fish-size" data-fish-size type="range" min="2" max="32" value="${pad.size}"></label>
-      <label class="hn-fish-label">Độ mờ <input id="hn-fish-blur" data-fish-blur type="range" min="1" max="8" value="${pad.blurStrength}"></label>
-      <button type="button" class="hn-btn" data-fish-undo>Hoàn tác</button>
-      <button type="button" class="hn-btn" data-fish-clear>Xóa tranh</button>
+  return `<div class="hn-tank-stage">
+    <canvas class="hn-tank-view" data-fish-tank width="640" height="360" aria-label="Ao cá đang bơi"></canvas>
+    <div class="hn-tank-bar">
+      <button type="button" class="hn-btn hn-btn-red" data-fish-draw>Vẽ cá</button>
+      <button type="button" class="hn-btn" data-fish-upload-mine>Đưa cá máy này lên ao</button>
+      <span class="hn-fish-count" data-fish-count>${tank.count} cá trong ao</span>
     </div>
-    <div class="hn-fish-patterns" role="group" aria-label="Mẫu cá">${patterns}</div>
-    <div class="hn-fish-import-row">
-      <input class="sr-only" data-fish-file type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
-      <button type="button" class="hn-btn" data-fish-import>Nhập ảnh</button>
-      <button type="button" class="hn-btn hn-btn-red" data-fish-release>Thả vào bể</button>
-      <button type="button" class="hn-btn" data-fish-remove>Gỡ cá cuối</button>
+    <div class="hn-fish-pop" data-fish-pop ${drawOpen ? '' : 'hidden'}>
+      <div class="hn-fish-pop-card" role="dialog" aria-label="Vẽ cá">
+        <div class="hn-fish-pop-head">
+          <h3>Vẽ cá</h3>
+          <button type="button" class="hn-btn" data-fish-close>Đóng</button>
+        </div>
+        <p class="hn-hint">Nháp chỉ ở máy này. Thả mới đưa lên ao chung. Đóng hoặc Escape giữ nháp.</p>
+        <canvas class="hn-fish-pad" data-fish-pad width="480" height="240" aria-label="Tranh cá"></canvas>
+        <div class="hn-fish-tools">
+          ${toolButton('pen', 'Bút', pad.tool)}
+          ${toolButton('eraser', 'Tẩy', pad.tool)}
+          ${toolButton('blur', 'Làm mờ', pad.tool)}
+          <label class="hn-fish-label">Màu <input data-fish-color type="color" value="${esc(pad.color)}"></label>
+          <label class="hn-fish-label">Nét <input data-fish-size type="range" min="2" max="32" value="${pad.size}"></label>
+          <label class="hn-fish-label">Độ mờ <input data-fish-blur type="range" min="1" max="8" value="${pad.blurStrength}"></label>
+          <button type="button" class="hn-btn" data-fish-undo>Hoàn tác</button>
+          <button type="button" class="hn-btn" data-fish-clear>Xóa tranh</button>
+        </div>
+        <div class="hn-fish-patterns" role="group" aria-label="Mẫu cá">${patterns}</div>
+        <div class="hn-fish-import-row">
+          <input class="sr-only" data-fish-file type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
+          <button type="button" class="hn-btn" data-fish-import>Nhập ảnh</button>
+          <button type="button" class="hn-btn hn-btn-red" data-fish-release>Thả vào ao</button>
+        </div>
+        ${preview}
+        <ul class="hn-fish-list">${rows || '<li class="hn-hint">Ao chưa có cá.</li>'}</ul>
+      </div>
     </div>
-    ${preview}
-  </section>`;
+  </div>`;
 }
 
 function refreshCount(): void {
   const el = document.querySelector('[data-fish-count]');
-  if (el) el.textContent = `${fishTank().count} cá · tranh của bạn`;
+  if (el) el.textContent = `${fishTank().count} cá trong ao`;
+}
+
+function closeDraw(): void {
+  drawOpen = false;
+  document.querySelector('[data-fish-pop]')?.setAttribute('hidden', '');
+}
+
+function openDraw(root: HTMLElement): void {
+  drawOpen = true;
+  root.querySelector('[data-fish-pop]')?.removeAttribute('hidden');
+  const board = root.querySelector<HTMLCanvasElement>('[data-fish-pad]');
+  if (board) fishPad().attach(board);
 }
 
 function syncTools(): void {
@@ -66,13 +128,30 @@ function syncTools(): void {
   });
 }
 
+function ensureKey(): void {
+  if (keyBound) return;
+  keyBound = true;
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !drawOpen) return;
+    e.preventDefault();
+    closeDraw();
+  });
+}
+
 export function bindTank(root: HTMLElement): void {
   const pad = fishPad();
   const tank = fishTank();
   const view = root.querySelector<HTMLCanvasElement>('[data-fish-tank]');
-  const board = root.querySelector<HTMLCanvasElement>('[data-fish-pad]');
   if (view) tank.attach(view);
-  if (board) pad.attach(board);
+  ensureKey();
+  if (drawOpen) openDraw(root);
+
+  root.querySelector('[data-fish-draw]')?.addEventListener('click', () => openDraw(root));
+  root.querySelector('[data-fish-close]')?.addEventListener('click', () => closeDraw());
+  root.querySelector('[data-fish-pop]')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeDraw();
+  });
+  root.querySelector('.hn-fish-pop-card')?.addEventListener('click', (e) => e.stopPropagation());
 
   root.querySelectorAll<HTMLButtonElement>('[data-fish-tool]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -128,22 +207,93 @@ export function bindTank(root: HTMLElement): void {
   });
 
   root.querySelector('[data-fish-release]')?.addEventListener('click', () => {
-    if (pad.isBlank()) {
-      toast('Vẽ hoặc nhập ảnh trước');
-      return;
-    }
-    const result = tank.addFish(pad.toPng());
-    if (result === 'full') {
-      toast('Bể đủ 8 cá');
-      return;
-    }
-    refreshCount();
-    toast('Đã thả vào bể');
+    void releasePad();
   });
-  root.querySelector('[data-fish-remove]')?.addEventListener('click', () => {
-    tank.removeLast();
-    refreshCount();
+  root.querySelector('[data-fish-upload-mine]')?.addEventListener('click', () => {
+    void uploadMine();
   });
+  root.querySelectorAll<HTMLButtonElement>('[data-fish-del]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.fishDel;
+      if (id) void removeFish(id);
+    });
+  });
+}
+
+async function releasePad(): Promise<void> {
+  const pad = fishPad();
+  if (pad.isBlank()) {
+    toast('Vẽ hoặc nhập ảnh trước');
+    return;
+  }
+  if (state.mock) {
+    const result = fishTank().addFish(pad.toPng());
+    if (result === 'full') toast('Bể đủ cá');
+    else toast('Đã thả (máy này)');
+    refreshCount();
+    return;
+  }
+  if (!state.connected) {
+    toast('Mất mạng, chưa thả');
+    return;
+  }
+  const ack = await cmd('fish.release', { png: pad.toPng() });
+  if (!ack.ok) {
+    toast(ack.error === 'slow_down' ? 'Chậm thôi' : ack.error === 'tank_full' ? 'Ao đầy' : 'Không thả được');
+    return;
+  }
+  toast('Đã thả lên ao chung');
+}
+
+async function removeFish(id: string): Promise<void> {
+  if (state.mock) return;
+  if (!state.connected) {
+    toast('Mất mạng');
+    return;
+  }
+  const ack = await cmd('fish.remove', { id });
+  if (!ack.ok) toast(ack.error === 'forbidden' ? 'Không gỡ cá của người khác' : 'Không gỡ được');
+}
+
+async function uploadMine(): Promise<void> {
+  if (uploading) return;
+  const local = readLocalFish();
+  const done = readOnce();
+  const pending = local.filter((f) => f.png && !done.has(f.id));
+  if (!pending.length) {
+    toast('Không còn cá máy này để đưa');
+    return;
+  }
+  if (!state.connected && !state.mock) {
+    toast('Mất mạng, chưa đưa');
+    return;
+  }
+  uploading = true;
+  let n = 0;
+  try {
+    for (const fish of pending) {
+      if (state.mock) {
+        if (fishTank().addFish(fish.png) === 'ok') {
+          done.add(fish.id);
+          n += 1;
+        }
+      } else {
+        const ack = await cmd('fish.release', { png: fish.png, localId: fish.id });
+        if (!ack.ok) {
+          toast(ack.error === 'slow_down' ? 'Chậm thôi, bấm lại để đưa nốt' : 'Dừng đưa cá');
+          break;
+        }
+        done.add(fish.id);
+        n += 1;
+        await new Promise((r) => setTimeout(r, 1600));
+      }
+    }
+  } finally {
+    writeOnce(done);
+    uploading = false;
+    refreshCount();
+  }
+  if (n) toast(`Đã đưa ${n} cá lên ao`);
 }
 
 async function stageImport(file: File): Promise<void> {
@@ -184,11 +334,12 @@ async function usePreview(): Promise<void> {
 
 function paintImport(): void {
   const pad = fishPad();
-  const host = document.querySelector('.hn-tank-frame');
+  const host = document.querySelector('.hn-fish-pop-card');
   host?.querySelector('.hn-fish-preview')?.remove();
   if (!pad.previewUrl || !host) return;
-  host.insertAdjacentHTML(
-    'beforeend',
+  const row = host.querySelector('.hn-fish-import-row');
+  row?.insertAdjacentHTML(
+    'afterend',
     `<div class="hn-fish-preview">
       <img data-fish-preview src="${esc(pad.previewUrl)}" alt="Xem trước ảnh cá">
       <button type="button" class="hn-btn hn-btn-green" data-fish-use>Đưa vào tranh</button>

@@ -6,8 +6,9 @@ import {
   replaceChatSnap,
   type PermsState,
 } from './store.js';
-import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, Wheel } from '../shared/types.js';
+import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, TankFish, Wheel } from '../shared/types.js';
 import { toast } from './ui/toast.js';
+import { fishTank } from './be/tank.js';
 
 type HelloMsg = { t: 'hello'; subs: string[] };
 type CmdMsg = { t: 'cmd'; opId: string; name: string; args: unknown; baseVersion?: number };
@@ -70,6 +71,12 @@ function applySnap(scope: string, version: number, data: unknown): void {
     state.shops = data as Shop[];
   } else if (scope === 'games') {
     state.games = data as GameRoom[];
+    if (state.ui.gameRoomId && !state.games.some((g) => g.id === state.ui.gameRoomId)) {
+      state.ui.gameRoomId = null;
+    }
+  } else if (scope === 'tank') {
+    const payload = data as { fish?: TankFish[] };
+    fishTank().setShared(payload.fish || []);
   } else if (scope === 'wheels') {
     const payload = data as { wheels: Wheel[]; spins?: Spin[] } | (Wheel & { recentSpins?: Spin[] })[];
     if (Array.isArray(payload)) {
@@ -185,7 +192,7 @@ function send(msg: ClientMsg): void {
 }
 
 function baseSubs(): string[] {
-  return ['table:current', 'shops', 'wheels', 'members', 'perms', 'games', ...state.chatSubs];
+  return ['table:current', 'shops', 'wheels', 'members', 'perms', 'games', 'tank', ...state.chatSubs];
 }
 
 function hello(): void {
@@ -235,8 +242,10 @@ export function connectWs(): void {
   };
   ws.onmessage = (ev) => onMessage(String(ev.data));
   ws.onclose = () => {
+    if (socket !== ws) return;
     patch((s) => {
       s.connected = false;
+      s.games = [];
     });
     scheduleReconnect();
   };

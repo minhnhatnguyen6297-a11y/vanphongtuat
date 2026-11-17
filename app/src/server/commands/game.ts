@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { CmdError } from '../errors.ts';
 import { nowIso, type Db } from '../db.ts';
+import { roomIdleExpired, sweepRoomsNow } from '../rooms.ts';
 import { emptyCaro, applyCaroMove, type CaroState } from '../../shared/game-caro.ts';
 import {
   emptyCaNgua,
@@ -27,14 +28,35 @@ type RoomRow = {
   host_id: string;
   state_json: string;
   version: number;
+  last_play_at: string | null;
+  updated_at: string;
 };
 
 function getRoom(db: Db, id: string): RoomRow | undefined {
   return db
     .prepare(
-      `SELECT id, kind, title, status, host_id, state_json, version FROM game_rooms WHERE id = ?`,
+      `SELECT id, kind, title, status, host_id, state_json, version, last_play_at, updated_at
+       FROM game_rooms WHERE id = ?`,
     )
     .get(id) as RoomRow | undefined;
+}
+
+function touchPlay(db: Db, roomId: string) {
+  db.prepare(`UPDATE game_rooms SET last_play_at = ?, empty_since = NULL WHERE id = ?`).run(
+    nowIso(),
+    roomId,
+  );
+}
+
+function assertJoinable(db: Db, room: RoomRow) {
+  sweepRoomsNow(db);
+  const fresh = getRoom(db, room.id);
+  if (!fresh) throw new CmdError('expired');
+  if (fresh.status === 'ended') throw new CmdError('ended');
+  if (roomIdleExpired(fresh.last_play_at, fresh.updated_at, Date.now())) {
+    db.prepare(`DELETE FROM game_rooms WHERE id = ?`).run(fresh.id);
+    throw new CmdError('expired');
+  }
 }
 
 function getSeat(db: Db, roomId: string, memberId: string): GameSeat | null {
@@ -100,9 +122,9 @@ export const gameCreate: Handler = (ctx, args: CommandArgs<'game.create'>): CmdO
         ? JSON.stringify(emptyCaNgua([member.id]))
         : JSON.stringify(emptyTiPhu([member.id]));
   db.prepare(
-    `INSERT INTO game_rooms(id, kind, title, status, host_id, state_json, created_at, updated_at, version)
-     VALUES(?,?,?,'open',?,?,?,?,1)`,
-  ).run(id, kind, args.title, member.id, stateJson, now, now);
+    `INSERT INTO game_rooms(id, kind, title, status, host_id, state_json, created_at, updated_at, version, last_play_at)
+     VALUES(?,?,?,'open',?,?,?,?,1,?)`,
+  ).run(id, kind, args.title, member.id, stateJson, now, now, now);
   db.prepare(
     `INSERT INTO game_members(room_id, member_id, seat, joined_at) VALUES(?,?, 'host', ?)`,
   ).run(id, member.id, now);
@@ -113,10 +135,11 @@ export const gameJoin: Handler = (ctx, args: CommandArgs<'game.join'>): CmdOk =>
   const { db, member } = ctx;
   const room = getRoom(db, args.roomId);
   if (!room) throw new CmdError('not_found');
-  if (room.status === 'ended') throw new CmdError('ended');
+  assertJoinable(db, room);
 
   const existing = getSeat(db, room.id, member.id);
   if (existing) {
+    touchPlay(db, room.id);
     return { result: { roomId: room.id, seat: existing }, scopes: ['games'] };
   }
 
@@ -135,6 +158,7 @@ export const gameJoin: Handler = (ctx, args: CommandArgs<'game.join'>): CmdOk =>
     `INSERT INTO game_members(room_id, member_id, seat, joined_at) VALUES(?,?,?,?)`,
   ).run(room.id, member.id, seat, nowIso());
   bumpRoom(db, room.id);
+  touchPlay(db, room.id);
   return { result: { roomId: room.id, seat }, scopes: ['games'] };
 };
 
@@ -169,6 +193,10 @@ export const gameStart: Handler = (ctx, args: CommandArgs<'game.start'>): CmdOk 
   if (room.host_id !== member.id) throw new CmdError('forbidden');
   if (getSeat(db, room.id, member.id) !== 'host') throw new CmdError('forbidden');
   if (room.status !== 'open') throw new CmdError('already_started');
+  if (roomIdleExpired(room.last_play_at, room.updated_at, Date.now())) {
+    db.prepare(`DELETE FROM game_rooms WHERE id = ?`).run(room.id);
+    throw new CmdError('expired');
+  }
 
   const players = listPlayers(db, room.id);
   const playerIds = players.map((p) => p.memberId);
@@ -184,6 +212,7 @@ export const gameStart: Handler = (ctx, args: CommandArgs<'game.start'>): CmdOk 
       status: 'playing',
       stateJson: JSON.stringify(state),
     });
+    touchPlay(db, room.id);
     return { result: { id: room.id, version, state }, scopes: ['games'] };
   }
 
@@ -194,6 +223,7 @@ export const gameStart: Handler = (ctx, args: CommandArgs<'game.start'>): CmdOk 
       status: 'playing',
       stateJson: JSON.stringify(state),
     });
+    touchPlay(db, room.id);
     return { result: { id: room.id, version, state }, scopes: ['games'] };
   }
 
@@ -204,6 +234,7 @@ export const gameStart: Handler = (ctx, args: CommandArgs<'game.start'>): CmdOk 
       status: 'playing',
       stateJson: JSON.stringify(state),
     });
+    touchPlay(db, room.id);
     return { result: { id: room.id, version, state }, scopes: ['games'] };
   }
 
@@ -215,6 +246,11 @@ export const gameMove: Handler = (ctx, args: CommandArgs<'game.move'>): CmdOk =>
   const room = getRoom(db, args.roomId);
   if (!room) throw new CmdError('not_found');
   if (room.status !== 'playing') throw new CmdError('not_playing');
+  if (roomIdleExpired(room.last_play_at, room.updated_at, Date.now())) {
+    db.prepare(`DELETE FROM game_rooms WHERE id = ?`).run(room.id);
+    throw new CmdError('expired');
+  }
+  touchPlay(db, room.id);
 
   const seat = getSeat(db, room.id, member.id);
   if (!seat || seat === 'spectator') throw new CmdError('forbidden');

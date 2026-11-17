@@ -4,6 +4,7 @@ import type { Db } from './db.ts';
 import { nowIso, newId } from './db.ts';
 import { config } from './config.ts';
 import type { AuthMember } from './perms.ts';
+import { TIERS } from '../shared/perms-catalog.ts';
 
 const SCRYPT_N = 1 << 15;
 const SCRYPT_R = 8;
@@ -142,9 +143,22 @@ export function clearSessionCookie(res: ServerResponse) {
   res.setHeader('Set-Cookie', parts.join('; '));
 }
 
-export function checkOriginAndCsrf(req: IncomingMessage): boolean {
+/** Configured origin, or the same host that served this request (a second PC on the LAN). */
+export function originAllowed(req: IncomingMessage, opts?: { allowMissing?: boolean }): boolean {
   const origin = req.headers.origin;
-  if (origin !== config.origin) return false;
+  if (!origin) return !!opts?.allowMissing;
+  if (origin === config.origin) return true;
+  const host = req.headers.host;
+  if (!host) return false;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+export function checkOriginAndCsrf(req: IncomingMessage): boolean {
+  if (!originAllowed(req)) return false;
   if (req.headers['x-hng'] !== '1') return false;
   return true;
 }
@@ -272,6 +286,51 @@ export function login(
       isOperator: tier === 'chu_xi' || !!row.is_operator,
       tier,
       avatarId: row.avatar_id ?? null,
+      disabled: false,
+    },
+  };
+}
+
+const USER_RE = /^[a-z0-9_]{2,40}$/i;
+
+/** Self-serve signup. Tier is always the lowest catalog tier. Client cannot raise it. */
+export function registerMember(
+  db: Db,
+  username: string,
+  displayName: string,
+  pin: string,
+  ip: string,
+):
+  | { ok: true; sessionId: string; member: AuthMember }
+  | { ok: false; error: string; retryAfterMin?: number } {
+  if (!checkIpRate(ip)) return { ok: false, error: 'rate_limited', retryAfterMin: 10 };
+  const user = username.trim().toLowerCase();
+  const name = displayName.trim().replace(/\s+/g, ' ');
+  if (!USER_RE.test(user)) return { ok: false, error: 'bad_username' };
+  if (!/^\d{6}$/.test(pin)) return { ok: false, error: 'bad_pin' };
+  if (name.length < 1 || name.length > 80 || /[\u0000-\u001f<>]/.test(name)) {
+    return { ok: false, error: 'bad_name' };
+  }
+  const taken = db.prepare(`SELECT id FROM members WHERE username = ? COLLATE NOCASE`).get(user);
+  if (taken) return { ok: false, error: 'username_taken' };
+  const tier = TIERS[TIERS.length - 1] ?? 'no_le';
+  const { hash, salt } = hashPin(pin);
+  const id = newId();
+  db.prepare(
+    `INSERT INTO members(id, username, display_name, pin_hash, pin_salt, is_operator, tier, disabled, created_at)
+     VALUES(?,?,?,?,?,0,?,0,?)`,
+  ).run(id, user, name, hash, salt, tier, nowIso());
+  const sessionId = createSession(db, id);
+  return {
+    ok: true,
+    sessionId,
+    member: {
+      id,
+      username: user,
+      displayName: name,
+      isOperator: false,
+      tier,
+      avatarId: null,
       disabled: false,
     },
   };

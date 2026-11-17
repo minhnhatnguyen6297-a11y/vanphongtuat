@@ -1,3 +1,4 @@
+import type { BillView } from '../shared/bill-read.js';
 import type { ChatMsg, GameRoom, Member, Shop, Spin, TableRow, Wheel } from '../shared/types.js';
 import type { PermKey, Tier } from '../shared/perms-catalog.js';
 
@@ -49,6 +50,7 @@ export type AppState = {
     soundOn: boolean;
     billPreviewUrl: string | null;
     aiBillTotal: number | null;
+    aiBill: BillView | null;
     khoFilter: 'all' | 'no' | 'vat' | 'uong' | '';
     khoEditId: string | null;
     menuDraftIds: string[];
@@ -100,6 +102,7 @@ export const state: AppState = {
     soundOn: loadSound(),
     billPreviewUrl: null,
     aiBillTotal: null,
+    aiBill: null,
     khoFilter: 'all',
     khoEditId: null,
     menuDraftIds: [],

@@ -2,6 +2,8 @@ import type { Db } from './db.ts';
 import type { ScopeName } from '../shared/types.ts';
 import { matrixToRecord } from '../shared/perms-catalog.ts';
 import { loadChatSnap, parseChatSub } from './commands/chat.ts';
+import { sweepRoomsNow } from './rooms.ts';
+import { loadTankFish } from './commands/fish.ts';
 
 function shopStats(db: Db) {
   const tables = db
@@ -216,6 +218,7 @@ export function snapCurrentTable(db: Db) {
 }
 
 export function snapGames(db: Db) {
+  sweepRoomsNow(db);
   const rooms = db
     .prepare(
       `SELECT id, kind, title, status, host_id AS hostId, state_json AS stateJson,
@@ -292,12 +295,18 @@ export function snapWheels(db: Db) {
   return { scope: 'wheels' as ScopeName, version, data };
 }
 
+export function snapTank(db: Db) {
+  const fish = loadTankFish(db);
+  return { scope: 'tank' as ScopeName, version: fish.length, data: { fish } };
+}
+
 export function buildSnap(db: Db, scope: ScopeName) {
   if (scope === 'members') return snapMembers(db);
   if (scope === 'perms') return snapPerms(db);
   if (scope === 'shops') return snapShops(db);
   if (scope === 'wheels') return snapWheels(db);
   if (scope === 'games') return snapGames(db);
+  if (scope === 'tank') return snapTank(db);
   if (scope === 'table:current') return snapCurrentTable(db);
   if (scope.startsWith('chat:')) {
     const inner = parseChatSub(scope);

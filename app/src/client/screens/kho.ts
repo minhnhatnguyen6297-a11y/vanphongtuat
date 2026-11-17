@@ -5,7 +5,7 @@ import { state, patch, canPerm } from '../store.js';
 import { ICONS } from '../icons.js';
 import { cmd } from '../ws.js';
 import { chooseImage, type ImageBlob } from '../image.js';
-import { apiAi } from '../api.js';
+import { apiAi, apiAiText } from '../api.js';
 import { waitAi } from '../ws.js';
 import { toast } from '../ui/toast.js';
 
@@ -43,13 +43,42 @@ export async function handleKhoImage(img: ImageBlob, kind: 'shop' | 'menu'): Pro
       if (!aiTouched.phone && r.phone) s.ui.khoForm.phone = r.phone;
     });
   } else {
-    const r = ai.result as { items: { name: string; price: number | null }[] };
+    const r = ai.result as { items: { name: string; price: number | null; uncertain?: boolean }[] };
     if (!aiTouched.menu && r.items) {
       patch((s) => {
-        s.ui.khoForm.menu = r.items.slice(0, 60);
+        s.ui.khoForm.menu = r.items.slice(0, 60).map((it) => ({
+          name: it.name,
+          price: typeof it.price === 'number' ? it.price : null,
+        }));
       });
+      if (r.items.some((it) => it.price == null || it.uncertain)) toast('Món mờ để trống giá. Xem lại rồi lưu.');
     }
   }
+}
+
+export async function handleShopNote(note: string): Promise<void> {
+  const res = await apiAiText('shop', { note });
+  if (res.status === 503 || res.error === 'ai_disabled') {
+    toast('AI chưa bật, nhập tay nhé');
+    return;
+  }
+  if (res.status === 429) {
+    toast('AI đang bận, thử lại sau chút');
+    return;
+  }
+  if (!res.jobId) return;
+  const ai = await waitAi(res.jobId);
+  if (!ai.ok || !ai.result) return;
+  const r = ai.result as { name: string | null; type: '' | 'no' | 'vat' | 'uong' | null; uncertain?: boolean };
+  if (!r.name) {
+    toast('Không thấy tên trong nguồn đã có');
+    return;
+  }
+  patch((s) => {
+    if (!aiTouched.name) s.ui.khoForm.name = r.name || '';
+    if (r.type === 'no' || r.type === 'vat' || r.type === 'uong') s.ui.khoForm.type = r.type;
+  });
+  toast(r.uncertain ? 'Xem lại tên rồi mới lưu' : 'Đã điền tên quán có sẵn');
 }
 
 export function renderKho(): string {
@@ -68,7 +97,7 @@ export function renderKho(): string {
     .map(
       (m, i) =>
         `<span style="display:flex;align-items:center;gap:6px;border:2px solid #1B1B1B;background:#FFF4D6;padding:2px 2px 2px 8px;font-size:13px;font-weight:800">
-          <button type="button" data-edit-menu="${i}" style="border:0;background:transparent;cursor:pointer;font-weight:800;padding:4px">${esc(m.name)} <span style="font-family:var(--font-mono);font-size:12px">${esc(fmtK(m.price))}</span></button>
+          <button type="button" data-edit-menu="${i}" style="border:0;background:transparent;cursor:pointer;font-weight:800;padding:4px">${esc(m.name)} <span style="font-family:var(--font-mono);font-size:12px">${m.price == null ? 'chưa rõ' : esc(fmtK(m.price))}</span></button>
           <button type="button" data-del-menu="${i}" aria-label="Bỏ" style="width:32px;height:32px;background:transparent;border:0;cursor:pointer;font-weight:800">×</button>
         </span>`,
     )
@@ -124,6 +153,7 @@ export function renderKho(): string {
         <div style="display:flex;gap:6px">
           <input class="hn-input" id="kho-paste" data-focus="shop" value="${esc(form.paste)}" placeholder="Link Maps hoặc dán ảnh → AI đọc quán" style="flex:1;border-style:dashed;border-width:3px;min-height:48px">
           <button type="button" class="hn-btn hn-btn-ink" data-act="fill" style="min-height:48px;box-shadow:none">ĐIỀN</button>
+          <button type="button" class="hn-btn hn-btn-white" data-act="suggest-shop" style="min-height:48px;box-shadow:none">GỢI Ý</button>
         </div>
         <p class="hn-hint" style="margin:0">AI: Ctrl+V ảnh quán vào ô trên, hoặc dùng nút menu bên dưới.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -195,6 +225,16 @@ export function bindKho(root: HTMLElement): void {
         s.ui.khoFilter = (btn as HTMLElement).dataset.filter as typeof s.ui.khoFilter;
       });
     });
+  });
+
+  root.querySelector('[data-act="suggest-shop"]')?.addEventListener('click', () => {
+    syncFormFromDom(root);
+    const note = state.ui.khoForm.paste.trim();
+    if (!note) {
+      toast('Gõ tên quán hoặc ghi chú trước');
+      return;
+    }
+    void handleShopNote(note);
   });
 
   root.querySelector('[data-act="fill"]')?.addEventListener('click', () => {

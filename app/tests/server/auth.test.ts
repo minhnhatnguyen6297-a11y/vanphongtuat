@@ -64,9 +64,14 @@ describe('auth PIN lockout & CSRF', () => {
     assert.equal(checkOriginAndCsrf(noHeader), false);
 
     const badOrigin = {
-      headers: { origin: 'https://evil.example', 'x-hng': '1' },
+      headers: { origin: 'https://evil.example', 'x-hng': '1', host: 'localhost:8443' },
     } as unknown as IncomingMessage;
     assert.equal(checkOriginAndCsrf(badOrigin), false);
+
+    const sameHost = {
+      headers: { origin: 'http://192.168.1.20:8443', host: '192.168.1.20:8443', 'x-hng': '1' },
+    } as unknown as IncomingMessage;
+    assert.equal(checkOriginAndCsrf(sameHost), true);
   });
 
   it('POST /api/login thiếu CSRF → 403', async () => {

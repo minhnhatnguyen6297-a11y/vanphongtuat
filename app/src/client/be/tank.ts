@@ -11,10 +11,7 @@ import {
   type Swimmer,
 } from './motion.js';
 
-/**
- * Background layers are the approved tank art from PR #7
- * (commit 474626b), copied as static files. That branch is not merged.
- */
+/** Approved tank art. Do not restyle these layers. */
 const ART = {
   room: '/art/be/room.b03f0b8cb190.png',
   water: '/art/be/water.5f0d9e6f5c7a.png',
@@ -55,6 +52,19 @@ type ArtSet = {
   wood?: HTMLImageElement;
 };
 
+function unit(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967295;
+}
+
+export function readLocalFish(): { id: string; png: string }[] {
+  return readSaved().map((f) => ({ id: f.id, png: f.png }));
+}
+
 function readSaved(): SavedFish[] {
   try {
     const raw = localStorage.getItem(FISH_KEY);
@@ -75,6 +85,7 @@ export class Tank {
   private cssW = 640;
   private cssH = 280;
   private records: SavedFish[] = [];
+  private owners = new Map<string, string>();
   private swimmers: Swimmer[] = [];
   private sprites = new Map<string, HTMLImageElement>();
   private art: ArtSet = { sand: [], rocks: [] };
@@ -86,8 +97,7 @@ export class Tank {
   constructor() {
     this.sprite.width = SPRITE_W;
     this.sprite.height = SPRITE_H;
-    this.records = readSaved();
-    for (const rec of this.records) this.spawn(rec, false);
+    this.records = [];
     this.seedWaterBits();
     void this.loadArt();
     if (typeof matchMedia === 'function') {
@@ -128,6 +138,32 @@ export class Tank {
     this.swimmers = this.swimmers.filter((s) => s.id !== rec.id);
     this.sprites.delete(rec.id);
     this.persist();
+  }
+
+  /** Cá chung từ server. Không ghi lại localStorage. */
+  setShared(list: Array<{ id: string; png: string; ownerId: string }>): void {
+    const next = new Set(list.map((f) => f.id));
+    this.owners = new Map(list.map((f) => [f.id, f.ownerId]));
+    for (const id of [...this.sprites.keys()]) {
+      if (!next.has(id)) this.sprites.delete(id);
+    }
+    this.swimmers = this.swimmers.filter((s) => next.has(s.id));
+    this.records = this.records.filter((r) => next.has(r.id));
+    for (const f of list) {
+      if (this.records.some((r) => r.id === f.id)) continue;
+      const rec: SavedFish = {
+        id: f.id,
+        png: f.png,
+        depth: 0.25 + unit(f.id) * 0.7,
+        phase: unit(`${f.id}p`) * Math.PI * 2,
+      };
+      this.records.push(rec);
+      this.spawn(rec, true);
+    }
+  }
+
+  rows(): Array<{ id: string; ownerId: string }> {
+    return this.records.map((r) => ({ id: r.id, ownerId: this.owners.get(r.id) || '' }));
   }
 
   private persist(): void {

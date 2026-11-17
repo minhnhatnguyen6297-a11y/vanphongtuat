@@ -10,12 +10,14 @@ import {
   login,
   memberFromSession,
   publicMember,
+  registerMember,
   revokeSession,
   setSessionCookie,
 } from './auth.ts';
 import { APP_ROOT } from './config.ts';
 import type { AiQueue } from './ai/queue.ts';
 import type { AiKind } from './ai/provider.ts';
+import { acceptShopSuggestion } from '../shared/shop-suggest.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -69,6 +71,35 @@ function detectImageMime(buf: Buffer, header: string | undefined): string | null
     return 'image/webp';
   if (header && /image\/(jpeg|png|webp)/.test(header)) return header.split(';')[0].trim();
   return null;
+}
+
+function shopSources(db: Db): { name: string; type: string }[] {
+  return db.prepare(`SELECT name, type FROM shops ORDER BY name LIMIT 80`).all() as {
+    name: string;
+    type: string;
+  }[];
+}
+
+/** Tên quán chỉ sống nếu có trong kho hoặc trong chữ người dùng. Không giữ địa chỉ. */
+function sanitizeShop(db: Db, raw: unknown, note: string) {
+  const obj =
+    raw && typeof raw === 'object'
+      ? (raw as { name?: string | null; type?: string | null; phone?: string | null })
+      : {};
+  const accepted = acceptShopSuggestion(obj, shopSources(db), note);
+  const phoneRaw = String(obj.phone || '').trim();
+  const digits = phoneRaw.replace(/\s/g, '');
+  const phone = digits && note.replace(/\s/g, '').includes(digits) ? phoneRaw.slice(0, 40) : null;
+  return { name: accepted.name, type: accepted.type, phone, uncertain: accepted.uncertain };
+}
+
+function memberBody(db: Db, id: string) {
+  const pub = publicMember(db, id)!;
+  return {
+    ...pub,
+    isOperator: !!pub.isOperator,
+    disabled: !!pub.disabled,
+  };
 }
 
 function serveStatic(req: IncomingMessage, res: ServerResponse): boolean {
@@ -139,14 +170,31 @@ export function createHttpHandler(deps: HttpDeps) {
           });
         }
         setSessionCookie(res, result.sessionId);
-        const pub = publicMember(db, result.member.id)!;
-        return json(res, 200, {
-          member: {
-            ...pub,
-            isOperator: !!pub.isOperator,
-            disabled: !!pub.disabled,
-          },
-        });
+        return json(res, 200, { member: memberBody(db, result.member.id) });
+      }
+
+      if (path === '/api/register' && req.method === 'POST') {
+        if (!checkOriginAndCsrf(req)) return json(res, 403, { error: 'csrf' });
+        const raw = await readBody(req, 64_000);
+        let body: { username?: string; displayName?: string; pin?: string };
+        try {
+          body = JSON.parse(raw.toString('utf8'));
+        } catch {
+          return json(res, 400, { error: 'bad_json' });
+        }
+        const result = registerMember(
+          db,
+          String(body.username || ''),
+          String(body.displayName || ''),
+          String(body.pin || ''),
+          clientIp(req),
+        );
+        if (!result.ok) {
+          const status = result.error === 'rate_limited' ? 429 : result.error === 'username_taken' ? 409 : 400;
+          return json(res, status, { error: result.error, retryAfterMin: result.retryAfterMin });
+        }
+        setSessionCookie(res, result.sessionId);
+        return json(res, 200, { member: memberBody(db, result.member.id) });
       }
 
       if (path === '/api/logout' && req.method === 'POST') {
@@ -160,14 +208,7 @@ export function createHttpHandler(deps: HttpDeps) {
       if (path === '/api/me' && req.method === 'GET') {
         const member = memberFromSession(db, getSessionId(req));
         if (!member) return json(res, 401, { error: 'unauthorized' });
-        const pub = publicMember(db, member.id)!;
-        return json(res, 200, {
-          member: {
-            ...pub,
-            isOperator: !!pub.isOperator,
-            disabled: !!pub.disabled,
-          },
-        });
+        return json(res, 200, { member: memberBody(db, member.id) });
       }
 
       // Danh sách đăng nhập công khai (username + displayName, không PIN/hash).
@@ -196,11 +237,28 @@ export function createHttpHandler(deps: HttpDeps) {
         } catch {
           return json(res, 413, { error: 'too_large' });
         }
-        const mime = detectImageMime(buf, req.headers['content-type']);
-        if (!mime) return json(res, 400, { error: 'bad_image' });
-
+        const ctype = String(req.headers['content-type'] || '');
         try {
-          const { jobId } = await ai.enqueue(db, kind, member.id, buf, mime);
+          if (ctype.includes('application/json')) {
+            if (kind === 'menu') return json(res, 400, { error: 'bad_image' });
+            let body: { note?: string; text?: string };
+            try {
+              body = JSON.parse(buf.toString('utf8'));
+            } catch {
+              return json(res, 400, { error: 'bad_json' });
+            }
+            const text = String(kind === 'shop' ? body.note || '' : body.text || '').trim();
+            if (!text || text.length > 4000) return json(res, 400, { error: 'bad_text' });
+            const context =
+              kind === 'shop' ? shopSources(db).map((s) => `${s.name} | ${s.type}`).join('\n') : '';
+            const after = kind === 'shop' ? (raw: unknown) => sanitizeShop(db, raw, text) : undefined;
+            const { jobId } = await ai.enqueueText(db, kind, member.id, text, context, after);
+            return json(res, 200, { jobId });
+          }
+          const mime = detectImageMime(buf, ctype);
+          if (!mime) return json(res, 400, { error: 'bad_image' });
+          const after = kind === 'shop' ? (raw: unknown) => sanitizeShop(db, raw, '') : undefined;
+          const { jobId } = await ai.enqueue(db, kind, member.id, buf, mime, after);
           return json(res, 200, { jobId });
         } catch (e: any) {
           if (e?.code === 'busy') return json(res, 429, { error: 'busy' });
