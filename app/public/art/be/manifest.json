@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "layers": {
+    "room": "/art/be/room.b03f0b8cb190.png",
+    "water": "/art/be/water.5f0d9e6f5c7a.png",
+    "caustics": "/art/be/caustics.bd905211b540.png",
+    "rays": "/art/be/rays.efd347570c5e.png",
+    "kelp": "/art/be/kelp.9b609ec82b2a.png",
+    "sand": [
+      "/art/be/sand-0.2626c7020d11.png",
+      "/art/be/sand-1.97eb1df0066c.png",
+      "/art/be/sand-2.263ed082fdee.png"
+    ],
+    "rocks": [
+      "/art/be/rocks-0.2effc4e2b74e.png",
+      "/art/be/rocks-1.9efd9a247f31.png",
+      "/art/be/rocks-2.e913b51f83b0.png"
+    ],
+    "wood": "/art/be/wood.62d65217c747.png",
+    "bubbles": "/art/be/bubbles.96bd98fe9114.png"
+  }
+}
