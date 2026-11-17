@@ -79,6 +79,10 @@ export type StepView = { tilt: number; squash: number; facing: Facing };
  * Seek the current target. A facing change squeezes the body for 0.4–0.6s
  * and flips at the thinnest point. `speedPx` is pixels per second.
  */
+function targetInside(s: Swimmer, bounds: Bounds): boolean {
+  return s.tx >= bounds.minX && s.tx <= bounds.maxX && s.ty >= bounds.minY && s.ty <= bounds.maxY;
+}
+
 export function stepSwimmer(
   s: Swimmer,
   dt: number,
@@ -86,6 +90,15 @@ export function stepSwimmer(
   bounds: Bounds,
   speedPx: number,
 ): StepView {
+  // A smaller tank leaves tx/ty outside the new water. Clamping x/y alone
+  // never reaches that point, so the fish sticks to the edge. Retarget first.
+  s.x = clamp(s.x, bounds.minX, bounds.maxX);
+  s.y = clamp(s.y, bounds.minY, bounds.maxY);
+  if (!targetInside(s, bounds)) {
+    const next = pickTarget(rand, bounds);
+    s.tx = next.x;
+    s.ty = next.y;
+  }
   let dx = s.tx - s.x;
   let dy = s.ty - s.y;
   if (Math.hypot(dx, dy) < 10) {

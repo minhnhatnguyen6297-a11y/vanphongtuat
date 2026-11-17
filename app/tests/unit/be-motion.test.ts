@@ -16,6 +16,11 @@ import { FISH_PATTERNS } from '../../src/client/be/patterns.ts';
 
 const bounds = { minX: 0, maxX: 200, minY: 0, maxY: 100 };
 
+function sequence(values: number[]): () => number {
+  let i = 0;
+  return () => values[i++ % values.length];
+}
+
 function swimmer(facing: 1 | -1, tx: number): Swimmer {
   return {
     id: 'a',
@@ -77,6 +82,45 @@ describe('bể cá motion', () => {
       if (s.turn === null && s.facing === -1) doneAt = t;
     }
     assert.ok(doneAt >= 0.6 && doneAt <= 0.65, `done ${doneAt}`);
+  });
+
+  it('thu hẹp ngang: đích ngoài vùng thì bơi tiếp, không kẹt mép', () => {
+    const narrow = { minX: 30, maxX: 90, minY: 10, maxY: 110 };
+    const s = swimmer(1, 180);
+    s.x = 200;
+    s.y = 60;
+    s.ty = 60;
+    const rand = sequence([0.25, 0.5, 0.8, 0.35, 0.15, 0.7]);
+    const xs: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      stepSwimmer(s, 0.05, rand, narrow, 90);
+      assert.ok(s.tx >= narrow.minX && s.tx <= narrow.maxX, `tx ${s.tx}`);
+      assert.ok(s.ty >= narrow.minY && s.ty <= narrow.maxY, `ty ${s.ty}`);
+      assert.ok(s.x >= narrow.minX && s.x <= narrow.maxX, `x ${s.x}`);
+      assert.ok(s.y >= narrow.minY && s.y <= narrow.maxY, `y ${s.y}`);
+      xs.push(s.x);
+    }
+    const leftTheEdge = xs.some((x) => x < narrow.maxX - 15);
+    assert.ok(leftTheEdge, `vẫn dính mép phải ${xs.slice(-5).join(',')}`);
+    assert.ok(Math.max(...xs) - Math.min(...xs) > 20, 'không đổi chỗ');
+  });
+
+  it('thu hẹp dọc: đích dưới cát thì rời mép dưới', () => {
+    const short = { minX: 0, maxX: 200, minY: 40, maxY: 70 };
+    const s = swimmer(1, 100);
+    s.x = 100;
+    s.y = 120;
+    s.ty = 150;
+    const rand = sequence([0.4, 0.2, 0.7, 0.85, 0.3, 0.55]);
+    const ys: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      stepSwimmer(s, 0.05, rand, short, 90);
+      assert.ok(s.ty >= short.minY && s.ty <= short.maxY, `ty ${s.ty}`);
+      assert.ok(s.y >= short.minY && s.y <= short.maxY, `y ${s.y}`);
+      ys.push(s.y);
+    }
+    assert.ok(ys.some((y) => y < short.maxY - 12), `vẫn dính mép dưới ${ys.slice(-5).join(',')}`);
+    assert.ok(Math.max(...ys) - Math.min(...ys) > 12, 'không đổi chỗ');
   });
 
   it('đuôi lắc nhẹ và cá xa nhỏ hơn, mờ hơn, ngả xanh hơn', () => {
