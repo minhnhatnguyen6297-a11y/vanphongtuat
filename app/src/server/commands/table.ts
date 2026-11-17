@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { nowIso } from '../db.ts';
 import { CmdError } from '../errors.ts';
-import { currentTableId } from '../perms.ts';
+import { currentTableId, hasPerm } from '../perms.ts';
 import { bumpTableVersion } from '../snapshots.ts';
 import type { CmdCtx, CmdOk, Handler } from './types.ts';
 import type { CommandArgs } from '../../shared/commands.ts';
@@ -125,13 +125,58 @@ export const tableAddShop: Handler = (ctx, args: CommandArgs<'table.addShop'>): 
   );
   bumpTableVersion(db, tableId);
   // Chỉ sync vòng shop còn tồn tại — không tạo lại vòng đã xóa.
+  syncShopWheelIfAny(db, tableId);
+  return {
+    result: { tableId, shopId: args.shopId },
+    scopes: ['table:current', 'wheels', `table:${tableId}`],
+  };
+};
+
+function syncShopWheelIfAny(db: CmdCtx['db'], tableId: number) {
   const shopWheel = db
     .prepare(`SELECT id FROM wheels WHERE table_id = ? AND kind = 'shop'`)
     .get(tableId) as { id: string } | undefined;
   if (shopWheel) syncShopWheelItems(db, shopWheel.id, tableId);
+}
+
+/**
+ * Một lệnh: thêm quán vào bàn (khi chưa có và người gọi có table.addShop)
+ * rồi ghi phiếu. Kiểm cả hai quyền trước khi ghi, để nô lệ không còn
+ * phiếu trỏ tới quán chưa nằm trên bàn.
+ */
+export const votePlace: Handler = (ctx, args: CommandArgs<'vote.place'>): CmdOk => {
+  const { db, member } = ctx;
+  const tableId = currentTableId(db);
+  if (tableId == null) throw new CmdError('no_table');
+  const shop = db.prepare('SELECT id FROM shops WHERE id = ?').get(args.shopId);
+  if (!shop) throw new CmdError('not_found');
+  if (!hasPerm(db, member.id, 'vote')) throw new CmdError('forbidden');
+
+  const onTable = db
+    .prepare('SELECT 1 FROM table_shops WHERE table_id = ? AND shop_id = ?')
+    .get(tableId, args.shopId);
+  if (!onTable && !hasPerm(db, member.id, 'table.addShop')) {
+    throw new CmdError('forbidden');
+  }
+
+  let added = false;
+  if (!onTable) {
+    db.prepare(`INSERT INTO table_shops(table_id, shop_id, added_by) VALUES(?,?,?)`).run(
+      tableId,
+      args.shopId,
+      member.id,
+    );
+    added = true;
+  }
+  db.prepare(
+    `INSERT INTO votes(table_id, member_id, shop_id, updated_at) VALUES(?,?,?,?)
+     ON CONFLICT(table_id, member_id) DO UPDATE SET shop_id = excluded.shop_id, updated_at = excluded.updated_at`,
+  ).run(tableId, member.id, args.shopId, nowIso());
+  bumpTableVersion(db, tableId);
+  syncShopWheelIfAny(db, tableId);
   return {
-    result: { tableId, shopId: args.shopId },
-    scopes: ['table:current', 'wheels', `table:${tableId}`],
+    result: { tableId, shopId: args.shopId, added },
+    scopes: ['table:current', 'wheels', `table:${tableId}`, 'shops'],
   };
 };
 
@@ -149,10 +194,7 @@ export const voteSet: Handler = (ctx, args: CommandArgs<'vote.set'>): CmdOk => {
     ).run(tableId, member.id, args.shopId, nowIso());
   }
   bumpTableVersion(db, tableId);
-  const shopWheel = db
-    .prepare(`SELECT id FROM wheels WHERE table_id = ? AND kind = 'shop'`)
-    .get(tableId) as { id: string } | undefined;
-  if (shopWheel) syncShopWheelItems(db, shopWheel.id, tableId);
+  syncShopWheelIfAny(db, tableId);
   return {
     result: { tableId, shopId: args.shopId },
     scopes: ['table:current', 'wheels', `table:${tableId}`, 'shops'],
