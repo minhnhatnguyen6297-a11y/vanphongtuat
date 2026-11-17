@@ -6,7 +6,7 @@ import { apiLogin, apiRegister, fetchLoginRoster } from '../api.js';
 import { connectWs } from '../ws.js';
 import { setRoute } from '../router.js';
 import { loginFailureMessage } from '../login-message.js';
-import { rememberLoginHint } from '../login-hint.js';
+import { clearLoginHint, rememberLoginHint } from '../login-hint.js';
 
 export async function renderLogin(mount: HTMLElement): Promise<void> {
   const roster = await fetchLoginRoster();
@@ -149,6 +149,7 @@ export async function renderLogin(mount: HTMLElement): Promise<void> {
       showLoginError(loginFailureMessage(res.error, res.retryAfterMin));
       return;
     }
+    clearLoginHint();
     if (!state.mock) connectWs();
     setRoute('home');
   }
