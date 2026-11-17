@@ -18,7 +18,8 @@ let uploading = false;
 
 const FAB = {
   draw: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20l4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20z"/><path d="M13 6l3 3"/></svg>`,
-  feed: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="14" r="3"/><circle cx="16" cy="11" r="2.2"/><path d="M4 20c2-3 5-4 8-3s5 1 8 3"/></svg>`,
+  /* Viên thức ăn — không dùng icon người/cá gây nhầm */
+  feed: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="9" cy="8" rx="3.2" ry="2.2"/><ellipse cx="15.5" cy="11" rx="2.6" ry="1.8"/><ellipse cx="11" cy="16.5" rx="2.8" ry="2"/></svg>`,
   scare: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12c2-2 4-3 7-2s5 2 8 0 3-3 3-3"/><path d="M3 17c2-2 4-3 7-2s5 2 8 0"/><path d="M3 7c2-2 4-3 7-2s5 2 8 0"/></svg>`,
   menu: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9h12M6 15h12"/></svg>`,
   chat: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14v9H9l-4 3V6z"/></svg>`,
@@ -158,6 +159,7 @@ function syncFabs(): void {
     else if (id === 'feed') on = mode === 'feed';
     else if (id === 'scare') on = mode === 'scare';
     else if (id === 'menu') on = menuOpen;
+    else if (id === 'chat') on = !!document.querySelector<HTMLDetailsElement>('.hn-chat-dock')?.open;
     btn.setAttribute('aria-pressed', String(on));
   });
 }
@@ -275,6 +277,7 @@ export function bindTank(root: HTMLElement): void {
       if (id === 'chat') {
         const dock = document.querySelector<HTMLDetailsElement>('.hn-chat-dock');
         if (dock) dock.open = !dock.open;
+        syncFabs();
       }
     });
   });

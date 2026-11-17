@@ -2384,6 +2384,7 @@ input[type=range] { accent-color: var(--red); }
   border: 0;
 }
 
+/* Chat ao cá: chỉ nút tròn FAB; panel hiện khi mở — không thanh «CHAT» chữ lớn */
 .hn-chat-dock {
   position: absolute;
   right: 18px;
@@ -2400,11 +2401,11 @@ input[type=range] { accent-color: var(--red); }
   backdrop-filter: blur(12px);
   pointer-events: auto;
 }
+.hn-chat-dock:not([open]) {
+  display: none !important;
+}
 .hn-chat-dock summary {
-  cursor: pointer;
-  padding: 8px 10px;
-  font-weight: 700;
-  color: #e8f4fc;
+  display: none !important;
 }
 .hn-chat-dock[open] {
   display: flex;

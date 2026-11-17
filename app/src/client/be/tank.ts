@@ -462,13 +462,6 @@ export class Tank {
     for (const s of ordered) this.drawFish(g, s, time);
 
     this.drawEventBubbles(g);
-
-    if (this.swimmers.length === 0) {
-      g.fillStyle = 'rgba(240, 248, 255, 0.72)';
-      g.font = '600 15px "Be Vietnam Pro", system-ui, sans-serif';
-      g.textAlign = 'center';
-      g.fillText('Thả tranh của bạn vào ao', w / 2, h * 0.5);
-    }
   }
 
   private drawMotes(g: CanvasRenderingContext2D, w: number, h: number): void {
