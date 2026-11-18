@@ -5,8 +5,8 @@ import { output } from './ao-ca/browser.mjs';
 
 const images=[
   {file:'fish-headon-before.png',label:'Ao V3 trước sửa · 90°',crop:[586,384,191,192]},
-  {file:'p2-1366x768-headon-detail.png',label:'Ao V3 sau sửa · 90°'},
-  {file:'p2-1366x768-uturn-angle.png',label:'Ao V3 sau sửa · góc 3/4',crop:[581,385,212,160]},
+  {file:'fish-headon-after-geometry.png',label:'Ao V3 sau sửa · 90°'},
+  {file:'fish-angle-after-geometry.png',label:'Ao V3 sau sửa · góc 3/4',crop:[581,385,212,160]},
   {file:'reference/goc-ca-phong-sang.jpg',label:'Ảnh tham chiếu Minh gửi · góc 3/4',crop:[320,106,425,358]},
 ];
 const entries=await Promise.all(images.map(async row=>({...row,src:'data:image/'+

@@ -58,32 +58,37 @@ try {
     await page.locator('[data-fish-clear]').click();
     await tool('pen');
     await color(f.color);
-    const y = f.y + f.height/2;
-    const tail = f.length * 0.23;
-    await size(f.name === 'tiny' ? 5 : 12);
-    await stroke([[f.x+8,y-tail*0.47], [f.x+tail,y], [f.x+8,y+tail*0.47], [f.x+8,y-tail*0.47]]);
-    await size(f.name === 'tiny' ? 9 : 20);
-    const left = f.x + tail*0.65;
-    const right = f.x+f.length;
-    for (let d = -0.84; d <= 0.85; d += f.name === 'tiny' ? 0.42 : 0.30) {
-      const trim = (1-Math.sqrt(1-d*d))*(right-left)/2;
-      await stroke([[left+trim, y+d*f.height/2], [right-trim, y+d*f.height/2]]);
+    if(f.name==='round') {
+      await page.locator('[data-fish-pattern=tron]').click();
+      await page.waitForFunction(()=>document.querySelector('[data-fish-pattern=tron]')?.getAttribute('aria-pressed')==='true');
+    } else {
+      const y = f.y + f.height/2;
+      const tail = f.length * 0.23;
+      await size(f.name === 'tiny' ? 5 : 12);
+      await stroke([[f.x+8,y-tail*0.47], [f.x+tail,y], [f.x+8,y+tail*0.47], [f.x+8,y-tail*0.47]]);
+      await size(f.name === 'tiny' ? 9 : 20);
+      const left = f.x + tail*0.65;
+      const right = f.x+f.length;
+      for (let d = -0.84; d <= 0.85; d += f.name === 'tiny' ? 0.42 : 0.30) {
+        const trim = (1-Math.sqrt(1-d*d))*(right-left)/2;
+        await stroke([[left+trim, y+d*f.height/2], [right-trim, y+d*f.height/2]]);
+      }
+      if (f.hole) {
+        await tool('eraser'); await size(30); await stroke([[left+55,y],[left+76,y]]);
+        await tool('pen');
+      }
+      if (f.fin) {
+        await size(9); await stroke([[left+25,f.y-26],[left+53,f.y-42],[left+70,f.y-24]]);
+      }
+      if (f.blur) {
+        await tool('blur'); await size(40);
+        await stroke([[left,y-25],[left+35,y-32],[right-30,y-32],[right,y-15],[right,y+16]]);
+        await tool('pen');
+      }
+      await color(f.color === '#080808' ? '#FFFFFF' : '#080808');
+      await size(f.name === 'tiny' ? 4 : 10);
+      await stroke([[right-f.length*0.17, y-f.height*0.10]]);
     }
-    if (f.hole) {
-      await tool('eraser'); await size(30); await stroke([[left+55,y],[left+76,y]]);
-      await tool('pen');
-    }
-    if (f.fin) {
-      await size(9); await stroke([[left+25,f.y-26],[left+53,f.y-42],[left+70,f.y-24]]);
-    }
-    if (f.blur) {
-      await tool('blur'); await size(40);
-      await stroke([[left,y-25],[left+35,y-32],[right-30,y-32],[right,y-15],[right,y+16]]);
-      await tool('pen');
-    }
-    await color(f.color === '#080808' ? '#FFFFFF' : '#080808');
-    await size(f.name === 'tiny' ? 4 : 10);
-    await stroke([[right-f.length*0.17, y-f.height*0.10]]);
     const png = await page.evaluate(() => localStorage.getItem('hng_be_pad_v1'));
     assert.ok(png?.startsWith('data:image/png;base64,'));
     const bytes = Buffer.from(png.split(',')[1],'base64');

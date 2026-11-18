@@ -2756,3 +2756,50 @@ body:has([data-fish-pop]:not([hidden])) #hn-office-chat[data-tank],
 }
 .hn-order-line.mine, .hn-order-line:hover { background: var(--highlight); }
 .hn-order-empty { margin: 0; padding: 8px; font-size: 14px; color: var(--muted); }
+/* Compact aquarium editor tools; the pond itself keeps its own color palette. */
+.hn-fish-tool-row,
+.hn-fish-edit-actions,
+.hn-fish-look {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.hn-fish-tool-row { grid-template-columns: .8fr .8fr 1.2fr; }
+.hn-fish-tool-row .hn-fab-tool { padding-inline: 6px; white-space: nowrap; }
+.hn-fish-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 5px;
+}
+.hn-fish-swatch { width: 100%; height: auto; aspect-ratio: 1; }
+.hn-fish-swatch:focus-visible { outline: 2px solid #ffda2e; outline-offset: 2px; }
+.hn-fish-custom-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cfe0ec;
+  font-size: 12px;
+  cursor: pointer;
+}
+.hn-fish-custom-color input {
+  width: 32px;
+  height: 28px;
+  padding: 1px;
+  border: 1px solid #92acb8;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+.hn-fish-tools [data-fish-blur-row][hidden] { display: none; }
+.hn-fish-look button[aria-pressed="true"] {
+  background: #c4e8e1;
+  color: #092634;
+}
+.hn-fish-pop-card .hn-fish-tools { align-items: stretch; }
+.hn-fish-pop-card .hn-fish-swatches { width: 100%; align-self: stretch; }
+.hn-fish-pop-card .hn-fish-pad {
+  align-self: center;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 2 / 1;
+}

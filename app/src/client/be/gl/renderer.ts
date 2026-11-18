@@ -6,6 +6,7 @@ import { goldenFish,type Scenario } from './golden-fish.js';
 import type { FishSource } from './fish-school.js';
 import { createGpuTimer } from './gpu-timer.js';
 import { createAdaptiveTier } from './adaptive-tier.js';
+import { readPondLook, type PondLook } from '../pond-look.js';
 import { hashQuery } from './query.js';
 import { parseTierParam, probeGpu, rememberTier, resolveTier, type AoTier } from './tier.js';
 
@@ -35,6 +36,7 @@ type MountOpts = {
   query?: URLSearchParams;
   readFish?: () => readonly FishSource[];
   viewer?: () => string;
+  look?: () => PondLook;
   pointerMode?: () => 'none'|'feed'|'scare';
   fallback?: (replaceCanvas:boolean, fixtures?: FishSource[]) => void;
 };
@@ -162,6 +164,8 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
 
   if (!bench && renderer) {
     const gl = renderer;
+    const requestedLook=q.get('look');
+    const fixedLook=requestedLook==='ink'||requestedLook==='form'?requestedLook:null;
     const ctx=gl.getContext() as WebGL2RenderingContext;
     const timer=q.get('perf')==='1'&&!golden?createGpuTimer(ctx):null;
     cleanups.push(()=>timer?.dispose());
@@ -183,6 +187,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     const paint = () => {
       if (!water) return;
       const start = performance.now();
+      water.setLook(fixedLook??opts.look?.()??readPondLook());
       if(timer) {
         const ms=timer.measure(()=>water?.render(seconds,sandVisible));
         if(ms!==null) meter.gpuMs=ms;

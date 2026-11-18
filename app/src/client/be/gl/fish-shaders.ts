@@ -59,7 +59,7 @@ uniform vec4 uSceneXform;            // sceneUv = gl_FragCoord.xy * xy + zw
 uniform vec3 uCamPos, uLightDir;     // uLightDir đã chuẩn hóa, hướng VỀ phía nguồn sáng
 uniform vec3 uKey, uAmbient, uRim, uFog, uAbsorb, uSandBounce;
 uniform float uSurfaceY, uSandY, uGlassZ, uDepthRange, uFogPerUnit;
-uniform float uCausticScale, uCausticGain, uSpec;
+uniform float uCausticScale, uCausticGain, uSpec, uInkLook;
 uniform vec4 uCausticScroll;         // xy lớp 1, zw lớp 2
 in float vAlpha;
 in vec3 vAxis, vCap;
@@ -100,13 +100,15 @@ void main() {
   float nearSand = 1.0 - smoothstep(0.0, 1.5, vWorld.y - uSandY);
   vec3 light = uAmbient + uKey * (wrap + c * uCausticGain)
              + uSandBounce * nearSand * max(-N.y, 0.0);          // cát hắt sáng lên bụng cá
-  vec3 col = tex.rgb * light;
+  // Matte light keeps the authored pigment dominant.
+  vec3 matte = vec3(0.93, 0.95, 0.96) + (wrap - 0.45) * 0.16 + c * 0.06;
+  vec3 col = tex.rgb * mix(light, matte, uInkLook);
 #ifndef LITE
-  col += tex.a * uSpec * uKey * pow(max(dot(N, normalize(uLightDir + V)), 0.0), 40.0) * 0.25;
+  col += tex.a * uSpec * mix(1.0, 0.08, uInkLook) * uKey * pow(max(dot(N, normalize(uLightDir + V)), 0.0), 40.0) * 0.25;
 #endif
-  col += tex.a * uRim * pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.35;   // viền sáng
-  col *= exp(-uAbsorb * max(uSurfaceY - vWorld.y, 0.0));            // càng sâu càng mất đỏ
-  float fog = 1.0 - exp(-uFogPerUnit * max(uGlassZ - vWorld.z, 0.0));
+  col += tex.a * uRim * mix(1.0, 0.13, uInkLook) * pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.35;   // viền sáng
+  col *= exp(-uAbsorb * mix(1.0, 0.40, uInkLook) * max(uSurfaceY - vWorld.y, 0.0));            // càng sâu càng mất đỏ
+  float fog = 1.0 - exp(-uFogPerUnit * mix(1.0, 0.65, uInkLook) * max(uGlassZ - vWorld.z, 0.0));
   col = mix(col, uFog * tex.a, fog);                                 // sương theo quãng nước sau kính
-  outColor = vec4(col, tex.a);                                       // premultiplied
+  outColor = vec4(min(col, vec3(tex.a)), tex.a);                                       // premultiplied
 }`;

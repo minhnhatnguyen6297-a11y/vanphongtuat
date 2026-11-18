@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { calibrateCamera, coverImage, sceneUvTransform } from '../fish-math.js';
+import type { PondLook } from '../pond-look.js';
 import { bakeCaustic } from './caustic.js';
 import { createFishLayer, fishLimit } from './fish-layer.js';
 import { createSchool, type FishLayout, type FishPose, type FishSource } from './fish-school.js';
@@ -116,7 +117,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
     uKey:{value:new THREE.Vector3(.73,.72,.63)}, uAmbient:{value:new THREE.Vector3(.43,.44,.48)},
     uRim:{value:fog.clone().multiplyScalar(1.6)},uFog:{value:fog},
     uAbsorb:{value:new THREE.Vector3(.06,.02,.01)},uSandBounce:{value:new THREE.Vector3(.13,.12,.095)},
-    uFogPerUnit:{value:.085},uCausticGain:{value:.5},uSpec:{value:1},
+    uFogPerUnit:{value:.085},uCausticGain:{value:.5},uSpec:{value:1},uInkLook:{value:1},
   };
   const school=createSchool();
   const layer=fish?createFishLayer(renderer,scene,tier,layerUniforms):null;
@@ -196,6 +197,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
     },
     scenario(name:Scenario) { scenario=name;lastTime=0;event=null;school.reset();life?.reset(); },
     get preparing(){return layer?.atlas.pending??false;},
+    setLook(look:PondLook) { layerUniforms.uInkLook.value=look==='ink'?1:0; },
     setShadow(visible:boolean) { shadow=visible; },
     setFishVisible(visible:boolean) { fishVisible=visible; },
     state: () => ({ ...framing, phase: uniforms.uCausticScroll.value.toArray(), poses,

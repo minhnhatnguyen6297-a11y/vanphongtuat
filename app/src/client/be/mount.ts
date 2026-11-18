@@ -6,11 +6,13 @@ import { importEdgeError, importFileError, loadImage } from './image.js';
 import { fishPad, type FishTool } from './pad.js';
 import { FISH_PATTERNS } from './patterns.js';
 import { Tank, fishTank, readLocalFish } from './tank.js';
+import { DEFAULT_FISH_COLOR, FISH_PALETTE, isFishColor } from './palette.js';
+import { readPondLook, writePondLook, type PondLook } from './pond-look.js';
 import { hashQuery, wantsAoCaGl } from './gl/query.js';
 
 const ONCE_KEY = 'hng_be_shared_once';
 
-const SWATCHES = ['#8BC2C7', '#F3B48C', '#C4A484', '#7A8FA3', '#4A5560', '#F5F7FA'] as const;
+let pondLook=readPondLook();
 
 let drawOpen = false;
 let menuOpen = false;
@@ -69,9 +71,9 @@ export function renderTankFrame(): string {
     (p) =>
       `<button type="button" class="hn-fish-pattern" data-fish-pattern="${esc(p.id)}" aria-label="Mẫu ${esc(p.label)}" aria-pressed="${pad.patternId === p.id}">${p.svg}</button>`,
   ).join('');
-  const swatches = SWATCHES.map(
-    (c) =>
-      `<button type="button" class="hn-fish-swatch" data-fish-swatch="${c}" style="--sw:${c}" aria-label="Màu ${c}" aria-pressed="${pad.color.toLowerCase() === c.toLowerCase()}"></button>`,
+  const swatches = FISH_PALETTE.map(
+    ([c,name]) =>
+      `<button type="button" class="hn-fish-swatch" data-fish-swatch="${c}" style="--sw:${c}" aria-label="${esc(name)}" title="${esc(name)} · ${c}" aria-pressed="${pad.color.toLowerCase() === c.toLowerCase()}"></button>`,
   ).join('');
   const rows = tank
     .rows()
@@ -102,6 +104,10 @@ export function renderTankFrame(): string {
       <a href="#/home">Trang chủ</a>
       <a href="#/sanh">Sảnh</a>
       <a href="#/ban">Bàn hôm nay</a>
+      <div class="hn-fish-look" role="group" aria-label="Ánh sáng trên cá">
+        <button type="button" data-fish-look="ink" aria-pressed="${pondLook==='ink'}">Nét vẽ</button>
+        <button type="button" data-fish-look="form" aria-pressed="${pondLook==='form'}">Có khối</button>
+      </div>
       <button type="button" data-fish-bg-default>Ảnh nền Hang Đá</button>
       <label class="hn-fish-menu-file">Chọn ảnh từ máy
         <input class="sr-only" data-fish-bg-file type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
@@ -121,17 +127,23 @@ export function renderTankFrame(): string {
         <div class="hn-fish-pop-body">
           <canvas class="hn-fish-pad" data-fish-pad width="480" height="240" aria-label="Tranh cá"></canvas>
           <aside class="hn-fish-tools">
-            <div class="hn-fish-tool-row">
+            <div class="hn-fish-tool-row" role="group" aria-label="Công cụ vẽ">
               ${toolButton('pen', 'Cọ', pad.tool)}
               ${toolButton('eraser', 'Tẩy', pad.tool)}
               ${toolButton('blur', 'Làm mờ', pad.tool)}
             </div>
             <p class="hn-fish-tools-label">Màu</p>
-            <div class="hn-fish-swatches">${swatches}</div>
-            <label class="hn-fish-label">Cỡ cọ <input data-fish-size type="range" min="4" max="40" value="${pad.size}"> <span data-fish-size-val>${pad.size} px</span></label>
-            <label class="hn-fish-label">Độ mạnh <input data-fish-blur type="range" min="1" max="8" value="${pad.blurStrength}"> <span data-fish-blur-val>${Math.round((pad.blurStrength / 8) * 100)}%</span></label>
-            <button type="button" class="hn-btn" data-fish-undo>Hoàn tác</button>
-            <button type="button" class="hn-btn" data-fish-clear>Xóa tranh</button>
+            <div class="hn-fish-swatches" role="group" aria-label="Bảng màu">${swatches}</div>
+            <label class="hn-fish-custom-color">
+              <input type="color" data-fish-custom-color value="${esc(isFishColor(pad.color)?pad.color:DEFAULT_FISH_COLOR)}">
+              <span>Màu tùy chọn</span>
+            </label>
+            <label class="hn-fish-label">Cỡ nét <input data-fish-size type="range" min="2" max="40" value="${pad.size}"> <span data-fish-size-val>${pad.size} px</span></label>
+            <label class="hn-fish-label" data-fish-blur-row ${pad.tool==='blur'?'':'hidden'}>Độ mờ <input data-fish-blur type="range" min="1" max="8" value="${pad.blurStrength}"> <span data-fish-blur-val>${Math.round((pad.blurStrength / 8) * 100)}%</span></label>
+            <div class="hn-fish-edit-actions">
+              <button type="button" class="hn-btn" data-fish-undo>Hoàn tác</button>
+              <button type="button" class="hn-btn" data-fish-clear>Xóa tranh</button>
+            </div>
             <div class="hn-fish-patterns" role="group" aria-label="Mẫu cá">${patterns}</div>
             <div class="hn-fish-import-row">
               <input class="sr-only" data-fish-file type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
@@ -199,6 +211,9 @@ function syncTools(): void {
   document.querySelectorAll<HTMLButtonElement>('[data-fish-swatch]').forEach((btn) => {
     btn.setAttribute('aria-pressed', String((btn.dataset.fishSwatch || '').toLowerCase() === pad.color.toLowerCase()));
   });
+  const picker=document.querySelector<HTMLInputElement>('[data-fish-custom-color]');
+  if(picker && isFishColor(pad.color) && picker.value!==pad.color.toLowerCase()) picker.value=pad.color;
+  document.querySelector('[data-fish-blur-row]')?.toggleAttribute('hidden',pad.tool!=='blur');
 }
 
 function ensureKey(): void {
@@ -228,11 +243,6 @@ function bindPointer(view: HTMLCanvasElement): void {
 
 export function bindTank(root: HTMLElement): void {
   const pad = fishPad();
-  // mặc định theo ảnh A: cỡ 28px, độ mạnh ~35%
-  if (pad.size === 8) pad.size = 28;
-  if (pad.blurStrength === 4) pad.blurStrength = 3;
-  if (pad.color === '#13110F') pad.color = SWATCHES[0]!;
-
   const tank = fishTank();
   const view = root.querySelector<HTMLCanvasElement>('[data-fish-tank]');
   const glQuery = hashQuery();
@@ -258,7 +268,7 @@ export function bindTank(root: HTMLElement): void {
       .then((m) => {
         if(!view.isConnected) return;
         return m.mountAoCaGl({root,canvas:view,query:glQuery,readFish,viewer:()=>state.me?.id??'',
-          pointerMode:()=>drawOpen?'none':tank.mode,fallback});
+          pointerMode:()=>drawOpen?'none':tank.mode,look:()=>pondLook,fallback});
       })
       .catch((err) => {
         console.error('ao-ca gl mount failed', err);
@@ -312,6 +322,14 @@ export function bindTank(root: HTMLElement): void {
   });
   root.querySelector('.hn-fish-pop-card')?.addEventListener('click', (e) => e.stopPropagation());
 
+  const looks=root.querySelectorAll<HTMLButtonElement>('[data-fish-look]');
+  looks.forEach(button=>button.addEventListener('click',()=>{
+    const look=button.dataset.fishLook as PondLook|undefined;
+    if(look!=='ink'&&look!=='form') return;
+    pondLook=look;
+    writePondLook(look);
+    looks.forEach(option=>option.setAttribute('aria-pressed',String(option.dataset.fishLook===look)));
+  }));
   root.querySelector('[data-fish-bg-default]')?.addEventListener('click', () => {
     tank.resetBackground();
     toast('Đã dùng nền Hang Đá');
@@ -357,11 +375,18 @@ export function bindTank(root: HTMLElement): void {
   root.querySelectorAll<HTMLButtonElement>('[data-fish-swatch]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const c = btn.dataset.fishSwatch;
-      if (c) pad.color = c;
+      if (c && isFishColor(c)) {pad.color=c;pad.tool='pen';}
       syncTools();
     });
   });
 
+  const custom=root.querySelector<HTMLInputElement>('[data-fish-custom-color]');
+  custom?.addEventListener('input',()=>{
+    if(!isFishColor(custom.value)) return;
+    pad.color=custom.value;
+    pad.tool='pen';
+    syncTools();
+  });
   const size = root.querySelector<HTMLInputElement>('[data-fish-size]');
   size?.addEventListener('input', () => {
     pad.size = Number(size.value) || 28;

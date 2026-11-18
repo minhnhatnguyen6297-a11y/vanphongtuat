@@ -24,6 +24,7 @@ npm --prefix app test
 npm --prefix app run build
 node app/scripts/ao-ca-visual.mjs --tier=cao --viewport=1366x768,1920x1080 --check --record
 node app/scripts/ao-ca-fish-visual.mjs --record
+node app/scripts/ao-ca-style-visual.mjs
 node app/scripts/ao-ca-perf-may3.mjs
 ```
 
@@ -40,4 +41,10 @@ Intel UHD Graphics 610/ANGLE D3D11, RAM 1×8 GB. Chrome có giao diện, v-sync 
 
 Lượt 1366×768 đủ 5 phút gồm 75 mẫu; giai đoạn đầu từng rớt tới 30,1% trong một cửa sổ. Mức ghi nhận theo thứ tự Cao → Vừa → Nhẹ (12 cá) → Vừa → Cao, trở lại 24 cá ở giây 120. Vì vậy ngưỡng ≤5% đạt trong đoạn ổn định nhưng chưa đạt xuyên suốt lượt 5 phút. Lần đo đầu bị Chrome bóp nhịp còn 1 Hz, đã loại và giữ log riêng. Các số P0 lịch sử chưa có GPU ms.
 
-Ở golden U-turn, cá đạt chiều ngang 141 px khi nhìn ngang / 42 px chính diện ở 1366×768 và 199 / 60 px ở 1920×1080, tương đương khoảng 30%. Có 6 lệnh vẽ ở cảnh đủ cá, bọt, hạt. Không đo lại toàn bộ các ngưỡng pixel cho màu theo độ sâu, bóng và viền cá mềm; ảnh cùng clip dùng để duyệt bằng mắt. Ảnh góc 3/4 vẫn còn gợn ở viền đối với mẫu vẽ bằng các nét to. Worker có mẫu giải mã/cắt cá vượt 30 ms dù đã thu nhỏ ô; việc đó xảy ra trong worker.
+Ở golden U-turn bản Nét vẽ cuối, cá đạt chiều ngang 144 px khi nhìn ngang / 32 px chính diện ở 1366×768 và 203 / 47 px ở 1920×1080, tương đương 22–23%. Mẫu cá trước tinh chỉnh từng đo 141/42 và 199/60 px. Có 6 lệnh vẽ ở cảnh đủ cá, bọt, hạt. Không đo lại toàn bộ các ngưỡng pixel cho màu theo độ sâu, bóng và viền cá mềm; ảnh cùng clip dùng để duyệt bằng mắt. Ảnh góc 3/4 vẫn còn gợn ở viền đối với mẫu vẽ bằng các nét to. Worker có mẫu giải mã/cắt cá vượt 30 ms dù đã thu nhỏ ô; việc đó xảy ra trong worker.
+
+## Phong cách và bộ vẽ
+
+Số đo hiệu năng ở trên thu trước khi tinh chỉnh ánh sáng và bộ vẽ. So ảnh và clip Minh gửi, nhất là frame 11,6 s: mắt, mảng đuôi và màu thân vẫn rõ khi quay. Mặc định **Nét vẽ** giữ màu PNG chủ đạo, dùng ánh sáng lì, độ phản sáng 8% và viền sáng 13% so với **Có khối**. Giữ nguyên lưới, độ dày và chuyển động. Chọn trong Menu; lưu theo trình duyệt. Có thể ghim `look=ink|form` khi chụp golden. Tương phản nền, nút chat và nền Hang Đá giữ bố cục riêng của dự án.
+
+Bộ vẽ dùng 16 màu có tên và một bộ chọn màu tự do; cỡ nét 2–40 px nguồn. Cọ/Tẩy/Làm mờ tách theo trạng thái, thanh độ mờ chỉ hiện với Làm mờ. Khung hiển thị đúng 2:1 của ảnh 480×240. Kiểm tra Chrome gồm đặt màu, vẽ pixel, hoàn tác, chọn làm mờ và thoát bằng Esc. Không đưa ảnh/clip tham chiếu vào app.
