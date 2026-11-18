@@ -17,6 +17,8 @@ App đặt đồ ăn văn phòng chạy trên **LAN** (máy chủ Node.js + SQLi
 | [`archive/`](archive/) | `thietke_v1/v2/v3` — tham khảo cũ, không sửa |
 | [`app/`](app/) | Mã nguồn chạy được |
 | [`app/docs/VAN-HANH.md`](app/docs/VAN-HANH.md) | Cài đặt & vận hành trên MAY3 |
+| [`docs/AO-CA-V3-HANDOFF.md`](docs/AO-CA-V3-HANDOFF.md) | Ao cá V3: quy trình pha, công cụ, cổng duyệt |
+| [`docs/AO-CA-V3-KY-THUAT.md`](docs/AO-CA-V3-KY-THUAT.md) | Ao cá V3: kỹ thuật đồ họa / ngưỡng |
 
 `archive/thietke_v1.html` / `archive/thietke_v2.html` chỉ để tham khảo UI/logic cũ.
 

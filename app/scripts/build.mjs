@@ -57,22 +57,29 @@ await esbuild.build({
   logLevel: 'info',
 });
 
-// Client bundle (optional until frontend lands)
+// Client: splitting so three / ao GL stay out of app.js (handoff 3.1)
 const clientMain = join(root, 'src/client/main.ts');
+const workerEntry = join(root, 'src/client/be/gl/worker-entry.ts');
 if (existsSync(clientMain)) {
+  const entryPoints = { app: clientMain };
+  if (existsSync(workerEntry)) entryPoints['ao-ca-worker'] = workerEntry;
   await esbuild.build({
-    entryPoints: [clientMain],
+    entryPoints,
     bundle: true,
-    outfile: join(outdir, 'app.js'),
+    outdir,
+    entryNames: '[name]',
+    chunkNames: 'chunks/[name]-[hash]',
+    splitting: true,
     format: 'esm',
     platform: 'browser',
     target: ['es2022'],
+    minify: true,
     sourcemap: true,
     logLevel: 'info',
   });
   const css = join(root, 'src/client/styles.css');
   if (existsSync(css)) cpSync(css, join(outdir, 'styles.css'));
-  console.log('client bundle → public/app.js');
+  console.log('client bundle → public/app.js (+ chunks, ao-ca-worker.js)');
 } else {
   console.warn('src/client/main.ts missing — skip client bundle');
 }

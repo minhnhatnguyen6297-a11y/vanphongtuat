@@ -29,9 +29,15 @@ app/client-pack/URL.txt
 Thumbs.db
 
 # Local agent / IDE
-.claude/
+.claude/*
+!.claude/skills/
 .superpowers/
 .cursor/
+
+# Client chunks (esbuild splitting)
+app/public/chunks/
+app/public/ao-ca-worker.js
+app/public/ao-ca-worker.js.map
 
 # Local scrape / chat caches
 threads_cache.json
