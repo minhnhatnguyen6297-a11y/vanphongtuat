@@ -1,62 +1,21 @@
-import { esc, fmtK, fmtVnd } from '../../shared/esc.js';
+import { esc } from '../../shared/esc.js';
+import { findShops } from '../../shared/shop-find.js';
 import {
   state,
   shopById,
   memberById,
   canPerm,
-  effectiveShopId,
   formatDateChip,
-  shortShopName,
   patch,
 } from '../store.js';
-import { ICONS, SHOP_COLORS } from '../icons.js';
-import { cmd, setChatSubs } from '../ws.js';
+import { ICONS } from '../icons.js';
+import { cmd } from '../ws.js';
 import { openModal, closeModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
-import { copyText } from '../copy.js';
 import { setRoute } from '../router.js';
-import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
 
-const NOTES = ['ít cay', 'không hành', 'thêm cơm', '50% đường'];
-const DRAFT_KEY = 'hng_menu_draft';
-
-function loadDraft(): string[] {
-  try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveDraft(ids: string[]): void {
-  try {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(ids));
-  } catch {
-    /* ignore */
-  }
-}
-
-function suggestShops(): { id: string; name: string; why: string }[] {
-  const table = state.table;
-  const inTable = new Set(table?.shopIds || []);
-  const out: { id: string; name: string; why: string }[] = [];
-  for (const s of state.shops) {
-    if (inTable.has(s.id) || out.length >= 3) continue;
-    const times = s.stats?.times ?? 0;
-    const last = s.stats?.lastDate;
-    let why = '';
-    if (times === 0) why = 'Chưa thử';
-    else if (last) {
-      const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
-      if (days >= 14) why = `${days} ngày chưa ăn`;
-      else if (times >= 5) why = 'Hay thắng';
-    }
-    if (!why && times >= 5) why = 'Hay thắng';
-    if (why) out.push({ id: s.id, name: s.name, why });
-  }
-  return out.slice(0, 3);
-}
+let findQuery = '';
+let findFocused = false;
 
 function openCreateTable(): void {
   const suggested = state.shops.slice(0, 3).map((s) => s.id);
@@ -109,54 +68,6 @@ function openCreateTable(): void {
   });
 }
 
-function openCopyOrder(): void {
-  const table = state.table;
-  if (!table) return;
-  let mode: 'shop' | 'names' = 'shop';
-
-  const build = () => {
-    if (mode === 'shop') {
-      const map = new Map<string, number>();
-      for (const o of table.orders) {
-        const key = o.text.trim();
-        map.set(key, (map.get(key) || 0) + 1);
-      }
-      return [...map.entries()].map(([t, n]) => (n > 1 ? `${n} × ${t}` : t)).join('\n');
-    }
-    return table.orders
-      .map((o) => `${memberById(o.memberId)?.displayName || '?'}: ${o.text}`)
-      .join('\n');
-  };
-
-  openModal({
-    title: 'Copy order',
-    bodyHtml: `
-      <div class="hn-toggle" style="margin-bottom:12px">
-        <button type="button" data-m="shop" aria-pressed="true">Cho quán</button>
-        <button type="button" data-m="names" aria-pressed="false">Kèm tên</button>
-      </div>
-      <pre id="co-pre" style="white-space:pre-wrap;font-family:var(--font-mono);background:#fff;border:2px solid #1B1B1B;padding:10px;min-height:120px"></pre>
-      <button type="button" class="hn-btn hn-btn-red" id="co-copy" style="width:100%;margin-top:10px">Sao chép</button>`,
-    onMount: (root) => {
-      const pre = root.querySelector('#co-pre')!;
-      pre.textContent = build();
-      root.querySelectorAll('[data-m]').forEach((b) => {
-        b.addEventListener('click', () => {
-          mode = (b as HTMLElement).dataset.m as 'shop' | 'names';
-          root.querySelectorAll('[data-m]').forEach((x) =>
-            x.setAttribute('aria-pressed', String((x as HTMLElement).dataset.m === mode)),
-          );
-          pre.textContent = build();
-        });
-      });
-      root.querySelector('#co-copy')?.addEventListener('click', async () => {
-        await copyText(build());
-        closeModal();
-      });
-    },
-  });
-}
-
 function editOrder(orderId: string): void {
   const table = state.table;
   const o = table?.orders.find((x) => x.id === orderId);
@@ -188,6 +99,49 @@ function editOrder(orderId: string): void {
   });
 }
 
+function voterLine(shopId: string): string {
+  const table = state.table;
+  if (!table) return 'Chưa ai chọn';
+  const names = table.votes
+    .filter((v) => v.shopId === shopId)
+    .map((v) => memberById(v.memberId)?.displayName || 'Ẩn danh');
+  return names.length ? names.join(', ') : 'Chưa ai chọn';
+}
+
+function findResultsHtml(shopIds: string[]): string {
+  if (!findQuery.trim()) return '';
+  const hits = findShops(state.shops, findQuery);
+  if (!hits.length) return '<p class="hn-find-empty">Không thấy món hoặc quán khớp.</p>';
+  const onTable = new Set(shopIds);
+  const canAdd = canPerm('table.addShop');
+  return hits
+    .map((hit) => {
+      const already = onTable.has(hit.id);
+      const lockedOut = !already && !canAdd;
+      const dish = hit.dishes.length ? hit.dishes.join(', ') : 'Khớp tên quán';
+      const hint = lockedOut ? 'Không có quyền thêm quán' : already ? `${dish} · đã có trong bàn` : dish;
+      return `<button type="button" class="hn-find-hit" data-pick="${esc(hit.id)}" ${lockedOut ? 'disabled' : ''}>
+        <b>${esc(hit.name)}</b>
+        <small>${esc(hint)}</small>
+      </button>`;
+    })
+    .join('');
+}
+
+async function pickShop(shopId: string): Promise<boolean> {
+  const previous = findQuery;
+  findQuery = '';
+  const ack = await cmd('vote.place', { shopId });
+  if (!ack.ok) {
+    findQuery = previous;
+    toast(ack.error === 'forbidden' ? 'Không có quyền thêm quán' : 'Chưa chọn được quán');
+    return false;
+  }
+  const added = (ack.result as { added?: boolean } | undefined)?.added;
+  toast(added ? 'Đã đưa quán vào bàn' : 'Đã chọn quán');
+  return true;
+}
+
 export function titleBan(): { chip: string; fun: string } {
   const t = state.table;
   if (!t) return { chip: 'CHƯA CÓ BÀN', fun: 'CHỌN ĐI CÁC CHÁU!' };
@@ -197,155 +151,125 @@ export function titleBan(): { chip: string; fun: string } {
 export function renderBan(): string {
   const table = state.table;
   if (!table) {
-    return `<main class="hn-main"><button type="button" class="hn-btn hn-btn-red" data-act="new-table">+ KÊ BÀN MỚI</button></main>`;
-  }
-
-  const voteTotal = table.votes.length || 1;
-  const counts = new Map<string, number>();
-  for (const id of table.shopIds) counts.set(id, 0);
-  for (const v of table.votes) counts.set(v.shopId, (counts.get(v.shopId) || 0) + 1);
-
-  let leadId = table.shopIds[0] || null;
-  let leadN = -1;
-  for (const id of table.shopIds) {
-    const n = counts.get(id) || 0;
-    if (n > leadN) {
-      leadId = id;
-      leadN = n;
-    }
+    const canCreate = canPerm('table.create');
+    return `<main class="hn-main">
+      <section class="hn-panel hn-paper-fold hn-ban-empty">
+        <h2 class="hn-h2"><span>CHƯA KÊ BÀN</span></h2>
+        <p>${canCreate ? 'Chưa có quán để bình chọn và chưa có món để gọi. Bấm Kê bàn để bắt đầu.' : 'Chưa có bàn. Cần người có quyền kê bàn.'}</p>
+        ${canCreate ? '<button type="button" class="hn-btn hn-btn-red" data-act="new-table">+ KÊ BÀN</button>' : ''}
+      </section>
+    </main>`;
   }
 
   const myVote = table.votes.find((v) => v.memberId === state.me?.id)?.shopId;
-  const callingId = effectiveShopId(table);
-  const calling = shopById(callingId);
-  const draft = new Set(loadDraft());
-  state.ui.menuDraftIds = [...draft];
-
   const shopCards = table.shopIds
-    .map((id, i) => {
+    .map((id) => {
       const s = shopById(id);
       if (!s) return '';
-      const color = SHOP_COLORS[i % SHOP_COLORS.length]!;
-      const count = counts.get(id) || 0;
-      const pct = Math.round((count / voteTotal) * 100);
       const mine = myVote === id;
       const locked = table.winnerShopId === id;
-      const lead = !table.winnerShopId && id === leadId && count > 0;
-      const stats = s.stats
-        ? `${s.stats.times} lần${s.stats.lastDate ? ` · lần cuối ${formatDateChip(s.stats.lastDate)}` : ''}`
-        : '';
-      const seats = Array.from({ length: count }, () => ICONS.seat(color)).join('');
-      const badges = [
-        locked ? '<span class="hn-badge hn-badge-locked">CHỐT</span>' : '',
-        lead ? '<span class="hn-badge">DẪN ĐẦU</span>' : '',
-        mine ? '<span class="hn-mine-tag" style="padding:2px 6px">GHẾ</span>' : '',
-      ]
-        .filter(Boolean)
-        .join('');
       return `<div class="hn-shop-card">
-        <button type="button" class="hn-shop-vote" data-vote="${id}" aria-pressed="${mine}">
-          <span class="hn-shop-card-head"><b>${esc(s.name)}</b><span class="hn-shop-badges">${badges}</span></span>
-          <span class="hn-shop-vote-count" aria-label="${count} phiếu">
-            <span class="hn-shop-seats" aria-hidden="true">${seats}</span>
-            <span>${count} phiếu</span>
-          </span>
-          <span class="hn-shop-progress"><span class="hn-bar" aria-hidden="true"><span style="width:${pct}%;background:${color}"></span></span><b>${pct}%</b></span>
-          ${stats ? `<small class="hn-muted">${esc(stats)}</small>` : ''}
+        <button type="button" class="hn-shop-vote" data-vote="${esc(id)}" aria-pressed="${mine}">
+          <span class="hn-shop-card-head"><b>${esc(s.name)}</b>${locked ? '<span class="hn-shop-locked">Đã chốt</span>' : ''}</span>
+          <span class="hn-shop-voters">${esc(voterLine(id))}</span>
         </button>
-        ${canPerm('table.setWinner') && !table.winnerShopId ? `<button type="button" class="hn-btn hn-btn-white hn-shop-lock" data-lock="${id}" aria-label="Chốt ${esc(s.name)}">Chốt</button>` : ''}
+        ${canPerm('table.setWinner') && !table.winnerShopId ? `<button type="button" class="hn-btn hn-btn-white hn-shop-lock" data-lock="${esc(id)}" aria-label="Chốt ${esc(s.name)}">Chốt</button>` : ''}
       </div>`;
     })
-    .join('');
-
-  const suggests = suggestShops()
-    .map(
-      (g) =>
-        `<button type="button" class="hn-btn-ghost" data-suggest="${g.id}" title="${esc(g.why)}">+ ${esc(g.name)}</button>`,
-    )
     .join('');
 
   const ordersHtml = table.orders
     .map((o) => {
       const mine = o.memberId === state.me?.id;
       const name = memberById(o.memberId)?.displayName || '?';
-      return `<button type="button" class="hn-order-row${mine ? ' mine' : ''}" data-order="${o.id}">
-        <b style="font-family:var(--font-body);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</b>
-        <span>${esc(o.text)}</span>
-        <span style="font-weight:700">${esc(fmtK(o.price))}</span>
-      </button>`;
+      const line = `${name} · ${o.text}`;
+      return `<button type="button" class="hn-order-line${mine ? ' mine' : ''}" data-order="${esc(o.id)}" title="${esc(line)}">${esc(line)}</button>`;
     })
     .join('');
-
-  const orderSum = table.orders.reduce((t, o) => t + (o.price || 0), 0);
-  const menu = calling?.menu || [];
-  const menuHtml = menu
-    .map((m) => {
-      const on = draft.has(m.id);
-      return `<button type="button" class="hn-menu-chip" aria-pressed="${on}" data-menu="${m.id}">
-        ${esc(m.name)}<span style="font-family:var(--font-mono);font-size:11px;font-weight:700">${esc(fmtK(m.price))}</span>
-      </button>`;
-    })
-    .join('');
-
-  const chatScope = `table:${table.id}`;
-  const addShopBtn = canPerm('table.addShop')
-    ? `<button type="button" class="hn-btn hn-btn-white" data-act="add-shop-kho" style="font-size:13px">+ QUÁN TỪ KHO</button>`
-    : '';
 
   return `<main class="hn-main">
     <div class="hn-ban-layout">
       <section class="hn-panel hn-paper-fold hn-ban-cell">
         <div class="hn-section-head">
-          <h2 class="hn-h2"><span>VOTE QUÁN</span></h2>
-          <button type="button" class="hn-btn hn-btn-blue" data-act="new-table">+ KÊ BÀN MỚI</button>
+          <h2 class="hn-h2"><span>BÌNH CHỌN</span></h2>
+          ${canPerm('table.create') ? '<button type="button" class="hn-btn hn-btn-blue" data-act="new-table">+ KÊ BÀN MỚI</button>' : ''}
           <button type="button" class="hn-btn hn-btn-white" data-act="history">${ICONS.history}LỊCH SỬ BÀN</button>
         </div>
-        <div class="hn-shop-grid hn-ban-scroll">${shopCards}</div>
-        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-          <span style="font-family:var(--font-display);font-size:12px">THÊM QUÁN</span>
-          ${suggests}
-          ${addShopBtn}
+        <div class="hn-find">
+          <label class="hn-find-label" for="ban-find">Tìm món hoặc quán
+            <input type="search" class="hn-input" id="ban-find" placeholder="Tìm món hoặc quán" autocomplete="off" value="${esc(findQuery)}">
+          </label>
+          <div class="hn-find-results" id="ban-find-results">${findResultsHtml(table.shopIds)}</div>
         </div>
+        <div class="hn-shop-grid hn-ban-scroll">${shopCards || '<p class="hn-order-empty">Chưa có quán trong bàn. Gõ món hoặc tên quán ở ô tìm.</p>'}</div>
       </section>
       <section class="hn-panel hn-paper-fold hn-ban-cell">
         <div class="hn-section-head">
           <h2 class="hn-h2"><span>GỌI MÓN</span></h2>
-          <button type="button" class="hn-btn hn-btn-blue" data-act="copy">${ICONS.copy}COPY ORDER</button>
         </div>
-        <b class="hn-calling-shop">${esc(shortShopName(calling?.name || '…'))}</b>
-        <div class="hn-order-sheet hn-ban-scroll">
-          ${ordersHtml || '<div style="padding:8px;color:#3D3D3D">Chưa ai gọi</div>'}
-          <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
-            <span>${table.orders.length} suất</span><span>${esc(fmtVnd(orderSum))}</span>
-          </div>
+        <div class="hn-call-row">
+          <input type="text" class="hn-input" id="ban-note" maxlength="120" placeholder="Món của bạn" value="${esc(state.ui.noteDraft)}" aria-label="Món của bạn">
+          <button type="button" class="hn-btn hn-btn-red" data-act="goi">Gọi</button>
         </div>
-        ${renderChatPanel(chatScope, { title: 'CHAT BÀN', collapsible: true })}
-      </section>
-      <section aria-labelledby="ban-menu-heading" class="hn-panel-yellow hn-ban-cell hn-ban-menu">
-        <div class="hn-menu-list">
-          <h2 id="ban-menu-heading" class="hn-h2 hn-menu-heading">THỰC ĐƠN</h2>
-          ${menuHtml}
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-          <input type="text" class="hn-input" id="ban-note" placeholder="Món khác / ghi chú" value="${esc(state.ui.noteDraft)}" style="flex:1 1 160px;min-width:0">
-          ${NOTES.map((n) => `<button type="button" class="hn-note-chip" data-note="${esc(n)}">+ ${esc(n)}</button>`).join('')}
-          <button type="button" class="hn-btn hn-btn-red" data-act="goi" style="font-size:15px;padding:8px 18px">GỌI</button>
+        <div class="hn-order-compact">
+          ${ordersHtml || '<p class="hn-order-empty">Chưa ai gọi món</p>'}
         </div>
       </section>
     </div>
   </main>`;
 }
 
-export function bindBan(root: HTMLElement): void {
-  const table = state.table;
-  if (table) setChatSubs([`table:${table.id}`]);
-  else setChatSubs([]);
+function bindFind(root: HTMLElement): void {
+  const input = root.querySelector<HTMLInputElement>('#ban-find');
+  const box = root.querySelector<HTMLElement>('#ban-find-results');
+  if (!input || !box) return;
 
+  const paint = () => {
+    const ids = state.table?.shopIds ?? [];
+    box.innerHTML = findResultsHtml(ids);
+    box.querySelectorAll('[data-pick]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.pick;
+        if (!id) return;
+        const ok = await pickShop(id);
+        if (ok) {
+          input.value = '';
+          box.innerHTML = '';
+          return;
+        }
+        paint();
+      });
+    });
+  };
+
+  if (findFocused) {
+    input.focus();
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  }
+  input.addEventListener('focus', () => {
+    findFocused = true;
+  });
+  input.addEventListener('blur', () => {
+    findFocused = false;
+  });
+  input.addEventListener('input', () => {
+    findQuery = input.value;
+    paint();
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const first = box.querySelector<HTMLButtonElement>('[data-pick]:not([disabled])');
+    first?.click();
+  });
+  paint();
+}
+
+export function bindBan(root: HTMLElement): void {
   root.querySelector('[data-act="new-table"]')?.addEventListener('click', () => openCreateTable());
   root.querySelector('[data-act="history"]')?.addEventListener('click', () => setRoute('so'));
-  root.querySelector('[data-act="copy"]')?.addEventListener('click', () => openCopyOrder());
-  root.querySelector('[data-act="add-shop-kho"]')?.addEventListener('click', () => setRoute('kho'));
-  bindChatPanel(root);
+  bindFind(root);
 
   root.querySelectorAll('[data-vote]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -362,37 +286,8 @@ export function bindBan(root: HTMLElement): void {
     });
   });
 
-  root.querySelectorAll('[data-suggest]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      await cmd('table.addShop', { shopId: (btn as HTMLElement).dataset.suggest });
-    });
-  });
-
   root.querySelectorAll('[data-order]').forEach((btn) => {
     btn.addEventListener('click', () => editOrder((btn as HTMLElement).dataset.order!));
-  });
-
-  root.querySelectorAll('[data-menu]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const id = (btn as HTMLElement).dataset.menu!;
-      const set = new Set(loadDraft());
-      if (set.has(id)) set.delete(id);
-      else set.add(id);
-      saveDraft([...set]);
-      patch((s) => {
-        s.ui.menuDraftIds = [...set];
-      });
-    });
-  });
-
-  root.querySelectorAll('[data-note]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const note = (btn as HTMLElement).dataset.note!;
-      const input = root.querySelector('#ban-note') as HTMLInputElement;
-      const cur = input.value.trim();
-      input.value = cur ? `${cur}, ${note}` : note;
-      state.ui.noteDraft = input.value;
-    });
   });
 
   const noteInput = root.querySelector('#ban-note') as HTMLInputElement | null;
@@ -401,33 +296,19 @@ export function bindBan(root: HTMLElement): void {
   });
 
   root.querySelector('[data-act="goi"]')?.addEventListener('click', async () => {
-    const table = state.table;
-    const shop = shopById(effectiveShopId(table));
-    const draft = loadDraft();
-    const items = (shop?.menu || []).filter((m) => draft.includes(m.id));
-    const note = ((root.querySelector('#ban-note') as HTMLInputElement)?.value || '').trim();
-    let text = items.map((m) => m.name).join(' + ');
-    if (note) text = text ? `${text}, ${note}` : note;
+    const text = (noteInput?.value || '').trim().slice(0, 120);
     if (!text) {
-      toast('Gõ món hoặc chọn thực đơn');
+      toast('Gõ món rồi bấm Gọi');
       return;
     }
-    let price: number | null = null;
-    if (items.length && items.every((m) => m.price != null) && !note) {
-      price = items.reduce((t, m) => t + (m.price || 0), 0);
-    } else if (items.length && items.every((m) => m.price != null) && note) {
-      // note present → price null if free-text mixed, else sum still ok when note is only modifier
-      price = items.reduce((t, m) => t + (m.price || 0), 0);
-    } else if (!items.length) {
-      price = null;
-    } else {
-      price = null;
+    const ack = await cmd('order.add', { text, price: null });
+    if (!ack.ok) {
+      toast('Chưa gọi được');
+      return;
     }
-    await cmd('order.add', { text: text.slice(0, 120), price });
-    saveDraft([]);
     state.ui.noteDraft = '';
+    if (noteInput) noteInput.value = '';
     patch((s) => {
-      s.ui.menuDraftIds = [];
       s.ui.noteDraft = '';
     });
     toast('Đã gọi');

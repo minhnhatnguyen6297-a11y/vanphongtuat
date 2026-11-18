@@ -1,46 +1,50 @@
 import { esc } from '../../shared/esc.js';
+import { LOBBY_CHAT_SCOPE } from '../../shared/chat.js';
 import { state, memberById, canPerm } from '../store.js';
 import type { ChatMsg } from '../../shared/types.js';
 import { cmd } from '../ws.js';
 import { toast } from './toast.js';
-import { ICONS } from '../icons.js';
 
-const expandedChats = new Set<string>();
+const HOST_ID = 'hn-office-chat';
+const DRAFT_KEY = 'vpt.office-chat.draft';
 
-const drafts = new Map<string, string>();
+/** Mở/đóng sống trong module để đổi màn không dựng lại popup. */
+let open = false;
+let bound = false;
 
-export function getChatDraft(scope: string): string {
-  return drafts.get(scope) || '';
+function readDraft(): string {
+  try {
+    return sessionStorage.getItem(DRAFT_KEY) ?? '';
+  } catch {
+    return '';
+  }
 }
 
-export function setChatDraft(scope: string, value: string): void {
-  if (!value) drafts.delete(scope);
-  else drafts.set(scope, value);
+function writeDraft(value: string): void {
+  try {
+    if (value) sessionStorage.setItem(DRAFT_KEY, value);
+    else sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* tab chặn storage vẫn giữ nháp trên ô input */
+  }
 }
 
-export function chatMessagesFor(scope: string): ChatMsg[] {
-  return state.chatByScope[scope] || [];
+function messages(): ChatMsg[] {
+  return state.chatByScope[LOBBY_CHAT_SCOPE] || [];
 }
 
-export function renderChatPanel(
-  scope: string,
-  opts?: { title?: string; collapsible?: boolean; room?: boolean; dock?: boolean },
-): string {
-  const title = opts?.title || 'CHAT';
-  const msgs = chatMessagesFor(scope);
-  const canSend = canPerm('chat.send');
+function logHtml(): string {
+  const msgs = messages();
   const canMod = canPerm('chat.mod');
   const meId = state.me?.id;
-  const draft = getChatDraft(scope);
-
-  const rows = msgs
+  if (!msgs.length) return '<span class="hn-chat-empty">Chưa có tin</span>';
+  return msgs
     .map((m) => {
       const who = memberById(m.memberId)?.displayName || '?';
       const mine = m.memberId === meId;
       const canDel =
         !m.deletedAt &&
-        (canMod ||
-          (mine && Date.now() - new Date(m.createdAt).getTime() <= 2 * 60 * 1000));
+        (canMod || (mine && Date.now() - new Date(m.createdAt).getTime() <= 2 * 60 * 1000));
       const body = m.deletedAt
         ? '<span class="hn-chat-body is-deleted">đã xóa</span>'
         : `<span class="hn-chat-body">${esc(m.body)}</span>`;
@@ -54,79 +58,129 @@ export function renderChatPanel(
       </div>`;
     })
     .join('');
-
-  const field = opts?.room
-    ? `<textarea class="hn-input hn-chat-box" data-chat-input aria-label="Tin nhắn" maxlength="500" rows="3" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>${esc(draft)}</textarea>`
-    : `<input class="hn-input" data-chat-input aria-label="Tin nhắn" maxlength="500" value="${esc(draft)}" placeholder="${canSend ? 'Nhắn…' : 'Không gửi được'}" ${canSend ? '' : 'disabled'}>`;
-  const content = `
-    <div class="hn-chat-log" data-chat-log>
-      ${rows || '<span class="hn-chat-empty">Chưa có tin</span>'}
-    </div>
-    <div class="hn-chat-compose">
-      ${field}
-      <button type="button" class="hn-btn hn-btn-blue" data-chat-send ${canSend ? '' : 'disabled'}>GỬI</button>
-    </div>`;
-
-  if (opts?.collapsible) {
-    const dock = opts.dock ? ' hn-chat-dock' : '';
-    return `<details class="hn-chat-fold${dock}" data-chat-scope="${esc(scope)}" ${expandedChats.has(scope) ? 'open' : ''}>
-      <summary class="hn-chat-title">${ICONS.chat} ${esc(title)}${msgs.length ? ` <span>(${msgs.length})</span>` : ''}</summary>
-      ${content}
-    </details>`;
-  }
-
-  const roomClass = opts?.room ? ' hn-chat-room-panel' : '';
-  return `<section class="hn-panel hn-chat${roomClass}" data-chat-scope="${esc(scope)}" aria-label="${esc(title)}">
-    <h3 class="hn-chat-title">${esc(title)}</h3>
-    ${content}
-  </section>`;
 }
 
-export function bindChatPanel(root: HTMLElement): void {
-  root.querySelectorAll('[data-chat-scope]').forEach((panel) => {
-    const scope = (panel as HTMLElement).dataset.chatScope!;
-    const log = panel.querySelector('[data-chat-log]');
-    if (panel instanceof HTMLDetailsElement) {
-      panel.addEventListener('toggle', () => {
-        if (!panel.isConnected) return;
-        if (panel.open) {
-          expandedChats.add(scope);
-          if (log) log.scrollTop = log.scrollHeight;
-        } else {
-          expandedChats.delete(scope);
-        }
-      });
-    }
-    const input = panel.querySelector('[data-chat-input]') as HTMLInputElement | null;
-    input?.addEventListener('input', () => {
-      setChatDraft(scope, input.value);
+function hostEl(): HTMLElement {
+  let host = document.getElementById(HOST_ID);
+  if (!host) {
+    host = document.createElement('div');
+    host.id = HOST_ID;
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+function paintOpen(host: HTMLElement, focusInput: boolean): void {
+  const btn = host.querySelector<HTMLButtonElement>('[data-office-chat-toggle]');
+  const pop = host.querySelector<HTMLElement>('#hn-office-chat-pop');
+  btn?.setAttribute('aria-expanded', String(open));
+  document.querySelector('[data-fish-fab="chat"]')?.setAttribute('aria-expanded', String(open));
+  if (pop) pop.hidden = !open;
+  if (focusInput && open) {
+    host.querySelector<HTMLInputElement>('[data-chat-input]')?.focus();
+  }
+}
+
+function paintLog(host: HTMLElement): void {
+  const log = host.querySelector<HTMLElement>('[data-chat-log]');
+  if (!log) return;
+  const html = logHtml();
+  if (log.innerHTML === html) return;
+  const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  log.innerHTML = html;
+  log.querySelectorAll('[data-chat-del]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = (btn as HTMLElement).dataset.chatDel;
+      if (!id) return;
+      const ack = await cmd('chat.delete', { id });
+      if (!ack.ok) toast('Không xóa được');
     });
-    const send = async () => {
-      if (!canPerm('chat.send') || !input) return;
-      const body = input.value.trim();
-      if (!body) return;
-      const ack = await cmd('chat.send', { scope, body });
-      if (!ack.ok) {
-        toast(ack.error === 'rate_limited' ? 'Chậm thôi' : 'Gửi lỗi');
-        return;
-      }
-      input.value = '';
-      setChatDraft(scope, '');
-    };
-    panel.querySelector('[data-chat-send]')?.addEventListener('click', () => void send());
-    input?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        void send();
-      }
-    });
-    panel.querySelectorAll('[data-chat-del]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = (btn as HTMLElement).dataset.chatDel!;
-        const ack = await cmd('chat.delete', { id });
-        if (!ack.ok) toast('Không xóa được');
-      });
-    });
-    if (log) log.scrollTop = log.scrollHeight;
   });
+  if (nearBottom) log.scrollTop = log.scrollHeight;
+}
+
+function paintSend(host: HTMLElement): void {
+  const canSend = canPerm('chat.send');
+  const input = host.querySelector<HTMLInputElement>('[data-chat-input]');
+  const send = host.querySelector<HTMLButtonElement>('[data-chat-send]');
+  if (input) {
+    input.disabled = !canSend;
+    input.placeholder = canSend ? 'Nhắn…' : 'Không gửi được';
+  }
+  if (send) send.disabled = !canSend;
+}
+
+async function sendDraft(host: HTMLElement): Promise<void> {
+  if (!canPerm('chat.send')) return;
+  const input = host.querySelector<HTMLInputElement>('[data-chat-input]');
+  if (!input) return;
+  const body = input.value.trim();
+  if (!body) return;
+  const ack = await cmd('chat.send', { scope: LOBBY_CHAT_SCOPE, body });
+  if (!ack.ok) {
+    toast(ack.error === 'rate_limited' ? 'Chậm thôi' : 'Gửi lỗi');
+    return;
+  }
+  input.value = '';
+  writeDraft('');
+}
+
+function bind(host: HTMLElement): void {
+  const input = host.querySelector<HTMLInputElement>('[data-chat-input]');
+  input?.addEventListener('input', () => writeDraft(input.value));
+  host.querySelector('[data-office-chat-toggle]')?.addEventListener('click', () => {
+    open = !open;
+    paintOpen(host, true);
+    if (open) {
+      const log = host.querySelector<HTMLElement>('[data-chat-log]');
+      if (log) log.scrollTop = log.scrollHeight;
+    }
+  });
+  host.querySelector('[data-office-chat-form]')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void sendDraft(host);
+  });
+}
+
+/** Gắn popup vào node riêng, ngoài #app. Gọi lại mỗi lần vẽ màn: không dựng lại ô nháp. */
+export function syncOfficeChat(): void {
+  if (!state.me) {
+    unmountOfficeChat();
+    return;
+  }
+  const host = hostEl();
+  host.hidden = false;
+  if (!bound) {
+    const draft = readDraft();
+    host.innerHTML = `<button type="button" class="hn-office-chat-btn" data-office-chat-toggle aria-expanded="false" aria-controls="hn-office-chat-pop">Chat</button>
+      <section id="hn-office-chat-pop" class="hn-office-chat-pop" data-chat-scope="${LOBBY_CHAT_SCOPE}" aria-label="Chat văn phòng" hidden>
+        <div class="hn-chat-log" data-chat-log></div>
+        <form class="hn-chat-compose" data-office-chat-form>
+          <input class="hn-input" data-chat-input aria-label="Tin nhắn" maxlength="500" placeholder="Nhắn…" value="${esc(draft)}">
+          <button type="submit" class="hn-btn hn-btn-blue" data-chat-send>GỬI</button>
+        </form>
+      </section>`;
+    bind(host);
+    bound = true;
+  }
+  const tankButton = document.querySelector<HTMLButtonElement>('[data-fish-fab="chat"]');
+  host.toggleAttribute('data-tank', !!tankButton);
+  if (tankButton) {
+    tankButton.removeAttribute('aria-pressed');
+    tankButton.setAttribute('aria-controls', 'hn-office-chat-pop');
+    tankButton.onclick = () => host.querySelector<HTMLButtonElement>('[data-office-chat-toggle]')?.click();
+  }
+  paintOpen(host, false);
+  paintSend(host);
+  paintLog(host);
+}
+
+export function unmountOfficeChat(): void {
+  const host = document.getElementById(HOST_ID);
+  if (host) {
+    host.replaceChildren();
+    host.hidden = true;
+  }
+  bound = false;
+  open = false;
 }

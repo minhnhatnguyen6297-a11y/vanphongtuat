@@ -1,4 +1,6 @@
 import type { Member } from '../shared/types.js';
+import { canonicalUsername } from '../shared/username.js';
+import { clearLoginHint } from './login-hint.js';
 import { state, patch } from './store.js';
 import { seedMock } from './mock.js';
 
@@ -27,6 +29,14 @@ function apiHeaders(extra?: HeadersInit): Headers {
   const h = new Headers(extra);
   h.set('X-HNG', '1');
   return h;
+}
+
+function errorFromResponse(status: number, error?: string): string {
+  if (error) return error;
+  if (status === 403) return 'csrf';
+  if (status === 429) return 'rate_limited';
+  if (status === 401) return 'bad_credentials';
+  return 'rejected';
 }
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
@@ -119,7 +129,8 @@ export async function fetchLoginRoster(): Promise<{ username: string; displayNam
 export async function apiLogin(username: string, pin: string): Promise<LoginResult> {
   if (!livePreferred()) {
     seedMock();
-    const me = state.members.find((m) => m.username === username);
+    const key = canonicalUsername(username);
+    const me = state.members.find((m) => canonicalUsername(m.username) === key);
     if (!me) return { ok: false, error: 'bad' };
     if (!/^\d{6}$/.test(pin)) return { ok: false, error: 'bad' };
     if (pin === '000000') return { ok: false, error: 'bad' };
@@ -144,7 +155,7 @@ export async function apiLogin(username: string, pin: string): Promise<LoginResu
     if (!r.ok) {
       return {
         ok: false,
-        error: data.error || 'bad',
+        error: errorFromResponse(r.status, data.error),
         retryAfterMin: data.retryAfterMin,
       };
     }
@@ -177,7 +188,9 @@ export async function apiRegister(
       error?: string;
       retryAfterMin?: number;
     };
-    if (!r.ok) return { ok: false, error: data.error || 'bad', retryAfterMin: data.retryAfterMin };
+    if (!r.ok) {
+      return { ok: false, error: errorFromResponse(r.status, data.error), retryAfterMin: data.retryAfterMin };
+    }
     const me = asMember(data.member);
     if (!me) return { ok: false, error: 'bad' };
     patch((s) => {
@@ -212,6 +225,7 @@ export async function apiAiText(
 }
 
 export async function apiLogout(): Promise<void> {
+  clearLoginHint();
   if (state.mock) return;
   try {
     await apiFetch('/api/logout', { method: 'POST' });

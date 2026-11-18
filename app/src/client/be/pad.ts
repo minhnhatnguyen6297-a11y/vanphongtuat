@@ -1,5 +1,6 @@
 import { boxBlurRGBA } from './blur.js';
 import { loadImage, svgUrl } from './image.js';
+import { DEFAULT_FISH_COLOR } from './palette.js';
 import { clamp } from './motion.js';
 
 export const PAD_W = 480;
@@ -18,10 +19,10 @@ export class FishPad {
   private dirty = false;
   private stampToken = 0;
   tool: FishTool = 'pen';
-  color = '#13110F';
-  size = 8;
+  color: string = DEFAULT_FISH_COLOR;
+  size = 18;
   /** 1–8. Higher spreads the blur dab further. */
-  blurStrength = 4;
+  blurStrength = 3;
   patternId: string | null = null;
   previewUrl: string | null = null;
 

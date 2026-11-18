@@ -12,6 +12,16 @@ import {
 } from '../../src/server/commands/chat.ts';
 import { LOBBY_CHAT_SCOPE } from '../../src/shared/chat.ts';
 import { buildSnap } from '../../src/server/snapshots.ts';
+import type { Db } from '../../src/server/db.ts';
+
+function insertChat(db: Db, scope: string, memberId: string, body: string): string {
+  const id = crypto.randomUUID();
+  db.prepare(
+    `INSERT INTO chat_messages(id, scope, member_id, body, created_at, deleted_at, deleted_by)
+     VALUES(?,?,?,?,?,NULL,NULL)`,
+  ).run(id, scope, memberId, body, new Date().toISOString());
+  return id;
+}
 
 describe('chat scope ACL + fanout', () => {
   let db: ReturnType<typeof setupTestDb>;
@@ -57,21 +67,17 @@ describe('chat scope ACL + fanout', () => {
 
   afterEach(() => closeDb());
 
-  it('hai wheelId không leak — snap/sub theo scope', () => {
+  it('hai wheelId không leak — lịch sử giữ, gửi mới bị chặn', () => {
+    insertChat(db, `wheel:${wheelA}`, dan.id, 'tin A');
+    insertChat(db, `wheel:${wheelB}`, dan.id, 'tin B');
+
     const sendA = dispatchCommand(db, dan.member, {
       opId: crypto.randomUUID(),
       name: 'chat.send',
-      args: { scope: `wheel:${wheelA}`, body: 'tin A' },
+      args: { scope: `wheel:${wheelA}`, body: 'tin mới' },
     });
-    assert.equal(sendA.ok, true);
-    resetChatRateLimit();
-
-    const sendB = dispatchCommand(db, dan.member, {
-      opId: crypto.randomUUID(),
-      name: 'chat.send',
-      args: { scope: `wheel:${wheelB}`, body: 'tin B' },
-    });
-    assert.equal(sendB.ok, true);
+    assert.equal(sendA.ok, false);
+    assert.equal((sendA as { error: string }).error, 'scope_closed');
 
     assert.equal(canAccessChatScope(db, dan.member, `wheel:${wheelA}`), true);
     assert.equal(canAccessChatScope(db, dan.member, `wheel:${wheelB}`), true);
@@ -99,23 +105,32 @@ describe('chat scope ACL + fanout', () => {
     const ack = dispatchCommand(db, dan.member, {
       opId: crypto.randomUUID(),
       name: 'chat.send',
-      args: { scope: `wheel:${wheelA}`, body: 'ping' },
+      args: { scope: LOBBY_CHAT_SCOPE, body: 'ping' },
     });
     assert.equal(ack.ok, true);
     const ok = ack as { ok: true; scopes: string[]; events?: ChatEvent[] };
     assert.ok(ok.events && ok.events.length === 1);
     assert.equal(ok.events![0]!.t, 'chat');
-    assert.equal(ok.events![0]!.scope, `wheel:${wheelA}`);
+    assert.equal(ok.events![0]!.scope, LOBBY_CHAT_SCOPE);
     assert.equal(ok.events![0]!.msg.body, 'ping');
     assert.ok(!ok.scopes.some((s) => s.startsWith('chat:')));
   });
 
-  it('nô lệ send table OK, không mod', () => {
-    const scope = `table:${tableId}`;
+  it('nô lệ gửi lobby được, gửi table bị chặn, không mod', () => {
+    const tableScope = `table:${tableId}`;
+    const blocked = dispatchCommand(db, nole.member, {
+      opId: crypto.randomUUID(),
+      name: 'chat.send',
+      args: { scope: tableScope, body: 'nô lệ chat bàn' },
+    });
+    assert.equal(blocked.ok, false);
+    assert.equal((blocked as { error: string }).error, 'scope_closed');
+    assert.equal(loadChatSnap(db, tableScope).messages.length, 0);
+
     const send = dispatchCommand(db, nole.member, {
       opId: crypto.randomUUID(),
       name: 'chat.send',
-      args: { scope, body: 'nô lệ chat' },
+      args: { scope: LOBBY_CHAT_SCOPE, body: 'nô lệ chat' },
     });
     assert.equal(send.ok, true);
     resetChatRateLimit();
@@ -123,7 +138,7 @@ describe('chat scope ACL + fanout', () => {
     const other = dispatchCommand(db, dan.member, {
       opId: crypto.randomUUID(),
       name: 'chat.send',
-      args: { scope, body: 'tin dân' },
+      args: { scope: LOBBY_CHAT_SCOPE, body: 'tin dân' },
     });
     assert.equal(other.ok, true);
     const msgId = (other as { result: { id: string } }).result.id;
@@ -137,15 +152,9 @@ describe('chat scope ACL + fanout', () => {
     assert.equal((del as { error: string }).error, 'forbidden');
   });
 
-  it('chủ xị chat.mod xóa được mọi lúc', () => {
+  it('chủ xị xóa được tin cũ trên table, gửi mới vẫn bị chặn', () => {
     const scope = `table:${tableId}`;
-    const send = dispatchCommand(db, dan.member, {
-      opId: crypto.randomUUID(),
-      name: 'chat.send',
-      args: { scope, body: 'xóa tôi' },
-    });
-    assert.equal(send.ok, true);
-    const msgId = (send as { result: { id: string } }).result.id;
+    const msgId = insertChat(db, scope, dan.id, 'xóa tôi');
 
     const del = dispatchCommand(db, chu.member, {
       opId: crypto.randomUUID(),
@@ -154,7 +163,17 @@ describe('chat scope ACL + fanout', () => {
     });
     assert.equal(del.ok, true);
     const snap = loadChatSnap(db, scope);
+    assert.equal(snap.messages.length, 1);
     assert.ok(snap.messages[0]!.deletedAt);
+
+    const send = dispatchCommand(db, dan.member, {
+      opId: crypto.randomUUID(),
+      name: 'chat.send',
+      args: { scope, body: 'tin mới' },
+    });
+    assert.equal(send.ok, false);
+    assert.equal((send as { error: string }).error, 'scope_closed');
+    assert.equal(loadChatSnap(db, scope).messages.length, 1);
   });
 
   it('lobby: mọi thành viên chat chung, tách khỏi wheel/table', () => {

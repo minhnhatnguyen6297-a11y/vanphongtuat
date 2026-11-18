@@ -242,7 +242,7 @@ export class PlanHarness {
       case 'wheel.item.add': {
         const wheel = this.wheels.get(String(args.wheelId ?? ''));
         if (!wheel) return [{ t: 'ack', opId, ok: false, error: 'no_wheel' }];
-        if (wheel.items.length >= 30) return [{ t: 'ack', opId, ok: false, error: 'limit' }];
+        if (wheel.items.length >= 60) return [{ t: 'ack', opId, ok: false, error: 'limit' }];
         const item: WheelItem = {
           id: randomUUID(),
           name: String(args.name ?? '').slice(0, 120),

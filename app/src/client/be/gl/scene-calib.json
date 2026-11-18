@@ -1,0 +1,27 @@
+{
+  "image": [
+    1672,
+    941
+  ],
+  "horizonV": 0.69,
+  "surfaceV": 0.113,
+  "fishShadowV": [
+    0.82,
+    0.93
+  ],
+  "fogSampleRect": [
+    0.55,
+    0.3,
+    0.68,
+    0.5
+  ],
+  "lightDir": [
+    -0.3,
+    1,
+    0.2
+  ],
+  "bubbleSourceUV": [
+    0.78,
+    0.62
+  ]
+}

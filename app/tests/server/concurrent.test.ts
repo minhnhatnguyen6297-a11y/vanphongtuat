@@ -149,8 +149,10 @@ describe('concurrent 15 users (plan harness)', { concurrency: 1 }, () => {
       expected.rows.map((r) => [r.memberId, r.share]),
     );
     const sum = result.shares.rows.reduce((t, r) => t + r.share, 0);
-    assert.equal(sum + result.shares.hostCovers, expected.bill);
-    assert.ok(result.shares.rows.every((r) => r.share % 500 === 0));
+    assert.equal(result.shares.hostCovers, 0);
+    assert.equal(sum, result.shares.each * result.shares.rows.length);
+    assert.ok(result.shares.rows.every((r) => r.share === result.shares.each && r.share % 500 === 0));
+    if (result.shares.rows.length > 0) assert.ok(sum >= expected.bill);
 
     // Thanh vien thuong khong set duoc bill
     const denied = clients[2]!.cmd('table.setBill', { total: 1, mode: 'equal' });

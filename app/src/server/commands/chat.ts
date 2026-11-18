@@ -5,7 +5,7 @@ import { hasPerm, type AuthMember } from '../perms.ts';
 import type { Db } from '../db.ts';
 import type { ChatEvent, ChatMsg, CmdOk, Handler } from './types.ts';
 import type { CommandArgs } from '../../shared/commands.ts';
-import { LOBBY_CHAT_SCOPE } from '../../shared/chat.ts';
+import { isRetiredChatScope, LOBBY_CHAT_SCOPE } from '../../shared/chat.ts';
 
 export type { ChatEvent, ChatMsg };
 
@@ -109,6 +109,7 @@ export const chatSend: Handler = (ctx, args: CommandArgs<'chat.send'>): CmdOk =>
   const { db, member } = ctx;
   const scope = parseChatScope(args.scope);
   if (!scope) throw new CmdError('invalid_args');
+  if (isRetiredChatScope(scope)) throw new CmdError('scope_closed');
   if (!canAccessChatScope(db, member, scope)) throw new CmdError('forbidden');
   if (!hasPerm(db, member.id, 'chat.send')) throw new CmdError('forbidden');
 

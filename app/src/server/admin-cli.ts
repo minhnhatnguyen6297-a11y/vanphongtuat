@@ -2,6 +2,7 @@ import { openDb, closeDb, nowIso, newId } from './db.ts';
 import { config } from './config.ts';
 import { hashPin, randomPin } from './auth.ts';
 import { setMemberTier } from './perms.ts';
+import { canonicalUsername } from '../shared/username.ts';
 
 function usage() {
   console.log(`Usage:
@@ -15,12 +16,9 @@ function usage() {
 }
 
 function findMember(db: ReturnType<typeof openDb>, key: string) {
-  return (
-    (db.prepare(`SELECT * FROM members WHERE id = ?`).get(key) as any) ||
-    (db
-      .prepare(`SELECT * FROM members WHERE username = ? COLLATE NOCASE`)
-      .get(key) as any)
-  );
+  const byId = db.prepare(`SELECT * FROM members WHERE id = ?`).get(key) as any;
+  if (byId) return byId;
+  return db.prepare(`SELECT * FROM members WHERE username = ?`).get(canonicalUsername(key)) as any;
 }
 
 async function main() {
@@ -55,7 +53,7 @@ async function main() {
       db.prepare(
         `INSERT INTO members(id, username, display_name, pin_hash, pin_salt, is_operator, tier, disabled, created_at)
          VALUES(?,?,?,?,?,0,'dan_den',0,?)`,
-      ).run(id, username.toLowerCase(), displayName, hash, salt, nowIso());
+      ).run(id, canonicalUsername(username), displayName, hash, salt, nowIso());
       console.log(`Created ${username} (${displayName}) id=${id} tier=dan_den`);
       console.log(`PIN (one-time): ${pin}`);
       return;

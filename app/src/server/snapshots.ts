@@ -279,11 +279,12 @@ export function snapWheels(db: Db) {
             ref_member_id AS refMemberId, votes, sort
      FROM wheel_items WHERE wheel_id = ? ORDER BY sort, rowid`,
   );
+  // 5 → 20 dòng (18/11/2026) để khung Lịch sử quay trên màn không cụt sau vài lượt. Chưa đo máy yếu.
   const spinsStmt = db.prepare(
     `SELECT id, wheel_id AS wheelId, by_member AS byMember, items_json AS itemsJson,
             result_index AS resultIndex, result_name AS resultName,
             started_at AS startedAt, duration_ms AS durationMs
-     FROM spins WHERE wheel_id = ? ORDER BY started_at DESC LIMIT 5`,
+     FROM spins WHERE wheel_id = ? ORDER BY started_at DESC LIMIT 20`,
   );
 
   const data = wheels.map((w) => ({

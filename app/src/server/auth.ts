@@ -5,6 +5,7 @@ import { nowIso, newId } from './db.ts';
 import { config } from './config.ts';
 import type { AuthMember } from './perms.ts';
 import { TIERS } from '../shared/perms-catalog.ts';
+import { canonicalUsername } from '../shared/username.ts';
 
 const SCRYPT_N = 1 << 15;
 const SCRYPT_R = 8;
@@ -232,9 +233,11 @@ export function login(
 ):
   | { ok: true; sessionId: string; member: AuthMember }
   | { ok: false; error: string; retryAfterMin?: number } {
+  const userKey = canonicalUsername(username);
   if (!checkIpRate(ip)) return { ok: false, error: 'rate_limited', retryAfterMin: 10 };
+  if (!userKey) return { ok: false, error: 'bad_credentials' };
 
-  const lock = checkUserLock(db, username);
+  const lock = checkUserLock(db, userKey);
   if (lock.locked) return { ok: false, error: 'locked', retryAfterMin: lock.retryAfterMin };
 
   const row = db
@@ -242,7 +245,7 @@ export function login(
       `SELECT id, username, display_name, pin_hash, pin_salt, is_operator, tier, avatar_id, disabled
        FROM members WHERE username = ? COLLATE NOCASE`,
     )
-    .get(username) as
+    .get(userKey) as
     | {
         id: string;
         username: string;
@@ -257,18 +260,18 @@ export function login(
     | undefined;
 
   if (!row || row.disabled) {
-    recordLoginFail(db, username.toLowerCase());
+    recordLoginFail(db, userKey);
     return { ok: false, error: 'bad_credentials' };
   }
 
   const ok = verifyPin(pin, row.pin_hash, row.pin_salt);
   if (!ok) {
-    const fail = recordLoginFail(db, row.username.toLowerCase());
+    const fail = recordLoginFail(db, userKey);
     if (fail.locked) return { ok: false, error: 'locked', retryAfterMin: fail.retryAfterMin };
     return { ok: false, error: 'bad_credentials' };
   }
 
-  clearLoginFails(db, row.username.toLowerCase());
+  clearLoginFails(db, userKey);
   const sessionId = createSession(db, row.id);
   const tier =
     row.tier === 'chu_xi' || row.tier === 'pho_xi' || row.tier === 'dan_den' || row.tier === 'no_le'
@@ -304,7 +307,7 @@ export function registerMember(
   | { ok: true; sessionId: string; member: AuthMember }
   | { ok: false; error: string; retryAfterMin?: number } {
   if (!checkIpRate(ip)) return { ok: false, error: 'rate_limited', retryAfterMin: 10 };
-  const user = username.trim().toLowerCase();
+  const user = canonicalUsername(username);
   const name = displayName.trim().replace(/\s+/g, ' ');
   if (!USER_RE.test(user)) return { ok: false, error: 'bad_username' };
   if (!/^\d{6}$/.test(pin)) return { ok: false, error: 'bad_pin' };

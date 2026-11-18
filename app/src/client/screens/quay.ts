@@ -1,11 +1,11 @@
 import { esc } from '../../shared/esc.js';
 import { adoptSpinClock, easeOutCubic, shouldRevealResult, spinProgress } from '../../shared/wheel-motion.js';
-import { state, canPerm, setSound, memberById, shopById, notify } from '../store.js';
-import type { Spin } from '../../shared/types.js';
+import { state, canPerm, setSound, memberById, notify } from '../store.js';
+import type { Shop, Spin } from '../../shared/types.js';
 import { ICONS, SHOP_COLORS } from '../icons.js';
-import { cmd, setChatSubs, uuid } from '../ws.js';
+import { cmd, uuid } from '../ws.js';
 import { toast } from '../ui/toast.js';
-import { renderChatPanel, bindChatPanel } from '../ui/chat-panel.js';
+import { closeModal, openModal } from '../ui/modal.js';
 
 let audioCtx: AudioContext | null = null;
 let lastTick = 0;
@@ -13,6 +13,11 @@ let spinRaf = 0;
 let loopSpinId: string | null = null;
 const localPlan = new Map<string, { start: number; dur: number; from: number; to: number }>();
 const ownSpins = new Set<string>();
+/** Thẻ đang gõ, chưa ghi máy chủ. Trọng số lúc lưu = 20 để các ô mới đều nhau. */
+const drafts = new Map<string, { wheelId: string; text: string }>();
+const savingDrafts = new Set<string>();
+let focusDraftId: string | null = null;
+const NEW_ITEM_WEIGHT = 20;
 
 function resumeAudio(): void {
   if (!audioCtx) audioCtx = new AudioContext();
@@ -70,7 +75,8 @@ function conic(items: { weight: number }[]): string {
   const stops = segs
     .flatMap((s) => [`${s.color} ${s.start}deg`, `${s.color} ${s.end}deg`])
     .join(', ');
-  return `conic-gradient(from -90deg, ${stops})`;
+  // conic-gradient mặc định 0° ở đỉnh. Không thêm `from`: nhãn đã trừ 90° vì rotate(0) chỉ sang phải.
+  return `conic-gradient(${stops})`;
 }
 
 function landingAngle(resultIndex: number, items: { weight: number }[]): number {
@@ -196,14 +202,9 @@ export function resetWheelSpinForTests(): void {
   stopSpinLoop();
   localPlan.clear();
   ownSpins.clear();
-}
-
-/** Slider % → weight, giữ tổng các ô khác. */
-function weightFromPct(pct: number, itemWeight: number, totalW: number): number {
-  const others = Math.max(0, totalW - itemWeight);
-  if (others <= 0) return Math.max(1, itemWeight);
-  const clamped = Math.max(1, Math.min(99, Math.round(pct)));
-  return Math.max(1, Math.round((clamped / (100 - clamped)) * others));
+  drafts.clear();
+  savingDrafts.clear();
+  focusDraftId = null;
 }
 
 function activeSpin(wheelId: string) {
@@ -227,22 +228,221 @@ function spinsToday(wheelId: string): number {
   ).length;
 }
 
+function freeWheels() {
+  return state.wheels.filter((w) => w.kind === 'free');
+}
+
+function pickedWheel() {
+  const wheels = freeWheels();
+  return wheels.find((w) => w.id === state.ui.wheelId) || wheels[0];
+}
+
+function nameLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => s.slice(0, 120));
+}
+
+function toastCmd(ack: { ok: boolean; error?: string }): boolean {
+  if (ack.ok) return true;
+  if (ack.error === 'too_many_items') toast('Tối đa 60 ô');
+  else if (ack.error === 'forbidden') toast('Không được sửa danh sách');
+  else if (ack.error === 'conflict') toast('Danh sách vừa đổi, thử lại');
+  else toast('Chưa lưu được');
+  return false;
+}
+
+async function ensureList(): Promise<string | null> {
+  const existing = pickedWheel();
+  if (existing) {
+    state.ui.wheelId = existing.id;
+    return existing.id;
+  }
+  if (!canPerm('wheel.create')) {
+    toast('Không được tạo danh sách');
+    return null;
+  }
+  const ack = await cmd('wheel.create', { title: 'Danh sách' });
+  if (!ack.ok || !ack.result) {
+    toast('Chưa tạo được danh sách');
+    return null;
+  }
+  const id = (ack.result as { id: string }).id;
+  state.ui.wheelId = id;
+  return id;
+}
+
+async function commitDraft(draftId: string): Promise<void> {
+  if (savingDrafts.has(draftId)) return;
+  const draft = drafts.get(draftId);
+  if (!draft) return;
+  const names = nameLines(draft.text);
+  if (!names.length) return;
+  savingDrafts.add(draftId);
+  try {
+    const wheel = state.wheels.find((w) => w.id === draft.wheelId);
+    const version = wheel?.version ?? 1;
+    const ack =
+      names.length === 1
+        ? await cmd(
+            'wheel.item.add',
+            { wheelId: draft.wheelId, name: names[0], weight: NEW_ITEM_WEIGHT },
+            version,
+          )
+        : await cmd(
+            'wheel.item.addMany',
+            {
+              wheelId: draft.wheelId,
+              items: names.map((name) => ({ name, weight: NEW_ITEM_WEIGHT })),
+            },
+            version,
+          );
+    if (!toastCmd(ack)) return;
+    drafts.delete(draftId);
+    notify();
+  } finally {
+    savingDrafts.delete(draftId);
+  }
+}
+
+function openShopPicker(): void {
+  if (!state.shops.length) {
+    toast('Kho chưa có quán');
+    return;
+  }
+  const wheel = pickedWheel();
+  const taken = new Set((wheel?.items || []).map((i) => i.refShopId).filter(Boolean) as string[]);
+  openModal({
+    title: 'Nhập cửa hàng',
+    bodyHtml: `<div class="hn-wheel-picker-list" id="shop-pick">
+      ${state.shops
+        .map(
+          (s) =>
+            `<button type="button" class="hn-btn hn-btn-white" data-sid="${esc(s.id)}" aria-pressed="false">${esc(s.name)}</button>`,
+        )
+        .join('')}
+    </div>
+    <button type="button" class="hn-btn hn-btn-green" id="shop-pick-go" style="width:100%;margin-top:10px">Đưa vào danh sách</button>`,
+    onMount: (root) => {
+      const selected = new Set<string>();
+      root.querySelectorAll('[data-sid]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = (btn as HTMLElement).dataset.sid!;
+          if (selected.has(id)) selected.delete(id);
+          else selected.add(id);
+          btn.setAttribute('aria-pressed', selected.has(id) ? 'true' : 'false');
+        });
+      });
+      root.querySelector('#shop-pick-go')?.addEventListener('click', () => {
+        void importShops([...selected], taken);
+      });
+    },
+  });
+}
+
+async function importShops(ids: string[], taken: Set<string>): Promise<void> {
+  if (!ids.length) {
+    toast('Chọn ít nhất một quán');
+    return;
+  }
+  const fresh = ids.filter((id) => !taken.has(id));
+  if (!fresh.length) {
+    toast('Các quán này đã có trong danh sách');
+    return;
+  }
+  const wheelId = await ensureList();
+  if (!wheelId) return;
+  const wheel = state.wheels.find((w) => w.id === wheelId);
+  const items = fresh
+    .map((id) => state.shops.find((s) => s.id === id))
+    .filter((s): s is Shop => !!s)
+    .map((s) => ({ name: s.name.slice(0, 120), weight: NEW_ITEM_WEIGHT, refShopId: s.id }));
+  if (!items.length) return;
+  const ack = await cmd('wheel.item.addMany', { wheelId, items }, wheel?.version ?? 1);
+  if (!toastCmd(ack)) return;
+  closeModal();
+  toast(`Đã thêm ${items.length} quán`);
+}
+
+function openMenuPicker(): void {
+  if (!state.shops.length) {
+    toast('Kho chưa có quán');
+    return;
+  }
+  openModal({
+    title: 'Nhập món',
+    bodyHtml: `<p style="margin:0 0 8px">Chọn một quán. Toàn bộ món vào một danh sách quay riêng.</p>
+      <div class="hn-wheel-picker-list" id="menu-pick">
+      ${state.shops
+        .map(
+          (s) =>
+            `<button type="button" class="hn-btn hn-btn-white" data-sid="${esc(s.id)}">${esc(s.name)} <span style="font-weight:600">(${s.menu.length} món)</span></button>`,
+        )
+        .join('')}
+      </div>`,
+    onMount: (root) => {
+      root.querySelectorAll('[data-sid]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const shop = state.shops.find((s) => s.id === (btn as HTMLElement).dataset.sid);
+          if (shop) void importMenu(shop);
+        });
+      });
+    },
+  });
+}
+
+async function importMenu(shop: Shop): Promise<void> {
+  if (!shop.menu.length) {
+    toast('Quán chưa có món');
+    return;
+  }
+  if (shop.menu.length > 60) {
+    toast('Menu dài hơn 60 món');
+    return;
+  }
+  if (!canPerm('wheel.create')) {
+    toast('Không được tạo danh sách');
+    return;
+  }
+  const title = `Món · ${shop.name}`.slice(0, 120);
+  const created = await cmd('wheel.create', { title });
+  if (!created.ok || !created.result) {
+    toast('Chưa tạo được danh sách món');
+    return;
+  }
+  const wheelId = (created.result as { id: string }).id;
+  const ack = await cmd(
+    'wheel.item.addMany',
+    {
+      wheelId,
+      items: shop.menu.map((m) => ({ name: m.name.slice(0, 120), weight: NEW_ITEM_WEIGHT })),
+    },
+    1,
+  );
+  if (!toastCmd(ack)) {
+    if (canPerm('wheel.delete')) await cmd('wheel.delete', { id: wheelId });
+    return;
+  }
+  state.ui.wheelId = wheelId;
+  closeModal();
+  toast(`Đã nhập ${shop.menu.length} món`);
+  notify();
+}
+
 export function titleQuay(): { chip: string; fun: string } {
   return { chip: 'VÒNG QUAY', fun: 'QUAY XONG KHÔNG CÃI!' };
 }
 
 export function renderQuay(): string {
-  const wheels = state.wheels;
+  const wheels = freeWheels();
   let wheel = wheels.find((w) => w.id === state.ui.wheelId) || wheels[0];
   if (wheel && state.ui.wheelId !== wheel.id) state.ui.wheelId = wheel.id;
 
-  if (!wheel) {
-    return `<main class="hn-main">${canPerm('wheel.create') ? `<button type="button" class="hn-btn" data-act="new-wheel">+ VÒNG MỚI</button>` : '<p>Chưa có vòng</p>'}</main>`;
-  }
-
-  const items = wheel.items;
-  const spinning = activeSpin(wheel.id);
-  const last = latestSpin(wheel.id);
+  const items = wheel?.items || [];
+  const spinning = wheel ? activeSpin(wheel.id) : undefined;
+  const last = wheel ? latestSpin(wheel.id) : undefined;
   const layout = segmentLayout(items);
 
   let angle = 0;
@@ -252,7 +452,6 @@ export function renderQuay(): string {
     angle = spinAngle(last.resultIndex, itemsSnap);
   }
 
-  const totalW = items.reduce((s, i) => s + i.weight, 0) || 1;
   const segs = layout.map((s, i) => {
     const ink = inkFor(s.color);
     return {
@@ -264,74 +463,84 @@ export function renderQuay(): string {
     };
   });
 
-  let spinLabel = 'QUAY NGAY';
+  const canEdit = canPerm('wheel.edit');
+  const canCreate = canPerm('wheel.create');
+  let spinLabel = 'Quay';
   let disabled = false;
   if (!canPerm('wheel.spin')) {
-    spinLabel = 'CHỈ XEM';
+    spinLabel = 'Chỉ xem';
     disabled = true;
   } else if (items.length < 2) {
-    spinLabel = 'THÊM ÍT NHẤT 2 Ô';
+    spinLabel = 'Thêm ít nhất 2 ô';
     disabled = true;
   } else if (spinning) {
-    spinLabel = 'ĐANG QUAY…';
+    spinLabel = 'Đang quay…';
     disabled = true;
-  } else if (last) {
-    spinLabel = 'QUAY LẠI';
   }
 
-  const hasWinner = !!(last && !spinning);
-  const count = spinsToday(wheel.id);
-  let act = '';
-  if (hasWinner && wheel.kind === 'shop' && canPerm('table.setWinner')) {
-    const item = items[last!.resultIndex];
-    act = `<button type="button" class="hn-btn hn-btn-green" data-act="set-winner" data-shop="${item?.refShopId || ''}" data-spin="${last!.id}">CHỐT QUÁN NÀY</button>`;
-  } else if (hasWinner && wheel.kind === 'person' && canPerm('table.setPickup')) {
-    const item = JSON.parse(last!.itemsJson)[last!.resultIndex] as { refMemberId?: string };
-    act = `<button type="button" class="hn-btn hn-btn-green" data-act="set-pickup" data-member="${item?.refMemberId || ''}" data-spin="${last!.id}">GHI NGƯỜI ĐI LẤY</button>`;
-  }
-
-  const canDelWheel = canPerm('wheel.delete');
-  const chips = wheels
-    .map((w) => {
-      const on = w.id === wheel!.id;
-      const del = canDelWheel
-        ? `<button type="button" data-del-wheel="${w.id}" aria-label="Xóa vòng" title="Xóa vòng" style="margin-left:2px;width:28px;height:28px;border:2px solid #1B1B1B;background:#fff;cursor:pointer;font-weight:800;line-height:1">×</button>`
-        : '';
-      return `<span style="display:inline-flex;align-items:center">
-        <button type="button" class="hn-choice" data-wheel="${w.id}" aria-pressed="${on}">${esc(w.title)}</button>${del}
-      </span>`;
-    })
-    .join('');
+  const hasWinner = !!(last && !spinning && wheel);
+  const count = wheel ? spinsToday(wheel.id) : 0;
+  const soundIcon = state.ui.soundOn ? ICONS.soundOn : ICONS.soundOff;
+  const current = wheel;
+  const draftRows = current ? [...drafts.entries()].filter(([, d]) => d.wheelId === current.id) : [];
 
   const rows = items
     .map((r, i) => {
-      const pctNum = Math.max(1, Math.min(99, Math.round((r.weight / totalW) * 100)));
       const dot = SHOP_COLORS[i % SHOP_COLORS.length];
       return `<li class="hn-wheel-row">
         <span class="hn-wheel-swatch" aria-hidden="true" style="background:${dot}"></span>
-        <input class="hn-input" data-iname="${r.id}" aria-label="Tên ô" value="${esc(r.name)}">
-        <input type="range" min="1" max="99" value="${pctNum}" data-iw="${r.id}" data-iw-weight="${r.weight}" aria-label="Tỷ lệ %" style="accent-color:${dot}">
-        <span class="hn-wheel-percent" data-pct-for="${r.id}">${pctNum}%</span>
-        <button class="hn-wheel-remove" type="button" data-iremove="${r.id}" aria-label="Bỏ ô">${ICONS.x}</button>
+        <input class="hn-input" data-iname="${r.id}" aria-label="Tên ô" value="${esc(r.name)}" ${canEdit ? '' : 'readonly'}>
+        ${canEdit ? `<button class="hn-wheel-remove" type="button" data-iremove="${r.id}" aria-label="Bỏ ${esc(r.name)}">${ICONS.x}</button>` : ''}
       </li>`;
     })
     .join('');
 
-  const log = state.spins
-    .filter((s) => s.wheelId === wheel!.id)
-    .slice(0, 5)
-    .map((s) => {
-      const d = new Date(s.startedAt);
-      const when = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      const name = spinSettled(s) ? s.resultName : 'đang quay';
-      return `<div class="hn-wheel-log-row"><time>${when}</time><b>${esc(name)}</b></div>`;
+  const draftHtml = draftRows
+    .map(([id, d], i) => {
+      const dot = SHOP_COLORS[(items.length + i) % SHOP_COLORS.length];
+      return `<li class="hn-wheel-row">
+        <span class="hn-wheel-swatch" aria-hidden="true" style="background:${dot}"></span>
+        <input class="hn-input" data-draft="${id}" aria-label="Tên ô mới" placeholder="Gõ tên, hoặc dán nhiều dòng" value="${esc(d.text)}">
+        <button class="hn-wheel-remove" type="button" data-draft-remove="${id}" aria-label="Bỏ thẻ">${ICONS.x}</button>
+      </li>`;
     })
     .join('');
 
-  const soundIcon = state.ui.soundOn ? ICONS.soundOn : ICONS.soundOff;
+  const history = current ? state.spins.filter((s) => s.wheelId === current.id).slice(0, 20) : [];
+  const log = history
+    .map((s) => {
+      const d = new Date(s.startedAt);
+      const when = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const who = memberById(s.byMember)?.displayName || '—';
+      const name = spinSettled(s) ? s.resultName : 'đang quay';
+      return `<div class="hn-wheel-log-row"><time>${when}</time><span class="hn-wheel-log-who">${esc(who)}</span><b>${esc(name)}</b></div>`;
+    })
+    .join('');
+
+  const picker =
+    wheels.length > 1
+      ? `<label class="hn-wheel-pick-label">Danh sách quay
+          <select class="hn-input" id="wheel-pick" aria-label="Danh sách quay">
+            ${wheels
+              .map(
+                (w) =>
+                  `<option value="${esc(w.id)}" ${w.id === wheel?.id ? 'selected' : ''}>${esc(w.title)} (${w.items.length})</option>`,
+              )
+              .join('')}
+          </select>
+        </label>`
+      : '';
+
+  const actions =
+    canEdit
+      ? `<div class="hn-wheel-actions">
+          <button type="button" class="hn-btn hn-btn-green" data-act="add-card">Thêm</button>
+          <button type="button" class="hn-btn hn-btn-white" data-act="import-shops">Nhập cửa hàng</button>
+          <button type="button" class="hn-btn hn-btn-white" data-act="import-menu" ${canCreate ? '' : 'disabled'}>Nhập món</button>
+        </div>`
+      : '';
 
   return `<main class="hn-main">
-    <div class="hn-wheel-chat">${renderChatPanel(`wheel:${wheel.id}`, { title: 'Chat vòng', collapsible: true })}</div>
     <div class="hn-quay-wrap">
       <section aria-label="Bàn xoay" class="hn-panel hn-paper-fold hn-wheel-stage">
         <button type="button" class="hn-btn hn-btn-white hn-wheel-sound" data-act="sound" aria-pressed="${state.ui.soundOn}" aria-label="${state.ui.soundOn ? 'Tắt tiếng' : 'Bật tiếng'}">${soundIcon} Âm thanh <span aria-hidden="true"></span></button>
@@ -365,8 +574,6 @@ export function renderQuay(): string {
             <div class="hn-wheel-winner">${esc(last!.resultName)}</div>
             <div style="font-size:14px;color:#3D3D3D;margin-top:2px">${esc(verdict(count))}</div>
           </div>
-          ${wheel.kind === 'shop' ? '<span class="hn-art-rice" aria-hidden="true"></span>' : ''}
-          ${act}
         </div>`
             : ''
         }
@@ -374,33 +581,19 @@ export function renderQuay(): string {
       </section>
       <section style="min-width:0">
         <div class="hn-panel hn-paper-fold hn-wheel-editor">
-          <div class="hn-section-head"><h2 class="hn-h2"><span>CÁC Ô</span></h2></div>
-          <div class="hn-wheel-picker">
-            <div class="hn-wheel-tabs" role="group" aria-label="Chọn vòng quay">${chips}</div>
-            ${canPerm('wheel.create') ? `<button type="button" class="hn-btn" data-act="new-wheel" style="font-size:12px;min-height:40px">+ VÒNG MỚI</button>` : ''}
-          </div>
-          <input class="hn-input" id="wheel-title" aria-label="Tên vòng" value="${esc(wheel.title)}" ${canPerm('wheel.edit') ? '' : 'readonly'}>
-          <ul class="hn-wheel-items">${rows}</ul>
+          <div class="hn-section-head"><h2 class="hn-h2"><span>Danh sách</span></h2></div>
+          ${picker}
           ${
-            canPerm('wheel.edit')
-              ? `<div style="display:flex;gap:6px">
-            <input class="hn-input" id="wheel-new" placeholder="Thêm ô…" style="flex:1">
-            <button type="button" class="hn-btn hn-btn-green" data-act="add-item">THÊM</button>
+            wheel
+              ? `<input class="hn-input" id="wheel-title" aria-label="Tên danh sách" value="${esc(wheel.title)}" ${canEdit ? '' : 'readonly'}>`
+              : '<p>Chưa có danh sách</p>'
+          }
+          <ul class="hn-wheel-items">${rows}${draftHtml}</ul>
+          ${actions}
+          <div class="hn-wheel-log">
+            <h3>Lịch sử quay</h3>
+            ${log || '<p>Chưa có lượt quay</p>'}
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <button type="button" class="hn-btn" data-act="equal" style="min-height:40px;font-family:var(--font-body);font-weight:800;font-size:13px">Chia đều</button>
-            ${wheel.kind === 'shop' ? `<button type="button" class="hn-btn hn-btn-white" data-act="by-vote" style="min-height:40px;font-size:13px">Theo vote</button>` : ''}
-          </div>`
-              : ''
-          }
-          ${
-            log
-              ? `<div class="hn-wheel-log">
-            <h3>ĐÃ QUAY</h3>
-            ${log}
-          </div>`
-              : ''
-          }
         </div>
       </section>
     </div>
@@ -408,18 +601,8 @@ export function renderQuay(): string {
 }
 
 export function bindQuay(root: HTMLElement): void {
-  const wheel = state.wheels.find((w) => w.id === state.ui.wheelId) || state.wheels[0];
-  if (wheel) setChatSubs([`wheel:${wheel.id}`]);
-  else setChatSubs([]);
-  bindChatPanel(root);
-
-  const tabs = root.querySelector<HTMLElement>('.hn-wheel-tabs');
-  const selectedTab = tabs?.querySelector<HTMLElement>('[aria-pressed="true"]');
-  if (tabs && selectedTab?.parentElement) {
-    const viewport = tabs.getBoundingClientRect();
-    const tab = selectedTab.parentElement.getBoundingClientRect();
-    if (tab.right > viewport.right) tabs.scrollLeft += tab.right - viewport.right + 3;
-  }
+  const wheel = pickedWheel();
+  if (wheel && state.ui.wheelId !== wheel.id) state.ui.wheelId = wheel.id;
 
   const spinning = wheel ? activeSpin(wheel.id) : undefined;
   if (spinning) runSpinLoop(spinning);
@@ -430,32 +613,9 @@ export function bindQuay(root: HTMLElement): void {
     setSound(!state.ui.soundOn);
   });
 
-  root.querySelectorAll('[data-wheel]').forEach((b) => {
-    b.addEventListener('click', () => {
-      state.ui.wheelId = (b as HTMLElement).dataset.wheel!;
-      notify();
-    });
-  });
-
-  root.querySelectorAll('[data-del-wheel]').forEach((b) => {
-    b.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const id = (b as HTMLElement).dataset.delWheel!;
-      if (!confirm('Xóa vòng này?')) return;
-      const ack = await cmd('wheel.delete', { id });
-      if (!ack.ok) {
-        toast('Xóa lỗi');
-        return;
-      }
-      if (state.ui.wheelId === id) {
-        state.ui.wheelId = state.wheels.find((w) => w.id !== id)?.id || null;
-      }
-      toast('Đã xóa vòng');
-    });
-  });
-
-  root.querySelector('[data-act="new-wheel"]')?.addEventListener('click', async () => {
-    await cmd('wheel.create', { title: 'Vòng mới' });
+  root.querySelector('#wheel-pick')?.addEventListener('change', (e) => {
+    state.ui.wheelId = (e.target as HTMLSelectElement).value;
+    notify();
   });
 
   root.querySelector('#wheel-title')?.addEventListener('change', async (e) => {
@@ -477,46 +637,62 @@ export function bindQuay(root: HTMLElement): void {
     });
   });
 
-  root.querySelectorAll('[data-iw]').forEach((el) => {
-    const input = el as HTMLInputElement;
-    const id = input.dataset.iw!;
-    input.addEventListener('input', () => {
-      const label = root.querySelector(`[data-pct-for="${CSS.escape(id)}"]`);
-      if (label) label.textContent = `${input.value}%`;
-    });
-    input.addEventListener('change', async () => {
-      if (!wheel) return;
-      const item = wheel.items.find((x) => x.id === id);
-      if (!item) return;
-      const total = wheel.items.reduce((s, i) => s + i.weight, 0) || 1;
-      const weight = weightFromPct(Number(input.value), item.weight, total);
-      await cmd('wheel.item.update', { id, weight }, wheel.version);
-    });
-  });
-
   root.querySelectorAll('[data-iremove]').forEach((el) => {
     el.addEventListener('click', async () => {
       await cmd('wheel.item.remove', { id: (el as HTMLElement).dataset.iremove });
     });
   });
 
-  root.querySelector('[data-act="add-item"]')?.addEventListener('click', async () => {
-    if (!wheel) return;
-    const input = root.querySelector('#wheel-new') as HTMLInputElement;
-    const name = input.value.trim();
-    if (!name) return;
-    await cmd('wheel.item.add', { wheelId: wheel.id, name, weight: 10 });
-    input.value = '';
+  root.querySelectorAll('[data-draft]').forEach((el) => {
+    const input = el as HTMLInputElement;
+    const id = input.dataset.draft!;
+    input.addEventListener('input', () => {
+      const row = drafts.get(id);
+      if (row) row.text = input.value;
+    });
+    input.addEventListener('paste', (e) => {
+      const text = (e as ClipboardEvent).clipboardData?.getData('text') || '';
+      if (!/[\r\n]/.test(text)) return;
+      e.preventDefault();
+      const row = drafts.get(id);
+      if (!row) return;
+      row.text = text;
+      input.value = text;
+      void commitDraft(id);
+    });
+    input.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter') {
+        e.preventDefault();
+        void commitDraft(id);
+      }
+    });
+    input.addEventListener('blur', () => {
+      void commitDraft(id);
+    });
   });
 
-  root.querySelector('[data-act="equal"]')?.addEventListener('click', async () => {
-    if (!wheel) return;
-    await cmd('wheel.equalize', { wheelId: wheel.id });
+  root.querySelectorAll('[data-draft-remove]').forEach((el) => {
+    el.addEventListener('click', () => {
+      drafts.delete((el as HTMLElement).dataset.draftRemove!);
+      notify();
+    });
   });
 
-  root.querySelector('[data-act="by-vote"]')?.addEventListener('click', async () => {
-    if (!wheel) return;
-    await cmd('wheel.byVote', { wheelId: wheel.id });
+  root.querySelector('[data-act="add-card"]')?.addEventListener('click', async () => {
+    const wheelId = await ensureList();
+    if (!wheelId) return;
+    const id = uuid();
+    drafts.set(id, { wheelId, text: '' });
+    focusDraftId = id;
+    notify();
+  });
+
+  root.querySelector('[data-act="import-shops"]')?.addEventListener('click', () => {
+    openShopPicker();
+  });
+
+  root.querySelector('[data-act="import-menu"]')?.addEventListener('click', () => {
+    openMenuPicker();
   });
 
   root.querySelector('[data-act="spin"]')?.addEventListener('click', async () => {
@@ -543,7 +719,6 @@ export function bindQuay(root: HTMLElement): void {
       durationMs: number;
       items?: unknown[];
     };
-    // Live: đẩy spin vào state (snap wheels mang recentSpins nhưng có thể chậm)
     if (res && !state.mock) {
       const spin: Spin = {
         id: res.spinId || res.id || uuid(),
@@ -580,38 +755,9 @@ export function bindQuay(root: HTMLElement): void {
     }
   });
 
-  root.querySelector('[data-act="set-winner"]')?.addEventListener('click', async (e) => {
-    const el = e.currentTarget as HTMLElement;
-    const shopId = el.dataset.shop;
-    if (!shopId) {
-      // resolve from name
-      const last = latestSpin(wheel!.id);
-      const item = wheel!.items[last?.resultIndex ?? -1];
-      await cmd('table.setWinner', {
-        shopId: item?.refShopId || shopById(item?.refShopId || '')?.id,
-        spinId: el.dataset.spin,
-      });
-    } else {
-      await cmd('table.setWinner', { shopId, spinId: el.dataset.spin });
-    }
-    toast('Đã chốt quán');
-  });
-
-  root.querySelector('[data-act="set-pickup"]')?.addEventListener('click', async (e) => {
-    const el = e.currentTarget as HTMLElement;
-    let memberId = el.dataset.member;
-    if (!memberId) {
-      const last = latestSpin(wheel!.id);
-      const snap = JSON.parse(last!.itemsJson) as { refMemberId?: string; name: string }[];
-      const it = snap[last!.resultIndex];
-      memberId = it?.refMemberId || memberById('')?.id;
-      if (!memberId) {
-        const m = state.members.find((x) => x.displayName === it?.name);
-        memberId = m?.id;
-      }
-    }
-    if (!memberId) return;
-    await cmd('table.setPickup', { memberId, spinId: el.dataset.spin });
-    toast('Đã ghi người đi lấy');
-  });
+  if (focusDraftId) {
+    const el = root.querySelector<HTMLInputElement>(`[data-draft="${CSS.escape(focusDraftId)}"]`);
+    focusDraftId = null;
+    el?.focus();
+  }
 }

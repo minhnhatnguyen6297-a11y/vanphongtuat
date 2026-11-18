@@ -41,7 +41,7 @@ export function getTableHost(db: Db, tableId: number): string | null {
   return row?.host_id ?? null;
 }
 
-/** @deprecated host_id chỉ gánh lẻ — không authorize. Giữ cho compat gọi cũ. */
+/** @deprecated host_id là người kê bàn, không authorize. Không còn gánh phần lẻ. */
 export function requireHost(db: Db, member: AuthMember, tableId: number) {
   const host = getTableHost(db, tableId);
   if (!host || host !== member.id) throw new CmdError('forbidden');
@@ -209,6 +209,7 @@ function resolveCommandPerm(
 ): PermKey | 'self' {
   switch (name) {
     case 'vote.set':
+    case 'vote.place':
       return 'vote';
     case 'order.add':
       return 'order';
@@ -243,6 +244,7 @@ function resolveCommandPerm(
       return 'wheel.create';
     case 'wheel.rename':
     case 'wheel.item.add':
+    case 'wheel.item.addMany':
     case 'wheel.item.update':
     case 'wheel.item.remove':
     case 'wheel.equalize':

@@ -16,6 +16,10 @@ export const CommandSchemas = {
   'vote.set': z.object({
     shopId: z.string().min(1).nullable(),
   }),
+  /** Thêm quán vào bàn nếu chưa có, rồi ghi phiếu của người gọi. Một transaction. */
+  'vote.place': z.object({
+    shopId: z.string().min(1),
+  }),
   'table.setWinner': z.object({
     shopId: z.string().min(1),
     spinId: z.string().min(1).optional(),
@@ -78,6 +82,21 @@ export const CommandSchemas = {
     weight: z.number().int().min(1).max(100).optional(),
     refShopId: z.string().min(1).nullable().optional(),
     refMemberId: z.string().min(1).nullable().optional(),
+  }),
+  /** Một transaction. Trần cả vòng là 60, kể cả ô đã có. */
+  'wheel.item.addMany': z.object({
+    wheelId: z.string().min(1),
+    items: z
+      .array(
+        z.object({
+          name: name120,
+          weight: z.number().int().min(1).max(100).optional(),
+          refShopId: z.string().min(1).nullable().optional(),
+          refMemberId: z.string().min(1).nullable().optional(),
+        }),
+      )
+      .min(1)
+      .max(60),
   }),
   'wheel.item.update': z.object({
     id: z.string().min(1),
@@ -231,6 +250,7 @@ export const VERSIONED_COMMANDS = new Set<CommandName>([
   'shop.setMenu',
   'wheel.rename',
   'wheel.item.add',
+  'wheel.item.addMany',
   'wheel.item.update',
   'wheel.item.remove',
   'wheel.equalize',
