@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { AUTO_SEQUENCE, createBenchRunner, type BenchId } from './bench.js';
 import { mountPerfHud, PerfMeter, type PerfSnapshot } from './perf.js';
+import { createSandScene, sandPixelRatio } from './sand-scene.js';
 import { hashQuery } from './query.js';
 import { parseTierParam, probeGpu, rememberTier, resolveTier, type AoTier } from './tier.js';
 
@@ -8,6 +9,10 @@ export type AoCaApi = {
   perf: () => PerfSnapshot;
   tier: () => AoTier;
   rendererString: () => string;
+  advance?: (seconds: number) => void;
+  scenario?: (name: 'wide') => void;
+  state?: () => { seconds: number; seed: number; scene: ReturnType<SandScene['state']> };
+  showSand?: (visible: boolean) => void;
 };
 
 declare global {
@@ -15,6 +20,8 @@ declare global {
     __aoCa?: AoCaApi;
   }
 }
+
+type SandScene = Awaited<ReturnType<typeof createSandScene>>;
 
 type MountOpts = {
   root: HTMLElement;
@@ -29,6 +36,9 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   activeDispose = null;
 
   const q = opts.query ?? hashQuery();
+  const golden = q.get('golden') === '1' && !q.has('bench');
+  const bench = q.has('bench');
+  const seed = Number(q.get('seed') ?? 42) >>> 0;
   const probe = probeGpu();
   const tierParam = parseTierParam(q.get('tier'));
   const tier = resolveTier({ soft: probe.soft, param: tierParam });
@@ -56,6 +66,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   const meter = new PerfMeter();
   let scale = 1;
   let renderer: THREE.WebGLRenderer | null = null;
+  let water: SandScene | null = null;
   let raf = 0;
   let disposed = false;
   const cleanups: Array<() => void> = [];
@@ -88,11 +99,15 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   const resize = () => {
     const w = Math.max(1, Math.floor(opts.canvas.clientWidth || opts.canvas.width || 1));
     const h = Math.max(1, Math.floor(opts.canvas.clientHeight || opts.canvas.height || 1));
-    const dpr = Math.min(window.devicePixelRatio || 1, tier === 'cao' ? 1 : tier === 'vua' ? 0.75 : 0.5);
+    const deviceRatio = window.devicePixelRatio || 1;
+    const dpr = bench
+      ? Math.min(deviceRatio, tier === 'cao' ? 1 : tier === 'vua' ? 0.75 : 0.5)
+      : sandPixelRatio(tier, w, h, deviceRatio);
     scale = dpr;
     if (renderer) {
       renderer.setPixelRatio(dpr);
       renderer.setSize(w, h, false);
+      water?.resize(w, h, opts.canvas.width, opts.canvas.height);
     } else {
       opts.canvas.width = Math.floor(w * dpr);
       opts.canvas.height = Math.floor(h * dpr);
@@ -129,39 +144,102 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     cleanups.push(hud.dispose);
   }
 
-  // Empty clear loop when not benching (perf-only / soft GPU).
-  if (!q.has('bench') || !renderer) {
-    let last = performance.now();
-    const loop = (now: number) => {
-      if (disposed) return;
-      const dt = now - last;
-      last = now;
-      const t0 = performance.now();
-      if (renderer) {
-        renderer.setClearColor(0x000000, 0);
-        renderer.clear();
-        meter.drawCalls = 0;
-        meter.triangles = 0;
-      } else {
-        const c2 = opts.canvas.getContext('2d');
-        if (c2) {
-          c2.clearRect(0, 0, opts.canvas.width, opts.canvas.height);
-          c2.fillStyle = 'rgba(3,23,37,0.15)';
-          c2.fillRect(0, 0, opts.canvas.width, opts.canvas.height);
-          c2.fillStyle = '#e8f4ff';
-          c2.font = '14px sans-serif';
-          c2.fillText(probe.soft ? 'Ao cá · mức Tĩnh (GPU mềm)' : 'Ao cá · Tĩnh', 16, 28);
-        }
-      }
-      meter.jsMs = performance.now() - t0;
-      meter.push(dt, now);
-      raf = requestAnimationFrame(loop);
+  if (!bench && tier !== 'cao') setBackdrop(false);
+
+  if (!bench && renderer) {
+    const gl = renderer;
+    let generation = 0;
+    let last: number | undefined;
+    let seconds = 0;
+    let ticks = 0;
+    let sandVisible = true;
+    const paint = () => {
+      if (!water) return;
+      const start = performance.now();
+      water.render(seconds, sandVisible);
+      meter.jsMs = performance.now() - start;
+      meter.drawCalls = gl.info.render.calls;
+      meter.triangles = gl.info.render.triangles;
     };
-    raf = requestAnimationFrame(loop);
-    cleanups.push(() => cancelAnimationFrame(raf));
+    const frame = (now: number) => {
+      if (disposed) return;
+      if (!opts.canvas.isConnected) { dispose(); return; }
+      raf = requestAnimationFrame(frame);
+      if (document.hidden || !water) { last = undefined; return; }
+      const dt = last === undefined ? 0 : now - last;
+      if (last !== undefined && tier === 'nhe' && dt < 32) return;
+      last = now;
+      seconds += Math.min(dt / 1000, 0.05);
+      paint();
+      if (dt > 0) meter.push(dt, now);
+    };
+    const start = async () => {
+      const ticket = ++generation;
+      try {
+        const scene = await createSandScene(gl, tier, seed);
+        if (disposed || ticket !== generation) { scene.dispose(); return; }
+        if (!opts.canvas.isConnected) { scene.dispose(); dispose(); return; }
+        water = scene;
+        resize();
+        paint();
+        opts.canvas.style.opacity = '1';
+        if (golden) {
+          api.advance = (duration) => {
+            if (!Number.isFinite(duration) || duration < 0) return;
+            ticks += Math.round(duration * 60);
+            seconds = ticks / 60;
+            paint();
+          };
+          api.scenario = (name) => {
+            if (name !== 'wide') return;
+            ticks = seconds = 0;
+            sandVisible = true;
+            paint();
+          };
+          api.state = () => ({ seconds, seed, scene: scene.state() });
+          api.showSand = (visible) => { sandVisible = visible; paint(); };
+        } else {
+          last = undefined;
+          raf = requestAnimationFrame(frame);
+        }
+      } catch (error) {
+        if (!disposed && ticket === generation) console.error('ao-ca sand scene failed', error);
+      }
+    };
+    const stop = () => {
+      generation++;
+      cancelAnimationFrame(raf);
+      water?.dispose();
+      water = null;
+      delete api.advance;
+      delete api.scenario;
+      delete api.state;
+      delete api.showSand;
+    };
+    const lost = (event: Event) => { event.preventDefault(); stop(); };
+    const restored = () => { if (!disposed) void start(); };
+    opts.canvas.style.opacity = '0';
+    if (!golden) opts.canvas.style.transition = 'opacity 180ms ease-out';
+    opts.canvas.addEventListener('webglcontextlost', lost);
+    opts.canvas.addEventListener('webglcontextrestored', restored);
+    cleanups.push(() => {
+      stop();
+      opts.canvas.removeEventListener('webglcontextlost', lost);
+      opts.canvas.removeEventListener('webglcontextrestored', restored);
+      opts.canvas.style.opacity = '';
+      opts.canvas.style.transition = '';
+    });
+    void start();
+  } else if (!renderer) {
+    const ctx = opts.canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#e8f4ff';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(probe.soft ? 'Ao cá · mức Tĩnh (GPU mềm)' : 'Ao cá · Tĩnh', 16, 28);
+    }
   }
 
-  if (q.has('bench') && renderer) {
+  if (bench && renderer) {
     const runner = createBenchRunner({
       renderer,
       canvas: opts.canvas,
@@ -232,13 +310,20 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   }
 
   const dispose = () => {
+    if (disposed) return;
     disposed = true;
+    if (activeDispose === dispose) activeDispose = null;
     for (const c of cleanups) c();
     renderer?.dispose();
     if (window.__aoCa === api) delete window.__aoCa;
     setBackdrop(false);
     setOpaqueBg(false);
   };
+  const observer = new MutationObserver(() => {
+    if (!opts.canvas.isConnected) dispose();
+  });
+  observer.observe(opts.root, { childList: true, subtree: true });
+  cleanups.push(() => observer.disconnect());
   activeDispose = dispose;
 
   return api;

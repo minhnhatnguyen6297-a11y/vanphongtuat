@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { bakeCaustic } from './caustic.js';
 import type { PerfMeter } from './perf.js';
 
 export type BenchId = 'B1' | 'B2' | 'B3' | 'B4' | 'B5-12' | 'B5-24' | 'B5-40' | 'B5-80' | 'B6' | 'B7';
@@ -144,58 +145,6 @@ function makeNoiseTex(size: number, seed: number): THREE.DataTexture {
   return t;
 }
 
-function bakeCaustic(renderer: THREE.WebGLRenderer): THREE.Texture {
-  const size = 512;
-  const rt = new THREE.WebGLRenderTarget(size, size, {
-    type: THREE.UnsignedByteType,
-    format: THREE.RGBAFormat,
-    minFilter: THREE.LinearMipmapLinearFilter,
-    magFilter: THREE.LinearFilter,
-    generateMipmaps: true,
-  });
-  const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const mat = new THREE.RawShaderMaterial({
-    glslVersion: THREE.GLSL3,
-    vertexShader: VERT,
-    fragmentShader: /* glsl */ `precision highp float;
-in vec2 vUv; out vec4 outColor;
-const float CELLS = 8.0;
-vec2 hash2(vec2 p) {
-  vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
-  q += dot(q, q.yzx + 33.33);
-  return fract((q.xx + q.yz) * q.zy);
-}
-float cellEdge(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  float d1 = 8.0, d2 = 8.0;
-  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
-    vec2 g = vec2(float(x), float(y));
-    vec2 o = hash2(mod(i + g, CELLS));
-    float d = length(g + o - f);
-    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
-  }
-  return d2 - d1;
-}
-void main() {
-  float e = cellEdge(vUv * CELLS);
-  float c = pow(clamp(1.0 - e * 2.2, 0.0, 1.0), 5.0);
-  outColor = vec4(vec3(c), 1.0);
-}`,
-    depthTest: false,
-    depthWrite: false,
-  });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
-  const scene = new THREE.Scene();
-  scene.add(mesh);
-  renderer.setRenderTarget(rt);
-  renderer.render(scene, cam);
-  renderer.setRenderTarget(null);
-  mesh.geometry.dispose();
-  mat.dispose();
-  rt.texture.wrapS = rt.texture.wrapT = THREE.RepeatWrapping;
-  return rt.texture;
-}
-
 function makeFishAtlas(): { color: THREE.DataTexture; shape: THREE.DataTexture } {
   const w = 256;
   const h = 128;
@@ -267,7 +216,8 @@ export function createBenchRunner(ctx: BenchContext): {
 
   const texA = makeNoiseTex(256, 1);
   const texB = makeNoiseTex(256, 2);
-  const caustic = bakeCaustic(renderer);
+  const causticTarget = bakeCaustic(renderer);
+  const caustic = causticTarget.texture;
   const atlas = makeFishAtlas();
 
   const quad = new THREE.Mesh(
@@ -447,6 +397,7 @@ export function createBenchRunner(ctx: BenchContext): {
       cancelAnimationFrame(raf);
       quad.geometry.dispose();
       (quad.material as THREE.Material).dispose();
+      causticTarget.dispose();
       texA.dispose();
       texB.dispose();
       atlas.color.dispose();

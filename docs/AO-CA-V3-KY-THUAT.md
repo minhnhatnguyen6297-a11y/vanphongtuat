@@ -790,3 +790,5 @@ Mỗi pha ghi quyết định mới vào `docs/THIET-KE.md` trong cùng PR (lu�
 | Ghép ảnh, quay video | Playwright (thư viện, theo mẫu `app/scripts/e2e-live-chuc-nang.mjs`) | Đã có trong dự án; không cần ffmpeg |
 | Nhánh, PR | Một nhánh `vpt/ao-ca-v3` từ `origin/vpt/ao-ca-v2-ui`, một PR nháp; Minh duyệt từng pha bằng comment | Một chỗ để xem toàn bộ, cổng duyệt rõ (handoff mục 2) |
 | Số đo P0 khác ước tính | Agent sửa bảng 3.3 theo luật cố định ở handoff mục 5, không tự chọn số | Tránh agent nới ngưỡng cho dễ qua |
+
+P1 (18/11/2026): [hiệu chỉnh Hang Đá, thông số caustic và cách giảm tải MAY3](AO-CA-V3-P1.md). G=1 dành cho đệm trong R/G để bảo toàn pixel ngoài cát khi phóng canvas; G=2–255 là cường độ ánh sáng. P1 giữ nền HTML và một lệnh vẽ caustic.
