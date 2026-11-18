@@ -106,7 +106,7 @@ Số điểm ảnh: 1366×768 = 1,05 Mpx; 1920×1080 = 2,07 Mpx. Render 1080p đ
 
 ### 3.3 Mức chất lượng
 
-Mức theo **ngân sách điểm ảnh** của canvas, không theo hệ số cố định, để 768p và 1080p tốn như nhau. Nền là `<img>` nên luôn nét, chỉ cá và hiệu ứng bị giảm phân giải. Mọi số trong bảng là `[ƯỚC]`.
+Mức theo **ngân sách điểm ảnh** của canvas, không theo hệ số cố định, để 768p và 1080p tốn như nhau. Nền là `<img>` nên luôn nét, chỉ cá và hiệu ứng bị giảm phân giải. Các ngân sách, hệ số và hiệu ứng chưa đo riêng vẫn là `[ƯỚC]`; trần xem ghi chú đo dưới bảng.
 
 | | Cao | Vừa | Nhẹ | Tĩnh (đường lui) |
 |---|---|---|---|---|
@@ -123,6 +123,11 @@ Mức theo **ngân sách điểm ảnh** của canvas, không theo hệ số c�
 | `backdrop-filter` trên nút `[CHỐT]` | giữ nếu B6 ≤ 1 ms, không thì tắt | tắt, dùng nền đặc `#091d2a` 88% | tắt | tắt |
 | Ngân sách GPU mỗi khung | ≤ 11 ms | ≤ 11 ms | ≤ 22 ms | – |
 | Ngân sách JS ao mỗi khung | ≤ 2 ms | ≤ 2 ms | ≤ 2 ms | ≤ 3 ms |
+
+
+[ĐO 18/11/2026, MAY3] Nguồn: [bảng P0 MAY3](AO-CA-V3-P0-MAY3.md), lượt **có tải 1366×768**, 1920×1080 dùng đối chiếu. Trần giữ **40/24/12/8** theo handoff mục 5. Ở các hệ số đo 1/0,75/0,5, cảnh 80 cá giả có p90 lần lượt 4,4/4,0/3,8 ms và HUD báo 0% rớt; các trần WebGL hiện hành không cần hạ. Tĩnh 8 là đường lui chưa đo riêng. Ngân sách GPU vẫn [ƯỚC] vì GPU ms còn thiếu.
+
+[ĐO 18/11/2026, MAY3] B6 − B5-24 = **0,7 ms p50 / 1,9 ms p90** ở 1366×768, hệ số 1, có tải. Handoff chưa chỉ rõ thống kê dùng cho ngưỡng 1 ms, chờ Minh chốt. B1 p50 3,3 ms, B7 4,3 ms: giữ nền ảnh HTML. B4 vẫn dùng caustic bake theo mục 5.
 
 Hệ số = `min(1, sqrt(maxPixels / (cssW × cssH)))`, nhân với `min(devicePixelRatio, 1)`. **Không bao giờ render quá 1× pixel CSS** trên máy này.
 

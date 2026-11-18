@@ -14,8 +14,7 @@ export type BenchResult = {
   seconds: number;
 };
 
-const VERT = /* glsl */ `#version 300 es
-precision highp float;
+const VERT = /* glsl */ `precision highp float;
 in vec3 position;
 in vec2 uv;
 out vec2 vUv;
@@ -26,13 +25,11 @@ void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
-const FRAG_CLEAR = /* glsl */ `#version 300 es
-precision highp float;
+const FRAG_CLEAR = /* glsl */ `precision highp float;
 out vec4 outColor;
 void main() { outColor = vec4(0.0); }`;
 
-const FRAG_TWO_TEX = /* glsl */ `#version 300 es
-precision highp float;
+const FRAG_TWO_TEX = /* glsl */ `precision highp float;
 uniform sampler2D uA;
 uniform sampler2D uB;
 in vec2 vUv;
@@ -43,8 +40,7 @@ void main() {
   outColor = vec4(a.rgb * 0.5 + b.rgb * 0.5, 0.15);
 }`;
 
-const FRAG_VORONOI = /* glsl */ `#version 300 es
-precision highp float;
+const FRAG_VORONOI = /* glsl */ `precision highp float;
 uniform float uTime;
 in vec2 vUv;
 out vec4 outColor;
@@ -68,8 +64,7 @@ void main() {
   outColor = vec4(vec3(c), c * 0.35);
 }`;
 
-const FRAG_CAUSTIC = /* glsl */ `#version 300 es
-precision highp float;
+const FRAG_CAUSTIC = /* glsl */ `precision highp float;
 uniform sampler2D uCaustic;
 uniform vec4 uScroll;
 in vec2 vUv;
@@ -81,8 +76,7 @@ void main() {
   outColor = vec4(vec3(c), c * 0.25);
 }`;
 
-const FRAG_FISH = /* glsl */ `#version 300 es
-precision highp float;
+const FRAG_FISH = /* glsl */ `precision highp float;
 uniform sampler2D uColor;
 uniform sampler2D uShape;
 uniform sampler2D uCaustic;
@@ -103,8 +97,7 @@ void main() {
   outColor = vec4(col, tex.a);
 }`;
 
-const VERT_FISH = /* glsl */ `#version 300 es
-precision highp float;
+const VERT_FISH = /* glsl */ `precision highp float;
 in vec3 position;
 in vec2 uv;
 in float aSide;
@@ -122,8 +115,7 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0);
 }`;
 
-const FRAG_BG = /* glsl */ `#version 300 es
-precision highp float;
+const FRAG_BG = /* glsl */ `precision highp float;
 uniform sampler2D uBg;
 in vec2 vUv;
 out vec4 outColor;
@@ -165,8 +157,7 @@ function bakeCaustic(renderer: THREE.WebGLRenderer): THREE.Texture {
   const mat = new THREE.RawShaderMaterial({
     glslVersion: THREE.GLSL3,
     vertexShader: VERT,
-    fragmentShader: /* glsl */ `#version 300 es
-precision highp float;
+    fragmentShader: /* glsl */ `precision highp float;
 in vec2 vUv; out vec4 outColor;
 const float CELLS = 8.0;
 vec2 hash2(vec2 p) {
