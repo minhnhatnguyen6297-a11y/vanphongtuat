@@ -749,12 +749,6 @@ input[type=range] { accent-color: var(--red); }
   outline-offset: 2px;
 }
 
-.hn-floor-room[data-tone="red"] { --room-tone: var(--red); }
-.hn-floor-room[data-tone="yellow"] { --room-tone: var(--yellow); }
-.hn-floor-room[data-tone="blue"] { --room-tone: var(--blue); }
-.hn-floor-room[data-tone="green"] { --room-tone: var(--green); }
-.hn-floor-room[data-tone="orange"] { --room-tone: var(--orange); }
-.hn-floor-room[data-tone="cream"] { --room-tone: var(--cream); }
 
 .hn-floor-room-art {
   min-width: 0;
@@ -762,29 +756,28 @@ input[type=range] { accent-color: var(--red); }
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  background: var(--paper);
   color: var(--ink);
-  box-shadow: inset 0 6px 0 var(--room-tone, var(--yellow));
 }
 
 .hn-floor-room-art svg {
   display: block;
-  width: auto;
-  height: 72%;
-  max-width: 86%;
-  max-height: 120px;
+  width: 100%;
+  height: 100%;
+  max-width: 174px;
+  max-height: 137px;
 }
 
 .hn-floor-room-name {
-  font-family: var(--font-display);
-  font-size: clamp(15px, 1.5vw, 20px);
-  line-height: 1.15;
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.6vw, 23px);
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
   overflow-wrap: anywhere;
 }
 
 .hn-floor-room-sub {
+  text-align: center;
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 13px;
