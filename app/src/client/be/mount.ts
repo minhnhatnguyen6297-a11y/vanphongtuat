@@ -153,14 +153,13 @@ function refreshCount(): void {
 
 function syncFabs(): void {
   const mode = fishTank().mode;
-  document.querySelectorAll<HTMLButtonElement>('[data-fish-fab]').forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>('[data-fish-fab]:not([data-fish-fab="chat"])').forEach((btn) => {
     const id = btn.dataset.fishFab;
     let on = false;
     if (id === 'draw') on = drawOpen;
     else if (id === 'feed') on = mode === 'feed';
     else if (id === 'scare') on = mode === 'scare';
     else if (id === 'menu') on = menuOpen;
-    else if (id === 'chat') on = !!document.querySelector<HTMLDetailsElement>('.hn-chat-dock')?.open;
     btn.setAttribute('aria-pressed', String(on));
   });
 }
@@ -285,11 +284,6 @@ export function bindTank(root: HTMLElement): void {
       if (id === 'menu') {
         setMenu(!menuOpen);
         return;
-      }
-      if (id === 'chat') {
-        const dock = document.querySelector<HTMLDetailsElement>('.hn-chat-dock');
-        if (dock) dock.open = !dock.open;
-        syncFabs();
       }
     });
   });

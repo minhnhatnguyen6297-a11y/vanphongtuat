@@ -73,7 +73,8 @@ function hostEl(): HTMLElement {
 function paintOpen(host: HTMLElement, focusInput: boolean): void {
   const btn = host.querySelector<HTMLButtonElement>('[data-office-chat-toggle]');
   const pop = host.querySelector<HTMLElement>('#hn-office-chat-pop');
-  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn?.setAttribute('aria-expanded', String(open));
+  document.querySelector('[data-fish-fab="chat"]')?.setAttribute('aria-expanded', String(open));
   if (pop) pop.hidden = !open;
   if (focusInput && open) {
     host.querySelector<HTMLInputElement>('[data-chat-input]')?.focus();
@@ -161,6 +162,13 @@ export function syncOfficeChat(): void {
       </section>`;
     bind(host);
     bound = true;
+  }
+  const tankButton = document.querySelector<HTMLButtonElement>('[data-fish-fab="chat"]');
+  host.toggleAttribute('data-tank', !!tankButton);
+  if (tankButton) {
+    tankButton.removeAttribute('aria-pressed');
+    tankButton.setAttribute('aria-controls', 'hn-office-chat-pop');
+    tankButton.onclick = () => host.querySelector<HTMLButtonElement>('[data-office-chat-toggle]')?.click();
   }
   paintOpen(host, false);
   paintSend(host);
