@@ -52,7 +52,7 @@ export function createSchool() {
     };
   }
   function update(fish:readonly FishSource[], viewer:string, limit:number, layout:FishLayout,
-      getRatio:(id:string)=>number|undefined, time:number, dt:number, now:number):FishPose[] {
+      getRatio:(id:string)=>number|undefined, time:number, dt:number, now:number, event?:{x:number;y:number;kind:'feed'|'scare';at:number}|null):FishPose[] {
     const all=new Map(fish.map(f=>[f.id,f]));
     for(const [id] of swimmers) if(!all.has(id)) {swimmers.delete(id);visible.delete(id);}
     for(const f of fish) {
@@ -97,7 +97,11 @@ export function createSchool() {
         s.yaw=s.x>=0?0:Math.PI;
         s.alpha=clamp((retiring!.until-time)/1.7,0,1);
       } else {
-        if(!s.turn && (time>=s.until || (s.facing*s.x>edge-1.1*s.length))) {
+        const active=event && time-event.at<1.3;
+        const spot=active?(event.x*2-1)*edge:0;
+        const target=active?(event.kind==='feed'?spot-s.x:s.x-spot):0;
+        const react=active&&Math.abs(s.x-spot)<edge*.75&&Math.sign(target)!==s.facing&&Math.abs(target)>.2;
+        if(!s.turn && (react || time>=s.until || (s.facing*s.x>edge-1.1*s.length))) {
           const from=s.facing===1?s.yaw: s.yaw+TAU*(s.yaw<0?1:0);
           s.turn={at:time,duration:.5+.4*s.seed,from,to:s.facing===1?-Math.PI:TAU};
         }
@@ -113,6 +117,7 @@ export function createSchool() {
         s.pitch=.18*Math.sin(time*.72+s.seed*TAU);
         s.x+=Math.cos(s.yaw)*s.speed*s.length*dt*(s.turn ? .6:1);
         s.depth=clamp(s.depth+Math.sin(s.yaw)*s.length*.1*dt,layout.front,layout.back);
+        if(active && event.kind==='feed') s.y+=(layout.surfaceY*(1-event.y)-s.y)*dt*.35;
         s.y=clamp(s.y+Math.sin(s.pitch)*s.length*dt*.33,s.height*.5,Math.max(s.height*.5,layout.surfaceY-s.height*.7));
         s.phase=(s.phase+TAU*(1.2+2*s.speed/.6)*(s.turn?1.5:1)*dt)%TAU;
         s.amplitude=s.turn? .098:.07;

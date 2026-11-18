@@ -34,6 +34,7 @@ export class PerfMeter {
   triangles = 0;
   gpuMs: number | null = null;
   refreshHz: number | null = null;
+  targetMs = 1000 / 60;
   scenarios: Record<string, unknown> = {};
 
   push(frameMs: number, now = performance.now()): void {
@@ -46,7 +47,7 @@ export class PerfMeter {
     const ms = this.samples.map((s) => s.ms).sort((a, b) => a - b);
     const n = ms.length;
     const pct = (p: number) => (n ? ms[Math.min(n - 1, Math.floor((p / 100) * n))]! : 0);
-    const target = 1000 / 60;
+    const target = this.targetMs;
     const drops = ms.filter((v) => v > target * 1.5).length;
     const span = n >= 2 ? (this.samples[n - 1]!.at - this.samples[0]!.at) / 1000 : 0;
     const fps = span > 0 ? (n - 1) / span : 0;

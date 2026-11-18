@@ -6,6 +6,7 @@ import { createSchool, type FishLayout, type FishPose, type FishSource } from '.
 import { goldenPoses, type Scenario } from './golden-fish.js';
 import calibration from './scene-calib.json' with { type: 'json' };
 import type { AoTier } from './tier.js';
+import { createWaterLife,type WaterEvent } from './water-life.js';
 
 const budgets = { cao: 1_050_000, vua: 620_000, nhe: 360_000, tinh: 360_000 };
 
@@ -123,6 +124,8 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
   let lastSource:readonly FishSource[]|undefined;
   let lastTime=0;
   let poses:FishPose[]=[];
+  const life=fish?createWaterLife(scene,tier,seed,map,uniforms.uSceneXform.value):null;
+  let event:WaterEvent|null=null;
   let shown=0;
   let shadow=true;
   let scenario:Scenario='wide';
@@ -136,6 +139,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
     caustic.dispose();
     map.dispose();
     layer?.dispose();
+    life?.dispose();
   };
   try {
     await renderer.compileAsync(scene, camera);
@@ -150,6 +154,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
       framing = calibrateCamera(cover, calibration);
       camera.aspect = cssW / cssH;
       layout={...framing,aspect:camera.aspect};
+      life?.resize(cover,cssW,cssH,canvasW/cssW);
       layerUniforms.uSurfaceY.value=framing.surfaceY;
       layerUniforms.uGlassZ.value=-framing.front;
       layerUniforms.uDepthRange.value=framing.back-framing.front;
@@ -178,17 +183,22 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
         layer.atlas.flush();
         const ratio=(id:string)=>{const r=layer.atlas.regions.get(id);return r?r.height/r.width:undefined;};
         poses=fish.golden?goldenPoses(scenario,source,layout,seconds,ratio):
-          school.update(source,fish.viewer(),fishLimit(tier),layout,ratio,seconds,Math.max(0,seconds-lastTime),Date.now());
+          school.update(source,fish.viewer(),fishLimit(tier),layout,ratio,seconds,Math.max(0,seconds-lastTime),Date.now(),event);
         shown=layer.update(poses,shadow);
       }
+      life?.update(seconds,!fish?.golden || scenario==='wide' || scenario==='bubbles');
       lastTime=seconds;
       renderer.render(scene, camera);
     },
-    scenario(name:Scenario) { scenario=name;lastTime=0;school.reset(); },
+    pushWaterEvent(x:number,y:number,kind:'feed'|'scare') {
+      event={x,y,kind,at:lastTime};life?.push(event,lastTime);
+    },
+    scenario(name:Scenario) { scenario=name;lastTime=0;event=null;school.reset();life?.reset(); },
+    get preparing(){return layer?.atlas.pending??false;},
     setShadow(visible:boolean) { shadow=visible; },
     state: () => ({ ...framing, phase: uniforms.uCausticScroll.value.toArray(), poses,
       shown,total:lastSource?.length??0,workerMs:layer?.atlas.samples??[],pending:layer?.atlas.pending??false,
-      failed:layer?[...layer.atlas.failed]:[] }),
+      failed:layer?[...layer.atlas.failed]:[], bubbles:life?.state()??null }),
     dispose,
   };
 }

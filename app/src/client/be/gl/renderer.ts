@@ -4,6 +4,8 @@ import { mountPerfHud, PerfMeter, type PerfSnapshot } from './perf.js';
 import { createSandScene, sandPixelRatio } from './sand-scene.js';
 import { goldenFish,type Scenario } from './golden-fish.js';
 import type { FishSource } from './fish-school.js';
+import { createGpuTimer } from './gpu-timer.js';
+import { createAdaptiveTier } from './adaptive-tier.js';
 import { hashQuery } from './query.js';
 import { parseTierParam, probeGpu, rememberTier, resolveTier, type AoTier } from './tier.js';
 
@@ -32,6 +34,8 @@ type MountOpts = {
   query?: URLSearchParams;
   readFish?: () => readonly FishSource[];
   viewer?: () => string;
+  pointerMode?: () => 'none'|'feed'|'scare';
+  fallback?: () => void;
 };
 
 let activeDispose: (() => void) | null = null;
@@ -46,8 +50,9 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   const seed = Number(q.get('seed') ?? 42) >>> 0;
   const probe = probeGpu();
   const tierParam = parseTierParam(q.get('tier'));
-  const tier = resolveTier({ soft: probe.soft, param: tierParam });
-  rememberTier(tier);
+  let tier = resolveTier({ soft: probe.soft, param: tierParam });
+  const auto=!bench&&!golden&&(!tierParam||tierParam==='auto');
+  if(auto) rememberTier(tier);
 
   const stage = opts.canvas.closest('.hn-tank-stage') as HTMLElement | null;
   const host = stage || opts.root;
@@ -149,12 +154,22 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     cleanups.push(hud.dispose);
   }
 
-  if (!bench && tier !== 'cao') setBackdrop(false);
+  if (!bench) setBackdrop(false); // P90 B6 exceeded 1 ms on MAY3
 
   if (!bench && renderer) {
     const gl = renderer;
+    const ctx=gl.getContext() as WebGL2RenderingContext;
+    const timer=q.get('perf')==='1'&&!golden?createGpuTimer(ctx):null;
+    cleanups.push(()=>timer?.dispose());
     let generation = 0;
     let last: number | undefined;
+    let rawLast: number|undefined;
+    let resizedAt=performance.now();
+    let measuringSince=performance.now();
+    const controller=createAdaptiveTier(tier);
+    const resized=()=>{resizedAt=performance.now();controller.reset();};
+    window.addEventListener('resize',resized);
+    cleanups.push(()=>window.removeEventListener('resize',resized));
     let seconds = 0;
     let ticks = 0;
     let sandVisible = true;
@@ -163,7 +178,10 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     const paint = () => {
       if (!water) return;
       const start = performance.now();
-      water.render(seconds, sandVisible);
+      if(timer) {
+        const ms=timer.measure(()=>water?.render(seconds,sandVisible));
+        if(ms!==null) meter.gpuMs=ms;
+      } else water.render(seconds, sandVisible);
       meter.jsMs = performance.now() - start;
       meter.drawCalls = gl.info.render.calls;
       meter.triangles = gl.info.render.triangles;
@@ -174,9 +192,18 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       if (disposed) return;
       if (!opts.canvas.isConnected) { dispose(); return; }
       raf = requestAnimationFrame(frame);
-      if (document.hidden || !water) { last = undefined; return; }
+      if (document.hidden || !water) { last = rawLast = undefined;controller.reset();return; }
+      const rawDt=rawLast===undefined?0:now-rawLast;
+      rawLast=now;
+      const changed=auto?controller.frame(now,rawDt,water.preparing||now-resizedAt<1000||now-measuringSince<3000):null;
+      if(auto) {meter.refreshHz=Math.round(1000/controller.nominal);meter.targetMs=controller.target;}
+      if(changed && changed!==tier) {
+        tier=changed;rememberTier(tier);
+        if(tier==='tinh' && opts.fallback) {dispose();opts.fallback();return;}
+        stop();resize();setBackdrop(false);void start();return;
+      }
       const dt = last === undefined ? 0 : now - last;
-      if (last !== undefined && tier === 'nhe' && dt < 32) return;
+      if (last !== undefined && tier === 'nhe' && dt < controller.nominal * 1.85) return;
       last = now;
       seconds += Math.min(dt / 1000, 0.05);
       paint();
@@ -192,6 +219,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
         if (disposed || ticket !== generation) { scene.dispose(); return; }
         if (!opts.canvas.isConnected) { scene.dispose(); dispose(); return; }
         water = scene;
+        measuringSince=performance.now();
         resize();
         paint();
         opts.canvas.style.opacity = '1';
@@ -230,6 +258,14 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       delete api.showSand;
       delete api.showShadows;
     };
+    const pointer=(e:PointerEvent)=>{
+      const mode=opts.pointerMode?.();
+      if(e.button!==0||!water||!mode||mode==='none') return;
+      const rect=opts.canvas.getBoundingClientRect();
+      water.pushWaterEvent((e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height,mode);
+    };
+    opts.canvas.addEventListener('pointerdown',pointer);
+    cleanups.push(()=>opts.canvas.removeEventListener('pointerdown',pointer));
     const lost = (event: Event) => { event.preventDefault(); stop(); };
     const restored = () => { if (!disposed) void start(); };
     opts.canvas.style.opacity = '0';
@@ -339,6 +375,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   observer.observe(opts.root, { childList: true, subtree: true });
   cleanups.push(() => observer.disconnect());
   activeDispose = dispose;
+  if(!renderer && !bench && !golden) opts.fallback?.();
 
   return api;
 }
