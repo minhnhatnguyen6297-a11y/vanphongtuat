@@ -146,7 +146,7 @@ try {
     page.on('console', message => {
       if (message.type()==='error' && /shader|ao-ca|webgl/i.test(message.text())) errors.push(message.text());
     });
-    await loginMock(page,app.base,'#/chat?golden=1&seed=42&tier='+tier);
+    await loginMock(page,app.base,'#/chat?golden=1&seed=42&water=only&tier='+tier);
     await page.waitForFunction(()=>Boolean(window.__aoCa?.state), undefined, {timeout:18000});
     await page.addStyleTag({content:'.hn-fab-cluster { visibility:hidden !important }'});
     await page.locator('[data-ao-bg]').evaluate(img=>img.decode());

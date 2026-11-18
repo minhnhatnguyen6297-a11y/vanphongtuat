@@ -28,6 +28,10 @@ const FONT_COPIES = [
   ['@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2', 'jetbrains-mono-latin-700.woff2'],
 ];
 
+// Golden scenes are local test artwork, loaded only when requested.
+const fishFixtures = join(root, 'tests/fixtures/ao-ca');
+if (existsSync(fishFixtures)) cpSync(fishFixtures, join(outdir, 'art/ao-ca-fixtures'), { recursive: true });
+
 let fontsCopied = 0;
 for (const [srcRel, destName] of FONT_COPIES) {
   const src = join(root, 'node_modules', srcRel);

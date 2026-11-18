@@ -123,6 +123,8 @@ export class Tank {
   private cssH = 280;
   private records: SavedFish[] = [];
   private owners = new Map<string, string>();
+  private birthdays = new Map<string,string>();
+  private fishRevision = 0;
   private swimmers: Swimmer[] = [];
   private sprites = new Map<string, HTMLImageElement>();
   private bg: HTMLImageElement | null = null;
@@ -191,6 +193,8 @@ export class Tank {
       phase: Math.random() * Math.PI * 2,
     };
     this.records.push(rec);
+    this.birthdays.set(rec.id,new Date().toISOString());
+    this.fishRevision++;
     this.persist();
     this.spawn(rec, true);
     return 'ok';
@@ -201,11 +205,15 @@ export class Tank {
     if (!rec) return;
     this.swimmers = this.swimmers.filter((s) => s.id !== rec.id);
     this.sprites.delete(rec.id);
+    this.birthdays.delete(rec.id);
+    this.fishRevision++;
     this.persist();
   }
 
   /** Cá chung từ server. Không ghi lại localStorage. */
-  setShared(list: Array<{ id: string; png: string; ownerId: string }>): void {
+  setShared(list: Array<{ id: string; png: string; ownerId: string; createdAt: string }>): void {
+    this.fishRevision++;
+    this.birthdays = new Map(list.map(f=>[f.id,f.createdAt]));
     const next = new Set(list.map((f) => f.id));
     this.owners = new Map(list.map((f) => [f.id, f.ownerId]));
     for (const id of [...this.sprites.keys()]) {
@@ -224,6 +232,12 @@ export class Tank {
       this.records.push(rec);
       this.spawn(rec, true);
     }
+  }
+
+  get revision() { return this.fishRevision; }
+  art() {
+    return this.records.map(f=>({id:f.id,png:f.png,ownerId:this.owners.get(f.id)??'',
+      createdAt:this.birthdays.get(f.id)??new Date(0).toISOString()}));
   }
 
   rows(): Array<{ id: string; ownerId: string }> {

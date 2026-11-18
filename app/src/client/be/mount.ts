@@ -239,8 +239,11 @@ export function bindTank(root: HTMLElement): void {
   const useGl = wantsAoCaGl(glQuery);
   if (view && useGl) {
     // P0+: three chunk loaded only when ?bench / ?perf — ao v2 giữ nguyên khi không có.
+    let revision=-1;
+    let source:ReturnType<typeof tank.art>=[];
+    const readFish=()=>{if(revision!==tank.revision){revision=tank.revision;source=tank.art();}return source;};
     void import('./gl/renderer.js')
-      .then((m) => m.mountAoCaGl({ root, canvas: view, query: glQuery }))
+      .then((m) => m.mountAoCaGl({ root, canvas: view, query: glQuery, readFish, viewer:()=>state.me?.id??'' }))
       .catch((err) => {
         console.error('ao-ca gl mount failed', err);
         tank.attach(view);

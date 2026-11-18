@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { AUTO_SEQUENCE, createBenchRunner, type BenchId } from './bench.js';
 import { mountPerfHud, PerfMeter, type PerfSnapshot } from './perf.js';
 import { createSandScene, sandPixelRatio } from './sand-scene.js';
+import { goldenFish,type Scenario } from './golden-fish.js';
+import type { FishSource } from './fish-school.js';
 import { hashQuery } from './query.js';
 import { parseTierParam, probeGpu, rememberTier, resolveTier, type AoTier } from './tier.js';
 
@@ -10,7 +12,8 @@ export type AoCaApi = {
   tier: () => AoTier;
   rendererString: () => string;
   advance?: (seconds: number) => void;
-  scenario?: (name: 'wide') => void;
+  scenario?: (name: Scenario) => void;
+  showShadows?: (visible:boolean) => void;
   state?: () => { seconds: number; seed: number; scene: ReturnType<SandScene['state']> };
   showSand?: (visible: boolean) => void;
 };
@@ -27,6 +30,8 @@ type MountOpts = {
   root: HTMLElement;
   canvas: HTMLCanvasElement;
   query?: URLSearchParams;
+  readFish?: () => readonly FishSource[];
+  viewer?: () => string;
 };
 
 let activeDispose: (() => void) | null = null;
@@ -153,6 +158,8 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     let seconds = 0;
     let ticks = 0;
     let sandVisible = true;
+    const fixtures=golden?goldenFish(seed,Math.min(80,Math.max(0,Number(q.get('fish')??8)||0))):[];
+    const source=golden?()=>fixtures:opts.readFish;
     const paint = () => {
       if (!water) return;
       const start = performance.now();
@@ -160,6 +167,8 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       meter.jsMs = performance.now() - start;
       meter.drawCalls = gl.info.render.calls;
       meter.triangles = gl.info.render.triangles;
+      meter.fishShown=water.state().shown;
+      meter.fishTotal=water.state().total;
     };
     const frame = (now: number) => {
       if (disposed) return;
@@ -176,7 +185,10 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     const start = async () => {
       const ticket = ++generation;
       try {
-        const scene = await createSandScene(gl, tier, seed);
+        await bgImg!.decode().catch(()=>{});
+        if(disposed || ticket!==generation) return;
+        const scene = await createSandScene(gl, tier, seed, source && q.get('water')!=='only' ?
+          {read:source,viewer:opts.viewer??(()=>''),golden,background:bgImg!}:undefined);
         if (disposed || ticket !== generation) { scene.dispose(); return; }
         if (!opts.canvas.isConnected) { scene.dispose(); dispose(); return; }
         water = scene;
@@ -191,13 +203,14 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
             paint();
           };
           api.scenario = (name) => {
-            if (name !== 'wide') return;
+            scene.scenario(name);
             ticks = seconds = 0;
             sandVisible = true;
             paint();
           };
           api.state = () => ({ seconds, seed, scene: scene.state() });
           api.showSand = (visible) => { sandVisible = visible; paint(); };
+          api.showShadows = (visible) => { scene.setShadow(visible);paint(); };
         } else {
           last = undefined;
           raf = requestAnimationFrame(frame);
@@ -215,6 +228,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       delete api.scenario;
       delete api.state;
       delete api.showSand;
+      delete api.showShadows;
     };
     const lost = (event: Event) => { event.preventDefault(); stop(); };
     const restored = () => { if (!disposed) void start(); };
