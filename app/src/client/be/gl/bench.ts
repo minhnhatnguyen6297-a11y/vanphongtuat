@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { bakeCaustic } from './caustic.js';
 import type { PerfMeter } from './perf.js';
 
-export type BenchId = 'B1' | 'B2' | 'B3' | 'B4' | 'B5-12' | 'B5-24' | 'B5-40' | 'B5-80' | 'B6' | 'B7';
+export type BenchId = 'B1' | 'B2' | 'B3' | 'B4' | 'B5-8' | 'B5-12' | 'B5-24' | 'B5-40' | 'B5-80' | 'B6' | 'B7';
 
 export type BenchResult = {
   id: BenchId;
@@ -234,6 +234,14 @@ export function createBenchRunner(ctx: BenchContext): {
   scene.add(quad);
 
   let fishMesh: THREE.Mesh | null = null;
+  let backgroundTexture: THREE.Texture | null = null;
+  const clearFish=()=>{
+    if(!fishMesh) return;
+    fishMesh.removeFromParent();
+    fishMesh.geometry.dispose();
+    (fishMesh.material as THREE.Material).dispose();
+    fishMesh=null;
+  };
   let scroll = new THREE.Vector4(0, 0, 0, 0);
   let running = false;
   let raf = 0;
@@ -244,8 +252,7 @@ export function createBenchRunner(ctx: BenchContext): {
     ctx.setOpaqueBg(id === 'B7');
     const mat = quad.material as THREE.RawShaderMaterial;
     mat.uniforms = {};
-    fishMesh?.removeFromParent();
-    fishMesh = null;
+    clearFish();
     meter.fishShown = 0;
     meter.fishTotal = 0;
 
@@ -270,15 +277,15 @@ export function createBenchRunner(ctx: BenchContext): {
       renderer.setClearColor(0x000000, 0);
     } else if (id === 'B7') {
       mat.fragmentShader = FRAG_BG;
-      const bg = new THREE.TextureLoader().load('/art/be/hang-da-v2.png');
-      bg.colorSpace = THREE.SRGBColorSpace;
-      mat.uniforms = { uBg: { value: bg } };
+      backgroundTexture ??= new THREE.TextureLoader().load('/art/be/hang-da-v2.png');
+      backgroundTexture.colorSpace = THREE.SRGBColorSpace;
+      mat.uniforms = { uBg: { value: backgroundTexture } };
       mat.transparent = false;
       renderer.setClearColor(0x031725, 1);
     } else {
       // B5 / B6 fish
       const n =
-        id === 'B5-12' ? 12 : id === 'B5-24' || id === 'B6' ? 24 : id === 'B5-40' ? 40 : 80;
+        id === 'B5-8' ? 8 : id === 'B5-12' ? 12 : id === 'B5-24' || id === 'B6' ? 24 : id === 'B5-40' ? 40 : 80;
       meter.fishShown = n;
       meter.fishTotal = n;
       const geo = fishGeo();
@@ -402,8 +409,8 @@ export function createBenchRunner(ctx: BenchContext): {
       texB.dispose();
       atlas.color.dispose();
       atlas.shape.dispose();
-      fishMesh?.geometry.dispose();
-      (fishMesh?.material as THREE.Material | undefined)?.dispose();
+      clearFish();
+      backgroundTexture?.dispose();
     },
   };
 }
@@ -413,8 +420,11 @@ export const AUTO_SEQUENCE: BenchId[] = [
   'B2',
   'B3',
   'B4',
+  'B5-8',
   'B5-12',
   'B5-24',
   'B5-40',
+  'B5-80',
   'B6',
+  'B7',
 ];

@@ -1,11 +1,11 @@
 import { esc } from '../../shared/esc.js';
-import { state, memberById } from '../store.js';
+import { state, memberById, patch } from '../store.js';
 import { cmd } from '../ws.js';
 import { toast } from '../ui/toast.js';
 import { importEdgeError, importFileError, loadImage } from './image.js';
 import { fishPad, type FishTool } from './pad.js';
 import { FISH_PATTERNS } from './patterns.js';
-import { fishTank, readLocalFish } from './tank.js';
+import { Tank, fishTank, readLocalFish } from './tank.js';
 import { hashQuery, wantsAoCaGl } from './gl/query.js';
 
 const ONCE_KEY = 'hng_be_shared_once';
@@ -236,18 +236,33 @@ export function bindTank(root: HTMLElement): void {
   const tank = fishTank();
   const view = root.querySelector<HTMLCanvasElement>('[data-fish-tank]');
   const glQuery = hashQuery();
-  const useGl = wantsAoCaGl(glQuery);
+  const useGl = !tank.hasCustomBackground || wantsAoCaGl(glQuery);
   if (view && useGl) {
-    // P0+: three chunk loaded only when ?bench / ?perf — ao v2 giữ nguyên khi không có.
     let revision=-1;
     let source:ReturnType<typeof tank.art>=[];
     const readFish=()=>{if(revision!==tank.revision){revision=tank.revision;source=tank.art();}return source;};
+    const fallback=(replaceCanvas:boolean, fixtures?:ReturnType<typeof tank.art>)=>{
+      if(!view.isConnected) return;
+      const live=replaceCanvas?view.cloneNode(false) as HTMLCanvasElement:view;
+      if(live!==view) {
+        view.replaceWith(live);
+        toast('Ao cá chuyển chế độ nhẹ');
+      }
+      const pond=fixtures?new Tank():tank;
+      if(fixtures) void pond.setBackground('/art/be/hang-da-v2.png', false);
+      pond.attach(live);
+      if(fixtures) pond.setShared(fixtures);
+      if(!fixtures) bindPointer(live);
+    };
     void import('./gl/renderer.js')
-      .then((m) => m.mountAoCaGl({ root, canvas: view, query: glQuery, readFish, viewer:()=>state.me?.id??'' }))
+      .then((m) => {
+        if(!view.isConnected) return;
+        return m.mountAoCaGl({root,canvas:view,query:glQuery,readFish,viewer:()=>state.me?.id??'',
+          pointerMode:()=>drawOpen?'none':tank.mode,fallback});
+      })
       .catch((err) => {
         console.error('ao-ca gl mount failed', err);
-        tank.attach(view);
-        bindPointer(view);
+        fallback(true);
       });
   } else if (view) {
     tank.attach(view);
@@ -301,6 +316,7 @@ export function bindTank(root: HTMLElement): void {
     tank.resetBackground();
     toast('Đã dùng nền Hang Đá');
     setMenu(false);
+    patch(()=>{});
   });
   const bgFile = root.querySelector<HTMLInputElement>('[data-fish-bg-file]');
   bgFile?.addEventListener('change', () => {
@@ -322,6 +338,7 @@ export function bindTank(root: HTMLElement): void {
         URL.revokeObjectURL(url);
         toast('Đã đổi nền');
         setMenu(false);
+        patch(()=>{});
       })
       .catch(() => {
         URL.revokeObjectURL(url);

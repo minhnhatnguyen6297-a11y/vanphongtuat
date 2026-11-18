@@ -16,6 +16,7 @@ export type AoCaApi = {
   advance?: (seconds: number) => void;
   scenario?: (name: Scenario) => void;
   showShadows?: (visible:boolean) => void;
+  showFish?: (visible:boolean) => void;
   state?: () => { seconds: number; seed: number; scene: ReturnType<SandScene['state']> };
   showSand?: (visible: boolean) => void;
 };
@@ -35,7 +36,7 @@ type MountOpts = {
   readFish?: () => readonly FishSource[];
   viewer?: () => string;
   pointerMode?: () => 'none'|'feed'|'scare';
-  fallback?: () => void;
+  fallback?: (replaceCanvas:boolean, fixtures?: FishSource[]) => void;
 };
 
 let activeDispose: (() => void) | null = null;
@@ -52,7 +53,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   const tierParam = parseTierParam(q.get('tier'));
   let tier = resolveTier({ soft: probe.soft, param: tierParam });
   const auto=!bench&&!golden&&(!tierParam||tierParam==='auto');
-  if(auto) rememberTier(tier);
+  if(auto && !probe.soft) rememberTier(tier);
 
   const stage = opts.canvas.closest('.hn-tank-stage') as HTMLElement | null;
   const host = stage || opts.root;
@@ -75,6 +76,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
 
   const meter = new PerfMeter();
   let scale = 1;
+  let benchmarkScale: number|undefined;
   let renderer: THREE.WebGLRenderer | null = null;
   let water: SandScene | null = null;
   let raf = 0;
@@ -111,7 +113,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     const h = Math.max(1, Math.floor(opts.canvas.clientHeight || opts.canvas.height || 1));
     const deviceRatio = window.devicePixelRatio || 1;
     const dpr = bench
-      ? Math.min(deviceRatio, tier === 'cao' ? 1 : tier === 'vua' ? 0.75 : 0.5)
+      ? benchmarkScale ?? Math.min(deviceRatio, tier === 'cao' ? 1 : tier === 'vua' ? 0.75 : 0.5)
       : sandPixelRatio(tier, w, h, deviceRatio);
     scale = dpr;
     if (renderer) {
@@ -119,8 +121,9 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       renderer.setSize(w, h, false);
       water?.resize(w, h, opts.canvas.width, opts.canvas.height);
     } else {
-      opts.canvas.width = Math.floor(w * dpr);
-      opts.canvas.height = Math.floor(h * dpr);
+      const staticRatio=Math.min(1,deviceRatio);
+      opts.canvas.width = Math.floor(w * staticRatio);
+      opts.canvas.height = Math.floor(h * staticRatio);
     }
   };
   resize();
@@ -138,7 +141,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     refreshHz: meter.refreshHz,
     machineNote: probe.soft
       ? 'GPU mềm → mức Tĩnh (không dùng số này để quyết)'
-      : 'máy dev, không dùng để quyết',
+      : 'Nguồn: trình duyệt này',
   });
 
   const api: AoCaApi = {
@@ -154,6 +157,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     cleanups.push(hud.dispose);
   }
 
+  if(renderer) opts.canvas.dataset.aoRenderer='webgl2';
   if (!bench) setBackdrop(false); // P90 B6 exceeded 1 ms on MAY3
 
   if (!bench && renderer) {
@@ -173,8 +177,9 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     let seconds = 0;
     let ticks = 0;
     let sandVisible = true;
-    const fixtures=golden?goldenFish(seed,Math.min(80,Math.max(0,Number(q.get('fish')??8)||0))):[];
-    const source=golden?()=>fixtures:opts.readFish;
+    const useFixtures=golden||q.get('fixtures')==='1';
+    const fixtures=useFixtures?goldenFish(seed,Math.min(80,Math.max(0,Math.floor(Number(q.get('fish')??8)||0)))):[];
+    const source=useFixtures?()=>fixtures:opts.readFish;
     const paint = () => {
       if (!water) return;
       const start = performance.now();
@@ -195,11 +200,14 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       if (document.hidden || !water) { last = rawLast = undefined;controller.reset();return; }
       const rawDt=rawLast===undefined?0:now-rawLast;
       rawLast=now;
+      // Windows may throttle an occluded but "visible" Chrome window to 1 Hz.
+      // Reset the measurement window instead of interpreting the suspension as load.
+      if(rawDt>250) {last=undefined;meter.samples.length=0;controller.reset();return;}
       const changed=auto?controller.frame(now,rawDt,water.preparing||now-resizedAt<1000||now-measuringSince<3000):null;
       if(auto) {meter.refreshHz=Math.round(1000/controller.nominal);meter.targetMs=controller.target;}
       if(changed && changed!==tier) {
         tier=changed;rememberTier(tier);
-        if(tier==='tinh' && opts.fallback) {dispose();opts.fallback();return;}
+        if(tier==='tinh' && opts.fallback) {dispose();opts.fallback(true);return;}
         stop();resize();setBackdrop(false);void start();return;
       }
       const dt = last === undefined ? 0 : now - last;
@@ -239,12 +247,16 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
           api.state = () => ({ seconds, seed, scene: scene.state() });
           api.showSand = (visible) => { sandVisible = visible; paint(); };
           api.showShadows = (visible) => { scene.setShadow(visible);paint(); };
+          api.showFish = (visible) => { scene.setFishVisible(visible);paint(); };
         } else {
           last = undefined;
           raf = requestAnimationFrame(frame);
         }
       } catch (error) {
-        if (!disposed && ticket === generation) console.error('ao-ca sand scene failed', error);
+        if (!disposed && ticket === generation) {
+          console.error('ao-ca sand scene failed', error);
+          if(opts.fallback && !golden) {dispose();opts.fallback(true);}
+        }
       }
     };
     const stop = () => {
@@ -257,6 +269,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
       delete api.state;
       delete api.showSand;
       delete api.showShadows;
+      delete api.showFish;
     };
     const pointer=(e:PointerEvent)=>{
       const mode=opts.pointerMode?.();
@@ -281,7 +294,7 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     });
     void start();
   } else if (!renderer) {
-    const ctx = opts.canvas.getContext('2d');
+    const ctx = bench || !opts.fallback ? opts.canvas.getContext('2d') : null;
     if (ctx) {
       ctx.fillStyle = '#e8f4ff';
       ctx.font = '14px sans-serif';
@@ -308,32 +321,35 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
     host.appendChild(status);
     cleanups.push(() => status.remove());
 
+    let benchBusy=false;
     const runList = async (ids: BenchId[]) => {
-      const scales = [1, 0.75, 0.5];
-      for (const sc of scales) {
-        renderer!.setPixelRatio(sc);
-        scale = sc;
-        resize();
-        for (const id of ids) {
-          status.textContent = `bench ${id} · scale ${sc}…`;
-          const r = await runner.run(id, 10);
-          status.textContent = `${id} p50=${r.p50} p90=${r.p90} (${r.viewport} @${sc})`;
+      if (benchBusy) return;
+      benchBusy=true;
+      try {
+        for (const sc of [1, 0.75, 0.5]) {
+          benchmarkScale=sc;
+          resize();
+          for (const id of ids) {
+            if(disposed) return;
+            status.textContent = `bench ${id} · scale ${sc}…`;
+            const result = await runner.run(id, 10);
+            meter.scenarios[`${id}@${sc}`]=result;
+            delete meter.scenarios[id];
+          }
         }
+        status.textContent = 'bench xong — bấm Sao chép số đo';
+      } finally {
+        benchBusy=false;
       }
-      status.textContent = 'bench xong — bấm Sao chép số đo';
     };
 
     if (benchMode === 'auto') {
-      void (async () => {
-        await runList(AUTO_SEQUENCE);
-        // KT 9.4: thêm cảnh 8/24/40 cá từng mức — P0 ghi khung, đo đủ B1–B6.
-        status.textContent += ' · auto B1–B6 xong (máy dev)';
-      })();
+      void runList(AUTO_SEQUENCE);
     } else if (benchMode === 'gl') {
       const bar = document.createElement('div');
       bar.style.cssText =
         'position:absolute;top:8px;right:8px;z-index:41;display:flex;flex-wrap:wrap;gap:4px;max-width:48vw;';
-      const ids: BenchId[] = ['B1', 'B2', 'B3', 'B4', 'B5-12', 'B5-24', 'B5-40', 'B5-80', 'B6', 'B7'];
+      const ids = AUTO_SEQUENCE;
       for (const id of ids) {
         const b = document.createElement('button');
         b.type = 'button';
@@ -341,9 +357,11 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
         b.textContent = id;
         b.style.fontSize = '11px';
         b.addEventListener('click', () => {
+          if(benchBusy) return;
+          benchBusy=true;
           void runner.run(id, 10).then((r) => {
             status.textContent = `${id} p50=${r.p50} p90=${r.p90}`;
-          });
+          }).finally(()=>{benchBusy=false;});
         });
         bar.appendChild(b);
       }
@@ -375,7 +393,10 @@ export async function mountAoCaGl(opts: MountOpts): Promise<AoCaApi> {
   observer.observe(opts.root, { childList: true, subtree: true });
   cleanups.push(() => observer.disconnect());
   activeDispose = dispose;
-  if(!renderer && !bench && !golden) opts.fallback?.();
+  if(!renderer && !bench) {
+    const count=Math.min(8,Math.max(0,Math.floor(Number(q.get('fish')??8)||0)));
+    opts.fallback?.(false,golden ? goldenFish(seed,count):undefined);
+  }
 
   return api;
 }

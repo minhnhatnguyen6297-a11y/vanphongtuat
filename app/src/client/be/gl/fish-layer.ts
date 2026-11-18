@@ -82,7 +82,7 @@ export function createFishLayer(renderer:THREE.WebGLRenderer, scene:THREE.Scene,
     defines:tier==='nhe'?{LITE:1}:{},
     uniforms:{...shared,uColor:{value:atlas.color},uShape:{value:atlas.shape},
       uThick:{value:THICK},uBendY:{value:.012}},
-    transparent:true,premultipliedAlpha:true,depthWrite:false,depthTest:false,
+    transparent:true,premultipliedAlpha:true,depthWrite:true,depthTest:true,
   });
   const fish=new THREE.Mesh(geometry,material);
   fish.renderOrder=2;fish.frustumCulled=false;fish.visible=false;

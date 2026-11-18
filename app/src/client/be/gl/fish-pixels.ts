@@ -69,7 +69,11 @@ export function fishPixels(rgba: Uint8ClampedArray, width: number, height: numbe
     for(let d=-6;d<=6;d++) sum+=temp[bound(y+d,height)*width+x]!*weights[d+6]!;
     const alpha=rgba[i*4+3]!/255;
     const a=Math.max(0,Math.min(1,(alpha-0.02)/0.28));
-    h[i]=sum/total*a*a*(3-2*a);
+    // Close the shell inside the drawn contour. A grid triangle can span
+    // neighboring pixels, so flatten a collar before alpha clips its edge.
+    const collar = Math.max(width/24, height/12)*1.25;
+    const blend = Math.min(1,Math.max(0,(field[i]!-collar*.60)/(collar*.80)));
+    h[i]=sum/total*a*a*(3-2*a)*blend;
     for(let c=0;c<3;c++) color[i*4+c]=Math.round(rgba[i*4+c]!*alpha);
     color[i*4+3]=rgba[i*4+3]!;
   }

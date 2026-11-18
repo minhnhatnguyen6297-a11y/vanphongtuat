@@ -10,6 +10,7 @@ in float aSide;             // +1 mặt trước, -1 mặt sau
 in vec3 iPos; in vec3 iRot; in vec2 iSize; in vec3 iWave; in vec4 iAtlas;
 in float iAlpha;
 out float vAlpha;
+out vec3 vAxis, vCap;
 out vec2 vUv; out vec3 vWorld; out vec3 vN; out vec3 vT; out float vSide;
 
 mat3 rotYPR(vec3 r) {                       // R = Ry(yaw) * Rz(pitch) * Rx(roll); mat3 theo cột
@@ -35,6 +36,11 @@ void main() {
   p.y += uBendY * iSize.x * env * sin(ang);
   vAlpha = iAlpha;
   mat3 R = rotYPR(iRot);
+  // Both surfaces share a rounded section normal at the joined rim.
+  // The projected tail should not introduce a hard lighting seam head-on.
+  vec2 section = vec2(position.y * 2.0, aSide * h);
+  vAxis = R * vec3(1.0, 0.0, 0.0);
+  vCap = R * vec3(sqrt(max(0.0, 1.0 - dot(section, section))), section.x, section.y);
   vec3 w = iPos + R * p;
   vWorld = w;
   vT = R * normalize(vec3(1.0, 0.0, slope));
@@ -56,6 +62,7 @@ uniform float uSurfaceY, uSandY, uGlassZ, uDepthRange, uFogPerUnit;
 uniform float uCausticScale, uCausticGain, uSpec;
 uniform vec4 uCausticScroll;         // xy lớp 1, zw lớp 2
 in float vAlpha;
+in vec3 vAxis, vCap;
 in vec2 vUv; in vec3 vWorld; in vec3 vN; in vec3 vT; in float vSide;
 out vec4 outColor;
 
@@ -77,6 +84,10 @@ void main() {
   vec3 Bg = cross(Ng, Tg) * vSide;                   // mặt sau: z đảo, x/y giữ nguyên
   vec3 N = normalize(Tg * nT.x + Bg * nT.y + Ng * nT.z);
   vec3 V = normalize(uCamPos - vWorld);
+  vec3 axis = normalize(vAxis);
+  float aim = dot(axis,V);
+  vec3 capN = normalize(vCap + (sign(aim)-1.0)*dot(axis,vCap)*axis);
+  N = normalize(mix(N,capN,smoothstep(0.58,0.98,abs(aim))));
 
   float wrap = clamp(dot(N, uLightDir) * 0.6 + 0.4, 0.0, 1.0);   // sáng bọc, không đen hẳn
   float c = 0.0;

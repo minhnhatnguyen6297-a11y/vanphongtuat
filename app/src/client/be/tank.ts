@@ -1,13 +1,9 @@
 import { loadImage } from './image.js';
 import {
-  depthLook,
   headTilt,
   pickTarget,
   stepSwimmer,
-  tailWag,
   turnDurationMs,
-  turnSquash,
-  turnWidthScale,
   type Bounds,
   type Facing,
   type Swimmer,
@@ -19,12 +15,10 @@ import {
  * giữ AMBIENT_BUBBLES = 0.
  */
 const BG_DEFAULT = '/art/be/hang-da-v2.png';
-const BG_TONE = 'rgba(3, 23, 37, 0.24)'; /* #031725 ~24% */
 const FISH_KEY = 'hng_be_fish_v1';
 const BG_KEY = 'hng_be_bg_v2';
 const MAX_FISH = 8;
-const SPRITE_W = 128;
-const SPRITE_H = 68;
+const SHADOW = 48;
 
 /** Cùng lúc tối đa sau cho ăn (sheet tham chiếu). */
 const EVENT_BUBBLE_CAP = 26;
@@ -126,21 +120,22 @@ export class Tank {
   private birthdays = new Map<string,string>();
   private fishRevision = 0;
   private swimmers: Swimmer[] = [];
-  private sprites = new Map<string, HTMLImageElement>();
-  private bg: HTMLImageElement | null = null;
+  private sprites = new Map<string, HTMLCanvasElement>();
+  private backgroundImg: HTMLImageElement | null = null;
+  private backgroundSrc = readBgSrc();
+  private readonly bubbleSprites = [4, 8, 12].map(size => bubbleSprite(size));
+  private readonly shadowSprite = bubbleSprite(SHADOW, true);
+  private sandMask: ImageData | null = null;
   /** Bọt sự kiện — chỉnh EVENT_BUBBLE_CAP / FEED_* / LIFE_* ở đầu file. */
   private eventBubbles: EventBubble[] = [];
   private motes: Mote[] = [];
-  private sprite = document.createElement('canvas');
   private reduceMotion = false;
   private pointerMode: 'none' | 'feed' | 'scare' = 'none';
 
   constructor() {
-    this.sprite.width = SPRITE_W;
-    this.sprite.height = SPRITE_H;
     this.records = [];
     this.seedMotes();
-    void this.loadBg(readBgSrc());
+
     if (typeof matchMedia === 'function') {
       this.reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
@@ -160,8 +155,25 @@ export class Tank {
     this.pointerMode = mode;
   }
 
+  get hasCustomBackground() { return this.backgroundSrc !== BG_DEFAULT; }
+
   attach(canvas: HTMLCanvasElement): void {
     this.view = canvas;
+    canvas.dataset.aoRenderer='canvas2d';
+    const host=canvas.parentElement;
+    if(host) {
+      let img=host.querySelector<HTMLImageElement>('[data-ao-bg]');
+      if(!img) {
+        img=document.createElement('img');
+        img.dataset.aoBg='1';img.alt='';
+        img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none';
+        host.prepend(img);
+      }
+      this.backgroundImg=img;
+      img.src=this.backgroundSrc;
+      canvas.style.position='relative';
+      this.loadSandMask();
+    }
     this.observer?.disconnect();
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(canvas);
@@ -170,14 +182,17 @@ export class Tank {
   }
 
   /** Đổi nền (data URL hoặc đường dẫn public). */
-  async setBackground(src: string): Promise<void> {
+  async setBackground(src: string, remember = true): Promise<void> {
     try {
-      if (src.startsWith('data:image/')) localStorage.setItem(BG_KEY, src);
-      else localStorage.removeItem(BG_KEY);
+      if (remember) {
+        if (src.startsWith('data:image/')) localStorage.setItem(BG_KEY, src);
+        else localStorage.removeItem(BG_KEY);
+      }
     } catch {
       /* in-memory ok */
     }
-    await this.loadBg(src.startsWith('data:image/') ? src : BG_DEFAULT);
+    this.backgroundSrc=src.startsWith('data:image/') ? src : BG_DEFAULT;
+    if(this.backgroundImg?.isConnected) this.backgroundImg.src=this.backgroundSrc;
   }
 
   resetBackground(): void {
@@ -221,6 +236,7 @@ export class Tank {
     }
     this.swimmers = this.swimmers.filter((s) => next.has(s.id));
     this.records = this.records.filter((r) => next.has(r.id));
+    const initial = this.records.length === 0;
     for (const f of list) {
       if (this.records.some((r) => r.id === f.id)) continue;
       const rec: SavedFish = {
@@ -230,7 +246,7 @@ export class Tank {
         phase: unit(`${f.id}p`) * Math.PI * 2,
       };
       this.records.push(rec);
-      this.spawn(rec, true);
+      this.spawn(rec, !initial);
     }
   }
 
@@ -248,7 +264,7 @@ export class Tank {
   feedAt(cssX: number, cssY: number): void {
     const n = FEED_BURST_MIN + Math.floor(Math.random() * (FEED_BURST_MAX - FEED_BURST_MIN + 1));
     this.spawnBurst(cssX, cssY, n, 0);
-    for (const s of this.swimmers) {
+    for (const s of this.active()) {
       const tx = cssX + (Math.random() - 0.5) * 36;
       const ty = cssY + (Math.random() - 0.5) * 36;
       this.retarget(s, tx, ty);
@@ -340,7 +356,7 @@ export class Tank {
     this.swimmers.push(swimmer);
     void loadImage(rec.png)
       .then((img) => {
-        this.sprites.set(rec.id, img);
+        if(this.records.some(row=>row.id===rec.id)) this.sprites.set(rec.id, cropAndTint(img,rec.depth));
       })
       .catch(() => {
         /* skip a sprite that no longer decodes */
@@ -359,18 +375,29 @@ export class Tank {
     }
   }
 
-  private async loadBg(src: string): Promise<void> {
-    try {
-      this.bg = await loadImage(src);
-    } catch {
-      if (src !== BG_DEFAULT) {
-        try {
-          this.bg = await loadImage(BG_DEFAULT);
-        } catch {
-          this.bg = null;
-        }
-      } else this.bg = null;
-    }
+  private loadSandMask(): void {
+    if(this.sandMask) return;
+    void loadImage('/art/be/scene-map.png').then(img=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      if(!ctx) return;
+      ctx.drawImage(img,0,0);
+      this.sandMask=ctx.getImageData(0,0,canvas.width,canvas.height);
+    }).catch(()=>{});
+  }
+
+  private active() {
+    return this.swimmers.slice(-MAX_FISH);
+  }
+
+  private onSand(x:number,y:number):boolean {
+    const map=this.sandMask;
+    if(!map || this.hasCustomBackground) return false;
+    const fit=Math.max(this.cssW/map.width,this.cssH/map.height);
+    const u=Math.floor((x+(map.width*fit-this.cssW)/2)/fit);
+    const v=Math.floor((y+(map.height*fit-this.cssH)/2)/fit);
+    return u>=0&&v>=0&&u<map.width&&v<map.height&&(map.data[(v*map.width+u)*4+1]??0)>1;
   }
 
   private ensureLoop(): void {
@@ -383,11 +410,13 @@ export class Tank {
         this.raf = 0;
         return;
       }
+      if(document.hidden) {this.lastMs=now;return;}
+      if(now-this.lastMs<30) return;
       const dt = Math.min(0.05, (now - this.lastMs) / 1000);
       this.lastMs = now;
       const step = this.reduceMotion ? dt * 0.15 : dt;
       this.step(step, now / 1000);
-      this.draw(now / 1000);
+      this.draw();
     };
     this.raf = requestAnimationFrame(loop);
   }
@@ -396,9 +425,16 @@ export class Tank {
     const canvas = this.view;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    this.cssW = Math.max(200, rect.width);
-    this.cssH = Math.max(160, rect.height);
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const width = Math.max(200, rect.width);
+    const height = Math.max(160, rect.height);
+    if (width !== this.cssW || height !== this.cssH) {
+      const sx=width/this.cssW, sy=height/this.cssH;
+      for(const fish of this.swimmers) {
+        fish.x*=sx;fish.tx*=sx;fish.y*=sy;fish.ty*=sy;
+      }
+      this.cssW=width;this.cssH=height;
+    }
+    const dpr = Math.min(1, window.devicePixelRatio || 1);
     const bw = Math.round(this.cssW * dpr);
     const bh = Math.round(this.cssH * dpr);
     if (canvas.width !== bw || canvas.height !== bh) {
@@ -441,7 +477,7 @@ export class Tank {
     }
   }
 
-  private draw(time: number): void {
+  private draw(): void {
     const canvas = this.view;
     if (!canvas) return;
     const g = canvas.getContext('2d');
@@ -452,58 +488,17 @@ export class Tank {
     const h = this.cssH;
 
     g.clearRect(0, 0, w, h);
-    if (this.bg) {
-      // cover 50% 50%
-      const iw = this.bg.naturalWidth || w;
-      const ih = this.bg.naturalHeight || h;
-      const scale = Math.max(w / iw, h / ih);
-      const dw = iw * scale;
-      const dh = ih * scale;
-      g.drawImage(this.bg, (w - dw) / 2, (h - dh) / 2, dw, dh);
-    } else {
-      const wash = g.createLinearGradient(0, 0, 0, h);
-      wash.addColorStop(0, '#0a3a4a');
-      wash.addColorStop(1, '#031725');
-      g.fillStyle = wash;
-      g.fillRect(0, 0, w, h);
-    }
-    g.fillStyle = BG_TONE;
-    g.fillRect(0, 0, w, h);
-
-    // Khúc xạ/caustic nhẹ trên nền Hang Đá — không blur toàn màn (máy yếu)
-    g.save();
-    g.globalAlpha = 0.14 + Math.sin(time * 0.85) * 0.04;
-    g.fillStyle = 'rgba(190, 235, 255, 0.55)';
-    for (let i = 0; i < 6; i++) {
-      const y = h * (0.12 + i * 0.14) + Math.sin(time * 1.25 + i * 0.9) * 12;
-      g.beginPath();
-      g.ellipse(
-        w * (0.15 + (i % 4) * 0.22) + Math.sin(time * 0.6 + i) * 18,
-        y,
-        w * 0.16,
-        14 + (i % 3) * 4,
-        Math.sin(time * 0.5 + i) * 0.35,
-        0,
-        Math.PI * 2,
-      );
-      g.fill();
-    }
-    g.globalAlpha = 0.1 + Math.sin(time * 1.4) * 0.03;
-    g.strokeStyle = 'rgba(210, 245, 255, 0.65)';
-    g.lineWidth = 1.4;
-    for (let i = 0; i < 3; i++) {
-      const y0 = h * (0.28 + i * 0.22) + Math.sin(time * 1.6 + i) * 8;
-      g.beginPath();
-      g.moveTo(0, y0);
-      g.bezierCurveTo(w * 0.28, y0 - 14, w * 0.62, y0 + 16, w, y0 - 4);
-      g.stroke();
-    }
-    g.restore();
-
     this.drawMotes(g, w, h);
-
-    const ordered = this.swimmers.slice().sort((a, b) => a.depth - b.depth);
-    for (const s of ordered) this.drawFish(g, s, time);
+    const ordered = this.active().sort((a, b) => a.depth - b.depth);
+    for (const fish of ordered) {
+      const y=h*(.83+.08*fish.depth);
+      if(!this.onSand(fish.x,y)) continue;
+      const size=this.fishWidth(fish);
+      g.globalAlpha=.18;
+      g.drawImage(this.shadowSprite,fish.x-size*.48,y-size*.13,size*.96,size*.26);
+    }
+    g.globalAlpha=1;
+    for (const fish of ordered) this.drawFish(g,fish);
 
     this.drawEventBubbles(g);
   }
@@ -520,101 +515,65 @@ export class Tank {
   }
 
   private drawEventBubbles(g: CanvasRenderingContext2D): void {
-    for (const b of this.eventBubbles) {
-      const fade = Math.min(1, b.life / Math.min(0.35, b.maxLife * 0.35));
-      const birth = 1 - Math.min(1, (b.maxLife - b.life) / 0.12);
-      const a = b.alpha * fade * (0.55 + 0.45 * (1 - birth));
-      g.save();
-      g.globalAlpha = a;
-      // ruột trong — không stroke / không quầng
-      const grd = g.createRadialGradient(
-        b.x - b.r * 0.35,
-        b.y - b.r * 0.4,
-        b.r * 0.05,
-        b.x,
-        b.y,
-        b.r,
-      );
-      grd.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-      grd.addColorStop(0.35, 'rgba(220, 240, 255, 0.35)');
-      grd.addColorStop(0.75, 'rgba(180, 210, 230, 0.12)');
-      grd.addColorStop(1, 'rgba(180, 210, 230, 0)');
-      g.fillStyle = grd;
-      g.beginPath();
-      g.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      g.fill();
-      // phản sáng lệch
-      g.globalAlpha = a * 0.9;
-      g.fillStyle = 'rgba(255, 255, 255, 0.75)';
-      g.beginPath();
-      g.ellipse(b.x - b.r * 0.28, b.y - b.r * 0.32, b.r * 0.22, b.r * 0.14, -0.4, 0, Math.PI * 2);
-      g.fill();
-      g.restore();
+    for(const b of this.eventBubbles) {
+      g.globalAlpha=b.alpha*Math.min(1,b.life/.3);
+      const sprite=this.bubbleSprites[b.r<1.7?0:b.r<3?1:2]!;
+      g.drawImage(sprite,b.x-b.r,b.y-b.r,b.r*2,b.r*2);
     }
+    g.globalAlpha=1;
   }
 
-  private drawFish(g: CanvasRenderingContext2D, s: Swimmer, time: number): void {
-    const img = this.sprites.get(s.id);
-    if (!img) return;
-    const look = depthLook(s.depth);
-    const wag = tailWag(time, s.phase);
-    const off = this.sprite.getContext('2d');
-    if (!off) return;
-    off.setTransform(1, 0, 0, 1, 0, 0);
-    off.clearRect(0, 0, SPRITE_W, SPRITE_H);
-    off.save();
-    off.translate(SPRITE_W / 2, SPRITE_H / 2);
-    this.drawWagging(off, img, SPRITE_W, SPRITE_H, wag);
-    off.restore();
-    if (look.tint > 0.02) {
-      off.globalCompositeOperation = 'source-atop';
-      off.fillStyle = `rgba(64, 140, 160, ${look.tint})`;
-      off.fillRect(0, 0, SPRITE_W, SPRITE_H);
-      off.globalCompositeOperation = 'source-over';
-    }
-
-    const squash = liveSquash(s);
-    g.save();
-    g.translate(s.x, s.y);
-    g.rotate(headPitch(s) * s.facing);
-    // không phóng to sprite lúc quay — chỉ co ngang nhẹ
-    g.scale(s.facing * turnWidthScale(squash) * look.scale, look.scale);
-    g.globalAlpha = look.alpha;
-    if (look.blurPx >= 0.85) g.filter = `blur(${look.blurPx.toFixed(2)}px)`;
-    g.drawImage(this.sprite, -SPRITE_W / 2, -SPRITE_H / 2);
-    g.filter = 'none';
-    g.restore();
+  private fishWidth(s:Swimmer) {
+    return this.cssW*(.09+.05*s.depth);
   }
 
-  private drawWagging(
-    g: CanvasRenderingContext2D,
-    img: CanvasImageSource,
-    fw: number,
-    fh: number,
-    wag: number,
-  ): void {
-    const tailW = fw * 0.38;
+  private drawFish(g:CanvasRenderingContext2D,s:Swimmer):void {
+    const sprite=this.sprites.get(s.id);
+    if(!sprite) return;
+    const w=this.fishWidth(s),h=w*sprite.height/sprite.width;
     g.save();
-    g.beginPath();
-    g.rect(-fw / 2 + tailW * 0.72, -fh / 2, fw, fh);
-    g.clip();
-    g.drawImage(img, -fw / 2, -fh / 2, fw, fh);
-    g.restore();
-    g.save();
-    g.translate(-fw / 2 + tailW * 0.72, 0);
-    g.rotate(wag);
-    g.translate(fw / 2 - tailW * 0.72, 0);
-    g.beginPath();
-    g.rect(-fw / 2, -fh / 2, tailW * 0.86, fh);
-    g.clip();
-    g.drawImage(img, -fw / 2, -fh / 2, fw, fh);
+    g.translate(s.x,s.y);
+    g.rotate(headPitch(s)*s.facing);
+    g.scale(s.facing,1);
+    g.drawImage(sprite,-w/2,-h/2,w,h);
     g.restore();
   }
 }
 
-function liveSquash(s: Swimmer): number {
-  if (!s.turn) return 0;
-  return turnSquash(s.turn.elapsed / s.turn.dur);
+function bubbleSprite(size:number,shadow=false) {
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const ctx=canvas.getContext('2d')!;
+  const r=size*.5;
+  const radial=ctx.createRadialGradient(r,r,0,r,r,r);
+  if(shadow) {
+    radial.addColorStop(0,'rgba(0,0,0,0.85)');radial.addColorStop(1,'rgba(0,0,0,0)');
+  } else {
+    radial.addColorStop(0,'rgba(215,250,255,0.09)');
+    radial.addColorStop(.70,'rgba(215,250,255,0.16)');
+    radial.addColorStop(.84,'rgba(226,255,255,0.75)');
+    radial.addColorStop(1,'rgba(226,255,255,0)');
+  }
+  ctx.fillStyle=radial;ctx.fillRect(0,0,size,size);
+  return canvas;
+}
+
+function cropAndTint(img:HTMLImageElement,depth:number) {
+  const canvas=document.createElement('canvas');
+  canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true})!;
+  ctx.drawImage(img,0,0);
+  const source=ctx.getImageData(0,0,canvas.width,canvas.height);
+  let x0=source.width,y0=source.height,x1=-1,y1=-1;
+  for(let y=0;y<source.height;y++) for(let x=0;x<source.width;x++) {
+    const i=(y*source.width+x)*4;
+    if(source.data[i+3]!>8) {x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
+    source.data[i]=source.data[i]!*(1-.3*(1-depth));
+    source.data[i+1]=source.data[i+1]!*(1-.1*(1-depth));
+  }
+  canvas.width=Math.max(1,x1-x0+1);canvas.height=Math.max(1,y1-y0+1);
+  ctx.putImageData(source,-x0,-y0);
+  return canvas;
 }
 
 function headPitch(s: Swimmer): number {

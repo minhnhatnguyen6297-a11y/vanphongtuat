@@ -128,6 +128,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
   let event:WaterEvent|null=null;
   let shown=0;
   let shadow=true;
+  let fishVisible=true;
   let scenario:Scenario='wide';
   const sand = new THREE.Mesh(quad, material);
   sand.frustumCulled = false;
@@ -184,7 +185,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
         const ratio=(id:string)=>{const r=layer.atlas.regions.get(id);return r?r.height/r.width:undefined;};
         poses=fish.golden?goldenPoses(scenario,source,layout,seconds,ratio):
           school.update(source,fish.viewer(),fishLimit(tier),layout,ratio,seconds,Math.max(0,seconds-lastTime),Date.now(),event);
-        shown=layer.update(poses,shadow);
+        shown=layer.update(fishVisible?poses:[],shadow);
       }
       life?.update(seconds,!fish?.golden || scenario==='wide' || scenario==='bubbles');
       lastTime=seconds;
@@ -196,6 +197,7 @@ export async function createSandScene(renderer: THREE.WebGLRenderer, tier: AoTie
     scenario(name:Scenario) { scenario=name;lastTime=0;event=null;school.reset();life?.reset(); },
     get preparing(){return layer?.atlas.pending??false;},
     setShadow(visible:boolean) { shadow=visible; },
+    setFishVisible(visible:boolean) { fishVisible=visible; },
     state: () => ({ ...framing, phase: uniforms.uCausticScroll.value.toArray(), poses,
       shown,total:lastSource?.length??0,workerMs:layer?.atlas.samples??[],pending:layer?.atlas.pending??false,
       failed:layer?[...layer.atlas.failed]:[], bubbles:life?.state()??null }),

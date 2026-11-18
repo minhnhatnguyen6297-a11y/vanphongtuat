@@ -57,7 +57,11 @@ export function createAtlas(renderer: THREE.WebGLRenderer) {
     const x=PAD+(slot%COLS)*(SLOT_W+2*PAD);
     const y=PAD+Math.floor(slot/COLS)*(SLOT_H+2*PAD);
     for(const [texture,bytes] of [[color,pixels.color],[shape,pixels.shape]] as const) {
-      const region=new THREE.DataTexture(bytes as Uint8Array<ArrayBuffer>,pixels.width,pixels.height);
+      // Clear the unused part of a recycled slot before generating mipmaps.
+      const padded=new Uint8Array(SLOT_W*SLOT_H*4);
+      const stride=pixels.width*4;
+      for(let row=0;row<pixels.height;row++) padded.set(bytes.subarray(row*stride,(row+1)*stride),row*SLOT_W*4);
+      const region=new THREE.DataTexture(padded,SLOT_W,SLOT_H);
       renderer.copyTextureToTexture(region,texture,null,new THREE.Vector2(x,y));
     }
     return {width:pixels.width,height:pixels.height,slot,

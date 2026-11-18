@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { appDir, loginMock, output, serveApp } from './ao-ca/browser.mjs';
-import { webmFromVp8 } from './ao-ca/webm.mjs';
+import { recordPond } from './ao-ca/record-pond.mjs';
 
 const options = process.argv.slice(2);
 const tier = options.find(arg=>arg.startsWith('--tier='))?.split('=')[1] ?? 'cao';
@@ -68,65 +68,6 @@ async function inspectPixels(page, baseline, lit, later, mask) {
   }, {baseline:dataUrl(baseline),lit:dataUrl(lit),later:dataUrl(later),mask:dataUrl(mask)});
 }
 
-async function recordSand(page, width, height) {
-  const clipWidth = 960, clipHeight = Math.round(height*clipWidth/width);
-  const fps=30, frameCount=300;
-  const frames=await page.evaluate(async ({width,height,fps,frameCount}) => {
-    const api=window.__aoCa;
-    api.scenario('wide');
-    const source=document.querySelector('[data-fish-tank]');
-    const background=document.querySelector('[data-ao-bg]');
-    await background.decode();
-    const canvas=document.createElement('canvas');
-    canvas.width=width; canvas.height=height;
-    const ctx=canvas.getContext('2d');
-    const ratio=Math.max(width/background.naturalWidth,height/background.naturalHeight);
-    const w=background.naturalWidth*ratio, h=background.naturalHeight*ratio;
-    const frames=[];
-    let encoderError;
-    const encoder=new VideoEncoder({
-      output(chunk) {
-        const data=new Uint8Array(chunk.byteLength);
-        chunk.copyTo(data);
-        frames.push({type:chunk.type,timestamp:chunk.timestamp,data:Array.from(data)});
-      },
-      error(error) { encoderError=error; },
-    });
-    encoder.configure({codec:'vp8',width,height,framerate:fps,bitrate:3_000_000,latencyMode:'quality'});
-    try {
-      // Render each timestamp directly. The review clip keeps its cadence even if Chrome is occluded.
-      for(let index=0;index<frameCount;index++) {
-        api.advance(index===0 ? 0 : 1/fps);
-        ctx.drawImage(background,(width-w)/2,(height-h)/2,w,h);
-        ctx.drawImage(source,0,0,width,height);
-        const frame=new VideoFrame(canvas,{timestamp:Math.round(index*1e6/fps)});
-        encoder.encode(frame,{keyFrame:index%60===0});
-        frame.close();
-        if(index%15===14) await encoder.flush();
-        if(encoderError) throw encoderError;
-      }
-      await encoder.flush();
-      return frames;
-    } finally {
-      if(encoder.state!=='closed') encoder.close();
-    }
-  }, {width:clipWidth,height:clipHeight,fps,frameCount});
-  const clip=webmFromVp8(frames,{width:clipWidth,height:clipHeight,fps});
-  const name='caustic-10s-'+width+'x'+height+'.webm';
-  const metadata = await page.evaluate(async data => {
-    const video=document.createElement('video');
-    await new Promise((done,fail)=>{
-      video.onloadeddata=done;
-      video.onerror=()=>fail(new Error('Chrome could not decode review clip'));
-      video.src='data:video/webm;base64,'+data;
-    });
-    return {duration:video.duration,width:video.videoWidth,height:video.videoHeight};
-  },clip.toString('base64'));
-  await writeFile(new URL(name, output),clip);
-  result('Clip caustic', frames.length===frameCount && Math.abs(metadata.duration-10)<0.05 &&
-    metadata.width===clipWidth && metadata.height===clipHeight, name+' '+metadata.duration.toFixed(2)+' s, '+frames.length+' khung');
-}
-
 await mkdir(output, {recursive:true});
 const built = await readFile(new URL('public/app.js', appDir),'utf8');
 const bg = await readFile(new URL('hang-da-v2.png', art));
@@ -181,15 +122,19 @@ try {
     const repeat=await page.screenshot();
     const reset=await page.evaluate(()=>window.__aoCa.state());
     result(name+' Golden tái lập', lit.equals(repeat) && reset.seconds===0 && reset.seed===42, 'seed=42, t=0');
-    if(record && width===1366) { await page.bringToFront(); await recordSand(page,width,height); }
+    if(record && width===1366) {
+      const {clip,metadata,frameCount}=await recordPond(page,width,height);
+      const file='caustic-10s-'+name+'.webm';
+      await writeFile(new URL(file,output),clip);
+      result('Clip caustic',true,file+' '+metadata.duration.toFixed(2)+' s, '+frameCount+' khung');
+    }
     result(name+' WebGL không lỗi', errors.length===0, errors.join(' | ') || '0 lỗi');
     await page.close();
   }
   const defaults = await browser.newPage({viewport:{width:1366,height:768}});
   await loginMock(defaults,app.base);
-  const canvas2d = await defaults.locator('[data-fish-tank]').evaluate(canvas =>
-    canvas.getContext('2d') !== null && !window.__aoCa && !document.querySelector('[data-ao-bg]'));
-  result('Ao V2 mặc định', canvas2d, '#/chat giữ Canvas2D');
+  await defaults.locator('[data-ao-renderer=webgl2]').waitFor();
+  result('Ao V3 mặc định', true, '#/chat dùng WebGL2 trên GPU thật');
   await defaults.close();
   await browser.close();
   browser=await chromium.launch({channel:'chrome',headless:false,args:['--use-angle=swiftshader']});
@@ -197,6 +142,7 @@ try {
   await loginMock(soft,app.base,'#/chat?perf=1');
   await soft.waitForFunction(()=>Boolean(window.__aoCa?.perf),undefined,{timeout:12000});
   const softState=await soft.evaluate(()=>window.__aoCa.perf());
+  await soft.locator('[data-ao-renderer=canvas2d]').waitFor();
   result('GPU mềm chọn Tĩnh', /SwiftShader/i.test(softState.renderer) && softState.tier==='tinh', softState.renderer);
 } finally {
   await browser?.close();
