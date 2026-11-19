@@ -32,7 +32,9 @@ Thumbs.db
 .claude/*
 !.claude/skills/
 .superpowers/
-.cursor/
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
 
 # Client chunks (esbuild splitting)
 app/public/chunks/
