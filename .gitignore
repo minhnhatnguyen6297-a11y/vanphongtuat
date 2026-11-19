@@ -32,7 +32,8 @@ Thumbs.db
 .claude/*
 !.claude/skills/
 .superpowers/
-.cursor/
+.cursor/*
+!.cursor/environment.json
 
 # Client chunks (esbuild splitting)
 app/public/chunks/
